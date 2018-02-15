@@ -60,7 +60,7 @@ void cActionAttack::execute(cModel& model) const
 		cUnit* target = model.getUnitFromID(targetId);
 		if (target == nullptr) return;
 
-		if (!target->isABuilding() && !target->getIsBig())
+		if (!target->isABuilding() /*&& !target->getIsBig()*/)
 		{
 			if (targetPosition != target->getPosition())
 			{

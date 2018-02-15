@@ -411,7 +411,8 @@ void cVehicle::continuePathBuilding(cModel& model)
 
 bool cVehicle::proceedClearing (cServer& server)
 {
-	if (isUnitClearing() == false || getClearingTurns() == 0) return false;
+	if (isUnitClearing() == false || getClearingTurns() == 0)
+		return false;
 
 	setClearingTurns (getClearingTurns() - 1);
 
@@ -421,7 +422,8 @@ bool cVehicle::proceedClearing (cServer& server)
 
 	setClearing (false);
 	cBuilding* Rubble = map.getField (getPosition()).getRubble();
-	if (isBig)
+	// This is another strange task, when clearing machine moves to a center of destroyed object
+	if (cellSize > 1)
 	{
 		map.moveVehicle (*this, buildBigSavedPosition);
 		sendStopClear (server, *this, buildBigSavedPosition, *getOwner());

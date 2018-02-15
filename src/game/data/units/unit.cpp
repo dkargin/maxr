@@ -59,7 +59,8 @@ cUnit::cUnit (const cDynamicUnitData* unitData, const cStaticUnitData* staticDat
 
 	data.setMaximumCurrentValues();
 
-	isBig = (staticData && staticData->isBig);
+	//isBig = (staticData && staticData->isBig);
+	cellSize = (staticData && staticData->isBig) ? 6 : 3;
 
 	disabledChanged.connect ([&]() { statusChanged(); });
 	sentryChanged.connect ([&]() { statusChanged(); });
@@ -187,15 +188,31 @@ bool cUnit::isAbove (const cPosition& position) const
 //------------------------------------------------------------------------------
 bool cUnit::getIsBig() const
 {
-	return isBig;
+	return cellSize > 1;
 }
 
 //------------------------------------------------------------------------------
+
+int cUnit::getCellSize() const
+{
+	return cellSize;
+}
+
+void cUnit::setCellSize(int cs)
+{
+	std::swap(cellSize, cs);
+	if (cellSize != cs)
+		unitSizeChanged();
+}
+
+/*
 void cUnit::setIsBig(bool value)
 {
-	std::swap(isBig, value);
-	if (isBig != value) isBigChanged();
+	std::swap(iscell, value);
+	if (isBig != value)
+		isBigChanged();
 }
+*/
 
 uint32_t cUnit::getChecksum(uint32_t crc) const
 {
@@ -530,4 +547,75 @@ bool cUnit::isStealthOnCurrentTerrain(const cMapField& field, const sTerrain& te
 const cStaticUnitData& cUnit::getStaticUnitData() const
 {
 	return *staticData;
+}
+
+std::vector<cPosition> generateBorder(const cPosition& corner, int size)
+{
+	if (size < 1)
+		size = 1;
+	std::vector<cPosition> result(size*4-4);
+	int dx = 1;
+	int dy = -1;
+	bool hor = true;
+	int x = corner.x();
+	int y = corner.y();
+
+	int step = size-1;
+
+	//2 -> 1
+
+	for(cPosition& pos: result)
+	{
+		pos.x() = x;
+		pos.y() = y;
+
+		step--;
+
+		if(hor)
+		{
+			x += dx;
+			if (step == 0)
+			{
+				dx = -dx;
+				hor = false;
+				step = size-1;
+			}
+		}
+		else
+		{
+			y += dy;
+			if (step == 0)
+			{
+				dy = -dy;
+				hor = true;
+				step = size-1;
+			}
+		}
+	}
+
+	return std::move(result);
+}
+
+// Generate array of adjacent cells
+// Direct adjacency is checked: left, right, upper and bottom sides are concidered adjacent
+// Corner sides are skipped
+std::vector<cAdjPosition> generateAdjacentBorder(const cPosition& corner, int size)
+{
+	if (size < 1)
+			size = 1;
+
+	std::vector<cPosition> result(size*4);
+	for(int i = 0; i < size; i++)
+	{
+		// Left side
+		result[i] = std::make_pair(corner.relative(-1,i), AdjLeft);
+		// Top side
+		result[i+size] = std::make_pair(corner.relative(i,-1), AdjTop);
+		// Right side
+		result[i+size*2] = std::make_pair(corner.relative(size, size-i-1), AdjRight);
+		// Bottom side
+		result[i+size*3] = std::make_pair(corner.relative(size-i-1, size), AdjBottom);
+	}
+
+	return std::move(result);
 }

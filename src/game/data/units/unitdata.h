@@ -170,7 +170,7 @@ public:
 	bool canWork;
 	bool explodesOnContact;
 	bool isHuman;
-	bool isBig;
+	int cellSize;
 
 	// Storage
 	int storageResMax;
@@ -236,7 +236,7 @@ public:
 		archive & NVP(canWork);
 		archive & NVP(explodesOnContact);
 		archive & NVP(isHuman);
-		archive & NVP(isBig);
+		archive & NVP(cellSize);
 		archive & NVP(storageResMax);
 		archive & NVP(storeResType);
 		archive & NVP(storageUnitsMax);

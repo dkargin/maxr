@@ -43,7 +43,7 @@ void sendAddRubble (cServer& server, const cBuilding& building, const cPlayer& r
 	message->pushInt16 (building.iID);
 //	message->pushInt16 (building.RubbleValue);
 //	message->pushInt16 (building.RubbleTyp);
-	message->pushBool (building.getIsBig());
+	message->pushChar(building.getCellSize());
 
 	server.sendNetMessage (std::move (message), &receiver);
 }

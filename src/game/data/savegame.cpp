@@ -87,7 +87,8 @@ int cSavegame::save(const cModel& model, int slot, const std::string& saveName)
 	archive.closeChild();
 
 	loadedSlot = slot;
-	tinyxml2::XMLError result = xmlDocument.SaveFile(getFileName(slot).c_str());
+	std::string fileName = getFileName(slot);
+	tinyxml2::XMLError result = xmlDocument.SaveFile(fileName.c_str());
 	if (result != tinyxml2::XML_NO_ERROR)
 	{
 		throw std::runtime_error(getXMLErrorMsg(xmlDocument));

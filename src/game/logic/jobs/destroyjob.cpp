@@ -72,9 +72,12 @@ void cDestroyJob::createDestroyFx(cModel& model)
 	{
 		auto& vehicle = *static_cast<cVehicle*>(unit);
 
-		if (vehicle.getIsBig())
+		int cellSize = vehicle.getCellSize();
+		if (cellSize > 1)
 		{
-			fx = std::make_shared<cFxExploBig>(vehicle.getPosition() * 64 + 64, map.isWaterOrCoast(vehicle.getPosition()));
+			fx = std::make_shared<cFxExploBig>(
+					vehicle.getPosition() * 64 + cellSize*32,
+					map.isWaterOrCoast(vehicle.getPosition()));
 		}
 		else if (vehicle.getStaticUnitData().factorAir > 0 && vehicle.getFlightHeight() != 0)
 		{
@@ -102,7 +105,7 @@ void cDestroyJob::createDestroyFx(cModel& model)
 		auto& building = *static_cast<cBuilding*>(unit);
 
 		const cBuilding* topBuilding = map.getField(building.getPosition()).getBuilding();
-		if (topBuilding && topBuilding->getIsBig())
+		if (topBuilding && topBuilding->getCellSize() > 1)
 		{
 			fx = std::make_shared<cFxExploBig>(topBuilding->getPosition() * 64 + 64, map.isWaterOrCoast(topBuilding->getPosition()));
 		}
@@ -121,8 +124,8 @@ void cDestroyJob::deleteUnit(cModel& model)
 {
 	bool isVehicle = false;
 	const auto position = unit->getPosition();
-	auto& map = *model.getMap();
-	auto& field = map.getField(position);
+	cMap& map = *model.getMap();
+	cMapField& field = map.getField(position);
 
 	//delete planes immediately
 	if (unit->isAVehicle())
@@ -139,7 +142,7 @@ void cDestroyJob::deleteUnit(cModel& model)
 	//check, if there is a big unit on the field
 	bool bigUnit = false;
 	auto topBuilding = field.getTopBuilding();
-	if ((topBuilding && topBuilding->getIsBig()) || unit->getIsBig())
+	if ((topBuilding && topBuilding->getCellSize() > 1) || unit->getCellSize() > 1)
 		bigUnit = true;
 
 
@@ -154,13 +157,22 @@ void cDestroyJob::deleteUnit(cModel& model)
 	}
 	model.deleteUnit(unit);
 
-	//delete all buildings (except connectors, when a vehicle is destroyed)
-	rubbleValue += deleteAllBuildingsOnField(field, !isVehicle, model);
-	if (bigUnit)
+	int cellSize = unit->getCellSize();
+	bool removeBuildings = false;
+	if (removeBuildings)
 	{
-		rubbleValue += deleteAllBuildingsOnField(map.getField(position + cPosition(1, 0)), !isVehicle, model);
-		rubbleValue += deleteAllBuildingsOnField(map.getField(position + cPosition(0, 1)), !isVehicle, model);
-		rubbleValue += deleteAllBuildingsOnField(map.getField(position + cPosition(1, 1)), !isVehicle, model);
+		//delete all buildings (except connectors, when a vehicle is destroyed)
+		for(int y = 0; y < cellSize; y++)
+		{
+			for(int x = 0; x < cellSize; x++)
+			{
+				auto& field = map.getField(position.relative(x, y));
+				rubbleValue += deleteAllBuildingsOnField(field, !isVehicle, model);
+			}
+		}
+		//rubbleValue += deleteAllBuildingsOnField(map.getField(position + cPosition(1, 0)), !isVehicle, model);
+		//rubbleValue += deleteAllBuildingsOnField(map.getField(position + cPosition(0, 1)), !isVehicle, model);
+		//rubbleValue += deleteAllBuildingsOnField(map.getField(position + cPosition(1, 1)), !isVehicle, model);
 	}
 
 	//add rubble

@@ -130,8 +130,10 @@ public:
 	virtual bool buildingCanBeUpgraded() const { return false; }
 	virtual bool canBeStoppedViaUnitMenu() const = 0;
 
-	bool getIsBig() const;
-	void setIsBig(bool value);
+	//bool getIsBig() const;
+	//void setIsBig(bool value);
+	int getCellSize() const;
+	void setCellSize(int cs);
 
 	virtual uint32_t getChecksum(uint32_t crc) const;
 
@@ -166,7 +168,7 @@ public:
 	mutable cSignal<void ()> clearingChanged;
 	mutable cSignal<void ()> workingChanged;
 	mutable cSignal<void ()> storedResourcesChanged;
-	mutable cSignal<void ()> isBigChanged;
+	mutable cSignal<void ()> unitSizeChanged;
 
 	template<typename T>
 	void serializeThis(T& archive)
@@ -185,7 +187,7 @@ public:
 		archive & NVP(attacking);
 		archive & NVP(beeingAttacked);
 		archive & NVP(beenAttacked);
-		archive & NVP(isBig);
+		archive & NVP(cellSize);
 		archive & NVP(storageResCur);
 
 		if (!archive.isWriter && data.getId() != sID(0, 0))
@@ -219,7 +221,8 @@ public: // TODO: make protected/private and make getters/setters
 	//-----------------------------------------------------------------------------
 protected:
 	const cStaticUnitData* staticData;
-	bool isBig;
+	// Unit size in cells
+	int cellSize;
 
 	//-----------------------------------------------------------------------------
 private:
@@ -276,5 +279,26 @@ struct sUnitLess
 		return left->iID < right;
 	}
 };
+
+
+// Generates array of coordinates belonging to internal border of an object with specified size
+// @param corner - coordinate of left topmost corner of the object
+// @param size - size of the object
+std::vector<cPosition> generateBorder(const cPosition& corner, int size);
+
+enum AdjSide
+{
+	AdjLeft = 1,
+	AdjTop = 2,
+	AdjRight = 4,
+	AdjBottom = 8,
+};
+
+typedef std::pair<cPosition, int> cAdjPosition;
+
+// Generates array of coordinates that are adjacent to specified object
+// @param corner - coordinate of left topmost corner of the object
+// @param size - size of the object
+std::vector<cAdjPosition> generateAdjacentBorder(const cPosition& corner, int size);
 
 #endif // game_data_units_unitH

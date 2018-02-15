@@ -484,10 +484,12 @@ void cServer::handleNetMessage_GAME_EV_WANT_START_CLEAR (cNetMessage& message)
 	}
 
 	cPosition rubblePosition (-1, -1);
-	if (building->getIsBig())
+	int cellSize = building->getCellSize();
+	if (cellSize > 1)
 	{
 		rubblePosition = building->getPosition();
 
+		// TODO: this will be problematic!
 		sideStepStealthUnit (building->getPosition()                  , *Vehicle, rubblePosition);
 		sideStepStealthUnit (building->getPosition() + cPosition (1, 0), *Vehicle, rubblePosition);
 		sideStepStealthUnit (building->getPosition() + cPosition (0, 1), *Vehicle, rubblePosition);
@@ -507,7 +509,8 @@ void cServer::handleNetMessage_GAME_EV_WANT_START_CLEAR (cNetMessage& message)
 	}
 
 	Vehicle->setClearing (true);
-	Vehicle->setClearingTurns (building->getIsBig() ? 4 : 1);
+	int clearSpeed = 9;
+	Vehicle->setClearingTurns (cellSize*cellSize / clearSpeed);
 	Vehicle->getOwner()->doScan();
 	//addJob (new cStartBuildJob (*Vehicle, Vehicle->getPosition(), building->data.isBig));
 
@@ -536,7 +539,8 @@ void cServer::handleNetMessage_GAME_EV_WANT_STOP_CLEAR (cNetMessage& message)
 		Vehicle->setClearing (false);
 		Vehicle->setClearingTurns (0);
 
-		if (Vehicle->getIsBig())
+		// TODO:Here will certainly be a problem with cleaning
+		if (Vehicle->getCellSize() > 1)
 		{
 			Map->moveVehicle (*Vehicle, Vehicle->buildBigSavedPosition);
 			Vehicle->getOwner()->doScan();

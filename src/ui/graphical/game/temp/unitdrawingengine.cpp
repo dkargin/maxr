@@ -75,6 +75,8 @@ void cUnitDrawingEngine::drawUnit (const cBuilding& building, SDL_Rect destinati
 	//to avoid a changing time within this method
 
 	SDL_Rect dest = {0, 0, 0, 0};
+	int cellSize = building.getCellSize();
+
 	bool bDraw = false;
 	SDL_Surface* drawingSurface = drawingCache.getCachedImage (building, zoomFactor, animationTime);
 	if (drawingSurface == nullptr)
@@ -123,7 +125,18 @@ void cUnitDrawingEngine::drawUnit (const cBuilding& building, SDL_Rect destinati
 		(building.getStaticUnitData().canResearch && building.getOwner()->isCurrentTurnResearchAreaFinished(building.getResearchArea()))))
 	{
 		const cRgbColor finishedMarkColor = cRgbColor::green();
-		const cBox<cPosition> d (cPosition (dest.x + 2, dest.y + 2), cPosition (dest.x + 2 + (building.getIsBig() ? 2 * destination.w - 3 : destination.w - 3), dest.y + 2 + (building.getIsBig() ? 2 * destination.h - 3 : destination.h - 3)));
+
+		//const cBox<cPosition> d (
+		//	cPosition (dest.x + 2, dest.y + 2),
+		//	cPosition (
+		//		dest.x + 2 + (building.getIsBig() ? 2 * destination.w - 3 : destination.w - 3),
+		//		dest.y + 2 + (building.getIsBig() ? 2 * destination.h - 3 : destination.h - 3)));
+
+		cPosition minCorner(dest.x + 2, dest.y + 2);
+		cPosition maxCorner(
+				dest.x + 2 + (cellSize * destination.w - 3),
+				dest.y + 2 + (cellSize * destination.h - 3));
+		const cBox<cPosition> d(minCorner, maxCorner);
 
 		drawRectangle (*cVideo::buffer, d, finishedMarkColor.exchangeGreen (255 - 16 * (animationTime % 0x8)), 3);
 	}
@@ -146,8 +159,10 @@ void cUnitDrawingEngine::drawUnit (const cBuilding& building, SDL_Rect destinati
 	// draw the seleted-unit-flash-frame for bulidings
 	if (unitSelection && &building == unitSelection->getSelectedBuilding())
 	{
-		Uint16 maxX = building.getIsBig() ? destination.w  * 2 : destination.w;
-		Uint16 maxY = building.getIsBig() ? destination.h * 2 : destination.h;
+		//Uint16 maxX = building.getIsBig() ? destination.w * 2 : destination.w;
+		//Uint16 maxY = building.getIsBig() ? destination.h * 2 : destination.h;
+		Uint16 maxX = destination.w * cellSize;
+		Uint16 maxY = destination.h * cellSize;
 		const int len = maxX / 4;
 		maxX -= 3;
 		maxY -= 3;
@@ -181,6 +196,7 @@ void cUnitDrawingEngine::drawUnit (const cVehicle& vehicle, SDL_Rect destination
 	unsigned long long animationTime = animationTimer->getAnimationTime(); //call getAnimationTime only once in this method and save the result,
 	//to avoid a changing time within this method
 
+	int cellSize = vehicle.getCellSize();
 	// calculate screen position
 	int ox = (int) (vehicle.getMovementOffset().x() * zoomFactor);
 	int oy = (int) (vehicle.getMovementOffset().y() * zoomFactor);
@@ -245,7 +261,12 @@ void cUnitDrawingEngine::drawUnit (const cVehicle& vehicle, SDL_Rect destination
 	if (vehicle.isUnitBuildingABuilding() && vehicle.getBuildTurns() == 0 && vehicle.getOwner() == player && !vehicle.BuildPath)
 	{
 		const cRgbColor finishedMarkColor = cRgbColor::green();
-		const cBox<cPosition> d (cPosition (destination.x + 2, destination.y + 2), cPosition (destination.x + 2 + (vehicle.getIsBig() ? 2 * destination.w - 3 : destination.w - 3), destination.y + 2 + (vehicle.getIsBig() ? 2 * destination.h - 3 : destination.h - 3)));
+		//const cBox<cPosition> d (cPosition (destination.x + 2, destination.y + 2), cPosition (destination.x + 2 + (vehicle.getIsBig() ? 2 * destination.w - 3 : destination.w - 3), destination.y + 2 + (vehicle.getIsBig() ? 2 * destination.h - 3 : destination.h - 3)));
+		cPosition minCorner(destination.x + 2, destination.y + 2);
+		cPosition maxCorner(
+				destination.x + 2 + (cellSize * destination.w - 3),
+				destination.y + 2 + (cellSize * destination.h - 3));
+		const cBox<cPosition> d (minCorner, maxCorner);
 
 		drawRectangle (*cVideo::buffer, d, finishedMarkColor.exchangeGreen (255 - 16 * (animationTime % 0x8)), 3);
 	}
@@ -253,7 +274,12 @@ void cUnitDrawingEngine::drawUnit (const cVehicle& vehicle, SDL_Rect destination
 	// Draw the colored frame if necessary
 	if (shouldDrawColor)
 	{
-		const cBox<cPosition> d (cPosition (destination.x + 1, destination.y + 1), cPosition (destination.x + 1 + (vehicle.getIsBig() ? 2 * destination.w - 1 : destination.w - 1), destination.y + 1 + (vehicle.getIsBig() ? 2 * destination.h - 1 : destination.h - 1)));
+		//const cBox<cPosition> d (cPosition (destination.x + 1, destination.y + 1), cPosition (destination.x + 1 + (vehicle.getIsBig() ? 2 * destination.w - 1 : destination.w - 1), destination.y + 1 + (vehicle.getIsBig() ? 2 * destination.h - 1 : destination.h - 1)));
+		cPosition minCorner(destination.x + 1, destination.y + 1);
+		cPosition maxCorner(
+				destination.x + 1 + (cellSize * destination.w - 1),
+				destination.y + 1 + (cellSize * destination.h - 1));
+		const cBox<cPosition> d (minCorner, maxCorner);
 
 		drawRectangle (*cVideo::buffer, d, vehicle.getOwner()->getColor().getColor());
 	}
@@ -262,15 +288,23 @@ void cUnitDrawingEngine::drawUnit (const cVehicle& vehicle, SDL_Rect destination
 	if (unitSelection && unitSelection->getSelectedUnitsCount() > 1 && unitSelection->isSelected (vehicle))
 	{
 		const cRgbColor groupSelectionColor = cRgbColor::yellow();
-		const cBox<cPosition> d (cPosition (destination.x + 2, destination.y + 2), cPosition (destination.x + 2 + (vehicle.getIsBig() ? 2 * destination.w - 3 : destination.w - 3), destination.y + 2 + (vehicle.getIsBig() ? 2 * destination.h - 3 : destination.h - 3)));
+		//const cBox<cPosition> d (cPosition (destination.x + 2, destination.y + 2), cPosition (destination.x + 2 + (vehicle.getIsBig() ? 2 * destination.w - 3 : destination.w - 3), destination.y + 2 + (vehicle.getIsBig() ? 2 * destination.h - 3 : destination.h - 3)));
+		cPosition minCorner(destination.x + 2, destination.y + 2);
+		cPosition maxCorner(
+				destination.x + 2 + (cellSize * destination.w - 3),
+				destination.y + 2 + (cellSize * destination.h - 3));
+		const cBox<cPosition> d (minCorner, maxCorner);
+
 
 		drawRectangle (*cVideo::buffer, d, groupSelectionColor, 1);
 	}
 	// draw the seleted-unit-flash-frame for vehicles
 	if (unitSelection && &vehicle == unitSelection->getSelectedVehicle())
 	{
-		Uint16 maxX = vehicle.getIsBig() ? destination.w * 2 : destination.w;
-		Uint16 maxY = vehicle.getIsBig() ? destination.h * 2 : destination.h;
+		//Uint16 maxX = vehicle.getIsBig() ? destination.w * 2 : destination.w;
+		//Uint16 maxY = vehicle.getIsBig() ? destination.h * 2 : destination.h;
+		Uint16 maxX = cellSize * destination.w;
+		Uint16 maxY = cellSize * destination.h;
 		const int len = maxX / 4;
 		maxX -= 3;
 		maxY -= 3;
@@ -308,9 +342,9 @@ void cUnitDrawingEngine::drawHealthBar (const cUnit& unit, SDL_Rect destination)
 	r1.w = destination.w * 8 / 10;
 	r1.h = destination.h / 8;
 
-	if (unit.getIsBig())
+	if (unit.getCellSize() > 1)
 	{
-		r1.w += destination.w;
+		r1.w += destination.w*(unit.getCellSize()-1);
 		r1.h *= 2;
 	}
 
@@ -380,7 +414,7 @@ void cUnitDrawingEngine::drawStatus (const cUnit& unit, SDL_Rect destination)
 			return;
 		dest.x = destination.x + destination.w / 2 - 12;
 		dest.y = destination.y + destination.h / 2 - 12;
-		if (unit.getIsBig())
+		if (unit.getCellSize() > 1)
 		{
 			dest.y += (destination.h / 2);
 			dest.x += (destination.w / 2);
@@ -391,7 +425,7 @@ void cUnitDrawingEngine::drawStatus (const cUnit& unit, SDL_Rect destination)
 	{
 		dest.y = destination.y + destination.h - 11;
 		dest.x = destination.x + destination.w / 2 - 4;
-		if (unit.getIsBig())
+		if (unit.getCellSize() > 1)
 		{
 			dest.y += (destination.h / 2);
 			dest.x += (destination.w / 2);

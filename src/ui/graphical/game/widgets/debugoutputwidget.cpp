@@ -417,7 +417,7 @@ void cDebugOutputWidget::traceVehicle (const cVehicle& vehicle, cPosition& drawP
 	font->showText (drawPosition, tmpString, FONT_LATIN_SMALL_WHITE);
 	drawPosition.y() += 8;
 
-	tmpString = " is_clearing: " + iToStr (vehicle.isUnitClearing()) + " clearing_rounds: +" + iToStr (vehicle.getClearingTurns()) + " clear_big: " + iToStr (vehicle.getIsBig()) + " loaded: " + iToStr (vehicle.isUnitLoaded());
+	tmpString = " is_clearing: " + iToStr (vehicle.isUnitClearing()) + " clearing_rounds: +" + iToStr (vehicle.getClearingTurns()) + " clear_big: " + iToStr (vehicle.getCellSize()) + " loaded: " + iToStr (vehicle.isUnitLoaded());
 	font->showText (drawPosition, tmpString, FONT_LATIN_SMALL_WHITE);
 	drawPosition.y() += 8;
 
@@ -469,7 +469,11 @@ void cDebugOutputWidget::traceBuilding (const cBuilding& building, cPosition& dr
 	font->showText (drawPosition, tmpString, FONT_LATIN_SMALL_WHITE);
 	drawPosition.y() += 8;
 
-	tmpString = "attacking: " + iToStr (building.isAttacking()) + " UnitsData.dirt_typ: " + iToStr (building.rubbleTyp) + " UnitsData.dirt_value: +" + iToStr (building.rubbleValue) + " big_dirt: " + iToStr (building.getIsBig()) + " is_working: " + iToStr (building.isUnitWorking());
+	tmpString =
+			"attacking: " + iToStr (building.isAttacking()) +
+			" UnitsData.dirt_typ: " + iToStr (building.rubbleTyp) +
+			" UnitsData.dirt_value: +" + iToStr (building.rubbleValue) +
+			" big_dirt: " + iToStr (building.getCellSize()) + " is_working: " + iToStr (building.isUnitWorking());
 	font->showText (drawPosition, tmpString, FONT_LATIN_SMALL_WHITE);
 	drawPosition.y() += 8;
 

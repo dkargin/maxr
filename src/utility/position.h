@@ -49,6 +49,12 @@ public:
 		y() = y_;
 	}
 
+	// Get a position, relative to current position
+	cPosition relative(int x, int y) const
+	{
+		return *this + cPosition(x, y);
+	}
+
 	uint32_t getChecksum(uint32_t crc) const;
 
 	template<typename T>

@@ -97,7 +97,7 @@ public:
 	cBuilding& addBuilding(const cPosition& position, const sID& id, cPlayer* player, bool init = false);
 	void destroyUnit(cUnit& unit);
 
-	void addRubble(const cPosition& position, int value, bool big);
+	void addRubble(const cPosition& position, int value, int size);
 	void deleteUnit(cUnit* unit);
 	void deleteRubble(cBuilding* rubble);
 

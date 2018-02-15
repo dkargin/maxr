@@ -78,7 +78,7 @@ void cActionFinishBuild::finishABuilding(cModel &model, cVehicle& vehicle) const
 	vehicle.BuildPath = false;
 
 	// set the vehicle to the border
-	if (vehicle.getIsBig())
+	if (vehicle.getCellSize() > 1)
 	{
 		int x = vehicle.getPosition().x();
 		int y = vehicle.getPosition().y();

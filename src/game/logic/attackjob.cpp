@@ -457,7 +457,7 @@ void cAttackJob::impactSingle (const cPosition& position, int attackPoints, cMod
 		cPosition offset;
 		if (target)
 		{
-			bigTarget = target->getIsBig();
+			bigTarget = target->getCellSize() > 1;
 			offset = target->getMovementOffset();
 		}
 		model.addFx (std::make_unique<cFxHit> (position * 64 + offset + cPosition (32, 32), targetHit, bigTarget));

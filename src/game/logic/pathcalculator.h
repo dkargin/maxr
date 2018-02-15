@@ -148,24 +148,31 @@ int cPathCalculator::calcNextCost(const cPosition& source, const cPosition& dest
 	// first we check whether the unit can fly
 	if (vehicle->getStaticUnitData().factorAir > 0)
 	{
-		if (source.x() != destination.x() && source.y() != destination.y()) return (int)(4 * 1.5f * vehicle->getStaticUnitData().factorAir);
-		else return (int)(4 * vehicle->getStaticUnitData().factorAir);
+		if (source.x() != destination.x() && source.y() != destination.y())
+			return (int)(4 * 1.5f * vehicle->getStaticUnitData().factorAir);
+		else
+			return (int)(4 * vehicle->getStaticUnitData().factorAir);
 	}
 	const cBuilding* building = map->getField(destination).getBaseBuilding();
 	// moving on water will cost more
-	if (map->isWater(destination) && (!building || (building->getStaticUnitData().surfacePosition == cStaticUnitData::SURFACE_POS_BENEATH_SEA || building->getStaticUnitData().surfacePosition == cStaticUnitData::SURFACE_POS_ABOVE)) && vehicle->getStaticUnitData().factorSea > 0) costs = (int)(4 * vehicle->getStaticUnitData().factorSea);
-	else if (map->isCoast(destination) && !building && vehicle->getStaticUnitData().factorCoast > 0) costs = (int)(4 * vehicle->getStaticUnitData().factorCoast);
-	else if (vehicle->getStaticUnitData().factorGround > 0) costs = (int)(4 * vehicle->getStaticUnitData().factorGround);
+	if (map->isWater(destination) && (!building || (building->getStaticUnitData().surfacePosition == cStaticUnitData::SURFACE_POS_BENEATH_SEA || building->getStaticUnitData().surfacePosition == cStaticUnitData::SURFACE_POS_ABOVE)) && vehicle->getStaticUnitData().factorSea > 0)
+		costs = (int)(4 * vehicle->getStaticUnitData().factorSea);
+	else if (map->isCoast(destination) && !building && vehicle->getStaticUnitData().factorCoast > 0)
+		costs = (int)(4 * vehicle->getStaticUnitData().factorCoast);
+	else if (vehicle->getStaticUnitData().factorGround > 0)
+		costs = (int)(4 * vehicle->getStaticUnitData().factorGround);
 	else
 	{
 		Log.write("Where can this unit move? " + iToStr(vehicle->iID), cLog::eLOG_TYPE_NET_WARNING);
 		costs = 4;
 	}
 	// moving on a road is cheaper
-	if (building && building->getStaticUnitData().modifiesSpeed != 0) costs = (int)(costs * building->getStaticUnitData().modifiesSpeed);
+	if (building && building->getStaticUnitData().modifiesSpeed != 0)
+		costs = (int)(costs * building->getStaticUnitData().modifiesSpeed);
 
 	// multiply with the factor 1.5 for diagonal movements
-	if (source.x() != destination.x() && source.y() != destination.y()) costs = (int)(costs * 1.5f);
+	if (source.x() != destination.x() && source.y() != destination.y())
+		costs = (int)(costs * 1.5f);
 	return costs;
 }
 

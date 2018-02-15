@@ -400,13 +400,13 @@ void cClient::HandleNetMessage_GAME_EV_ADD_RUBBLE (cNetMessage& message)
 {
 	assert (message.iType == GAME_EV_ADD_RUBBLE);
 
-	const bool big = message.popBool();
+	const int size = message.popChar();
 	const int typ = message.popInt16();
 	const int value = message.popInt16();
 	const unsigned int ID = message.popInt16();
 	auto rubble = std::make_shared<cBuilding> (nullptr, nullptr, nullptr, ID);
 
-	rubble->setIsBig(big);
+	rubble->setCellSize(size);
 //	rubble->RubbleTyp = typ;
 //	rubble->RubbleValue = value;
 	const auto position = message.popPosition();

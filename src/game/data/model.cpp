@@ -265,6 +265,7 @@ cVehicle& cModel::addVehicle(const cPosition& position, const sID& id, cPlayer* 
 	//TODO: detection
 	return addedVehicle;
 }
+
 //------------------------------------------------------------------------------
 cBuilding& cModel::addBuilding(const cPosition& position, const sID& id, cPlayer* player, bool init)
 {
@@ -274,7 +275,7 @@ cBuilding& cModel::addBuilding(const cPosition& position, const sID& id, cPlayer
 
 	addedBuilding.initMineRessourceProd(*map);
 	
-	cBuilding* buildingToBeDeleted = map->getField(position).getTopBuilding();
+	//cBuilding* buildingToBeDeleted = map->getField(position).getTopBuilding();
 
 	map->addBuilding(addedBuilding, position);
 
@@ -284,11 +285,26 @@ cBuilding& cModel::addBuilding(const cPosition& position, const sID& id, cPlayer
 	// if this is a top building, delete connectors, mines and roads
 	if (addedBuilding.getStaticUnitData().surfacePosition == cStaticUnitData::SURFACE_POS_GROUND)
 	{
+		for(cPosition& bigPosition: generateBorder(position, addedBuilding.getCellSize()))
+		{
+			auto buildings = &map->getField(bigPosition).getBuildings();
+			// Iterate all over the border of the building
+			for (size_t i = 0; i != buildings->size(); ++i)
+			{
+				if ((*buildings)[i]->getStaticUnitData().canBeOverbuild == cStaticUnitData::OVERBUILD_TYPE_YESNREMOVE)
+				{
+					deleteUnit((*buildings)[i]);
+					--i;
+				}
+			}
+		}
+#ifdef FUCK_THIS
+		/// Old code for removing OVERBUILD_TYPE_YESNREMOVE objects
 		if (addedBuilding.getIsBig())
 		{
 			auto bigPosition = position;
 			auto buildings = &map->getField(bigPosition).getBuildings();
-
+			// Iterate all over the border of the building
 			for (size_t i = 0; i != buildings->size(); ++i)
 			{
 				if ((*buildings)[i]->getStaticUnitData().canBeOverbuild == cStaticUnitData::OVERBUILD_TYPE_YESNREMOVE)
@@ -342,6 +358,7 @@ cBuilding& cModel::addBuilding(const cPosition& position, const sID& id, cPlayer
 				}
 			}
 		}
+#endif
 	}
 
 	if (addedBuilding.getStaticUnitData().canMineMaxRes > 0)
@@ -359,9 +376,10 @@ void cModel::destroyUnit(cUnit& unit)
 }
 
 //------------------------------------------------------------------------------
-void cModel::addRubble(const cPosition& position, int value, bool big)
+void cModel::addRubble(const cPosition& position, int value, int size)
 {
 	value = std::max(1, value);
+	bool big = size > 1;
 
 	if (map->isWaterOrCoast(position))
 	{

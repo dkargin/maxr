@@ -29,6 +29,10 @@ class cPlayer;
 class cPosition;
 class cBase;
 
+/**
+ * Several connected buildings organise a base
+ * This class deals with resource distribution in this connected system
+ */
 class cSubBase
 {
 public:

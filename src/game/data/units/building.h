@@ -155,8 +155,12 @@ public:
 
 	const sBuildingUIData* uiData;
 	mutable int effectAlpha; // alpha value for the effect
+
+#ifdef FUCK_THIS
+	// We will replace it with a better logic
 	bool BaseN, BaseE, BaseS, BaseW; // is the building connected in this direction?
 	bool BaseBN, BaseBE, BaseBS, BaseBW; // is the building connected in this direction (only for big buildings)
+#endif
 	cSubBase* subBase;     // the subbase to which this building belongs
 	int metalProd, oilProd, goldProd;          // production settings (from mine allocation menu)
 
@@ -275,6 +279,8 @@ public:
 
 		archive & NVP(rubbleTyp);
 		archive & NVP(rubbleValue);
+		/*
+		// This values are completely dynamic. No reason to save or send it anywhere
 		archive & NVP(BaseN);
 		archive & NVP(BaseE);
 		archive & NVP(BaseS);
@@ -283,6 +289,7 @@ public:
 		archive & NVP(BaseBE);
 		archive & NVP(BaseBS);
 		archive & NVP(BaseBW);
+		*/
 		archive & NVP(maxMetalProd);
 		archive & NVP(maxOilProd);
 		archive & NVP(maxGoldProd);
@@ -302,7 +309,7 @@ public:
 		{
 			if (isRubble())
 			{
-				if (isBig)
+				if (cellSize > 1)
 				{
 					uiData = UnitsUiData.rubbleBig;
 					staticData = archive.getPointerLoader()->getBigRubbleData();

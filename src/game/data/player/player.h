@@ -299,12 +299,12 @@ private:
 	/**
 	* draws a circle on the map for the fog
 	* @author alzi alias DoctorDeath
-	* @param iX X coordinate to the center of the circle
-	* @param iY Y coordinate to the center of the circle
+	* @param position position of the object's corner
+	* @param objSize size of an object
 	* @param iRadius radius of the circle
 	* @param map map were to store the data of the circle
 	*/
-	void drawSpecialCircle (const cPosition& position, int iRadius, cArrayCrc<uint8_t>& map, const cPosition& mapsize);
+	void drawSpecialCircle (const cPosition& position, int objSize, int iRadius, cArrayCrc<uint8_t>& map, const cPosition& mapsize);
 	/**
 	* draws a big circle on the map for the fog
 	* @author alzi alias DoctorDeath
@@ -313,7 +313,9 @@ private:
 	* @param iRadius radius of the circle
 	* @param map map were to store the data of the circle
 	*/
-	void drawSpecialCircleBig (const cPosition& position, int iRadius, cArrayCrc<uint8_t>& map, const cPosition& mapsize);
+
+	void drawSpecialCircle (const cUnit& unit, int iRadius, cArrayCrc<uint8_t>& map, const cPosition& mapsize);
+	//void drawSpecialCircleBig (const cPosition& position, int iRadius, cArrayCrc<uint8_t>& map, const cPosition& mapsize);
 
 	std::string resourceMapToString() const;
 	void setResourceMapFromString(const std::string& str);

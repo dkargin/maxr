@@ -64,7 +64,8 @@ void cActionStop::execute(cModel& model) const
 			vehicle->setBuildingABuilding(false);
 			vehicle->BuildPath = false;
 
-			if (vehicle->getIsBig())
+			/// Positioning unit at the center of the building
+			if (vehicle->getCellSize() > 1)
 			{
 				model.getMap()->moveVehicle(*vehicle, vehicle->buildBigSavedPosition);
 				vehicle->getOwner()->doScan();

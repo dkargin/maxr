@@ -140,9 +140,11 @@ cVehicle& cPlayer::addNewVehicle (const cPosition& position, const cStaticUnitDa
 	auto vehicle = std::make_shared<cVehicle> (unitData, *getUnitDataCurrentVersion(unitData.ID), this, uid);
 	vehicle->setPosition (position);
 
-	drawSpecialCircle (vehicle->getPosition(), vehicle->data.getScan(), ScanMap, mapSize);
-	if (vehicle->getStaticUnitData().canDetectStealthOn & TERRAIN_GROUND) drawSpecialCircle (vehicle->getPosition(), vehicle->data.getScan(), DetectLandMap, mapSize);
-	if (vehicle->getStaticUnitData().canDetectStealthOn & TERRAIN_SEA) drawSpecialCircle(vehicle->getPosition(), vehicle->data.getScan(), DetectSeaMap, mapSize);
+	drawSpecialCircle (*vehicle, vehicle->data.getScan(), ScanMap, mapSize);
+	if (vehicle->getStaticUnitData().canDetectStealthOn & TERRAIN_GROUND)
+		drawSpecialCircle (*vehicle, vehicle->data.getScan(), DetectLandMap, mapSize);
+	if (vehicle->getStaticUnitData().canDetectStealthOn & TERRAIN_SEA)
+		drawSpecialCircle(*vehicle, vehicle->data.getScan(), DetectSeaMap, mapSize);
 	if (vehicle->getStaticUnitData().canDetectStealthOn & AREA_EXP_MINE)
 	{
 		const int minx = std::max (vehicle->getPosition().x() - 1, 0);
@@ -169,8 +171,10 @@ cBuilding& cPlayer::addNewBuilding (const cPosition& position, const cStaticUnit
 
 	if (building->data.getScan())
 	{
-		if (building->getIsBig()) drawSpecialCircleBig (building->getPosition(), building->data.getScan(), ScanMap, mapSize);
-		else drawSpecialCircle (building->getPosition(), building->data.getScan(), ScanMap, mapSize);
+		//if (building->getIsBig())
+		drawSpecialCircle(*building, building->data.getScan(), ScanMap, mapSize);
+		//else
+		//	drawSpecialCircle (building->getPosition(), building->data.getScan(), ScanMap, mapSize);
 	}
 
 	auto result = buildings.insert (std::move (building));
@@ -251,11 +255,11 @@ void cPlayer::addSentry (cUnit& u)
 	u.setSentryActive (true);
 	if (u.getStaticUnitData().canAttack & TERRAIN_AIR)
 	{
-		drawSpecialCircle (u.getPosition(), u.data.getRange(), SentriesMapAir, mapSize);
+		drawSpecialCircle (u, u.data.getRange(), SentriesMapAir, mapSize);
 	}
 	if ((u.getStaticUnitData().canAttack & TERRAIN_GROUND) || (u.getStaticUnitData().canAttack & TERRAIN_SEA))
 	{
-		drawSpecialCircle (u.getPosition(), u.data.getRange(), SentriesMapGround, mapSize);
+		drawSpecialCircle (u, u.data.getRange(), SentriesMapGround, mapSize);
 	}
 }
 
@@ -281,9 +285,9 @@ void cPlayer::refreshSentryAir()
 	for (auto i = vehicles.begin(); i != vehicles.end(); ++i)
 	{
 		const auto& unit = *i;
-		if (unit->isSentryActive() && unit->getStaticUnitData().canAttack & TERRAIN_AIR)
+		if (unit->isSentryActive() && (unit->getStaticUnitData().canAttack & TERRAIN_AIR))
 		{
-			drawSpecialCircle (unit->getPosition(), unit->data.getRange(), SentriesMapAir, mapSize);
+			drawSpecialCircle (*unit, unit->data.getRange(), SentriesMapAir, mapSize);
 		}
 	}
 
@@ -292,7 +296,7 @@ void cPlayer::refreshSentryAir()
 		const auto& unit = *i;
 		if (unit->isSentryActive() && unit->getStaticUnitData().canAttack & TERRAIN_AIR)
 		{
-			drawSpecialCircle (unit->getPosition(), unit->data.getRange(), SentriesMapAir, mapSize);
+			drawSpecialCircle (*unit, unit->data.getRange(), SentriesMapAir, mapSize);
 		}
 	}
 }
@@ -307,7 +311,7 @@ void cPlayer::refreshSentryGround()
 		const auto& unit = *i;
 		if (unit->isSentryActive() && ((unit->getStaticUnitData().canAttack & TERRAIN_GROUND) || (unit->getStaticUnitData().canAttack & TERRAIN_SEA)))
 		{
-			drawSpecialCircle (unit->getPosition(), unit->data.getRange(), SentriesMapGround, mapSize);
+			drawSpecialCircle (*unit, unit->data.getRange(), SentriesMapGround, mapSize);
 		}
 	}
 	for (auto i = buildings.begin(); i != buildings.end(); ++i)
@@ -315,7 +319,7 @@ void cPlayer::refreshSentryGround()
 		const auto& unit = *i;
 		if (unit->isSentryActive() && ((unit->getStaticUnitData().canAttack & TERRAIN_GROUND) || (unit->getStaticUnitData().canAttack & TERRAIN_SEA)))
 		{
-			drawSpecialCircle (unit->getPosition(), unit->data.getRange(), SentriesMapGround, mapSize);
+			drawSpecialCircle (*unit, unit->data.getRange(), SentriesMapGround, mapSize);
 		}
 	}
 }
@@ -325,7 +329,8 @@ void cPlayer::refreshSentryGround()
 //------------------------------------------------------------------------------
 void cPlayer::doScan()
 {
-	if (isDefeated) return;
+	if (isDefeated)
+		return;
 	ScanMap.fill(0);
 	DetectLandMap.fill(0);
 	DetectSeaMap.fill(0);
@@ -341,14 +346,18 @@ void cPlayer::doScan()
 			ScanMap.set(getOffset (vp->getPosition()), 1);
 		else
 		{
-			if (vp->getIsBig())
-				drawSpecialCircleBig (vp->getPosition(), vp->data.getScan(), ScanMap, mapSize);
-			else
-				drawSpecialCircle (vp->getPosition(), vp->data.getScan(), ScanMap, mapSize);
+			int size = vp->getCellSize();
+			int fullDistance = vp->data.getScan();
+			//if (vp->getIsBig())
+			//	drawSpecialCircleBig (vp->getPosition(), vp->data.getScan(), ScanMap, mapSize);
+			//else
+			drawSpecialCircle (*vp, vp->data.getScan(), ScanMap, mapSize);
 
 			//detection maps
-			if (vp->getStaticUnitData().canDetectStealthOn & TERRAIN_GROUND) drawSpecialCircle(vp->getPosition(), vp->data.getScan(), DetectLandMap, mapSize);
-			else if (vp->getStaticUnitData().canDetectStealthOn & TERRAIN_SEA) drawSpecialCircle(vp->getPosition(), vp->data.getScan(), DetectSeaMap, mapSize);
+			if (vp->getStaticUnitData().canDetectStealthOn & TERRAIN_GROUND)
+				drawSpecialCircle(*vp, vp->data.getScan(), DetectLandMap, mapSize);
+			else if (vp->getStaticUnitData().canDetectStealthOn & TERRAIN_SEA)
+				drawSpecialCircle(*vp, vp->data.getScan(), DetectSeaMap, mapSize);
 			if (vp->getStaticUnitData().canDetectStealthOn & AREA_EXP_MINE)
 			{
 				const int minx = std::max (vp->getPosition().x() - 1, 0);
@@ -374,10 +383,10 @@ void cPlayer::doScan()
 			ScanMap.set(getOffset (bp->getPosition()), 1);
 		else if (bp->data.getScan())
 		{
-			if (bp->getIsBig())
-				drawSpecialCircleBig (bp->getPosition(), bp->data.getScan(), ScanMap, mapSize);
-			else
-				drawSpecialCircle (bp->getPosition(), bp->data.getScan(), ScanMap, mapSize);
+			//if (bp->getIsBig())
+			//	drawSpecialCircleBig (bp->getPosition(), bp->data.getScan(), ScanMap, mapSize);
+			//else
+			drawSpecialCircle (*bp, bp->data.getScan(), ScanMap, mapSize);
 		}
 	}
 
@@ -403,12 +412,17 @@ void cPlayer::revealResource()
 
 bool cPlayer::canSeeAnyAreaUnder (const cUnit& unit) const
 {
-	if (canSeeAt (unit.getPosition())) return true;
-	if (!unit.getIsBig()) return false;
+	auto pos = unit.getPosition();
+	int size = unit.getCellSize();
 
-	return canSeeAt (unit.getPosition() + cPosition (0, 1)) ||
-		   canSeeAt (unit.getPosition() + cPosition (1, 1)) ||
-		   canSeeAt (unit.getPosition() + cPosition (1, 0));
+	for(int y = 0; y < size; y++)
+		for(int x = 0; x < size; x++)
+		{
+			if(canSeeAt(unit.getPosition().relative(x,y)))
+				return true;
+		}
+
+	return false;
 }
 
 //------------------------------------------------------------------------------
@@ -864,17 +878,23 @@ int cPlayer::getResearchCentersWorkingOnArea (cResearch::ResearchArea area) cons
 //------------------------------------------------------------------------------
 bool cPlayer::canSeeAt (const cPosition& position) const
 {
-	if (position.x() < 0 || position.x() >= mapSize.x() || position.y() < 0 || position.y() >= mapSize.y()) return false;
+	if (position.x() < 0 ||
+			position.x() >= mapSize.x() ||
+			position.y() < 0 ||
+			position.y() >= mapSize.y())
+		return false;
 
 	return ScanMap[getOffset (position)] != 0;
 }
 
 //------------------------------------------------------------------------------
-void cPlayer::drawSpecialCircle (const cPosition& position, int iRadius, cArrayCrc<uint8_t>& map, const cPosition& mapsize)
+void cPlayer::drawSpecialCircle (const cPosition& position, int objSize, int iRadius, cArrayCrc<uint8_t>& map, const cPosition& mapsize)
 {
 	const float PI_ON_180 = 0.017453f;
 	const float PI_ON_4 = PI_ON_180 * 45;
-	if (iRadius <= 0) return;
+
+	if (iRadius <= 0)
+		return;
 
 	iRadius *= 10;
 	const float step = (PI_ON_180 * 90 - acosf (1.0f / iRadius)) / 2;
@@ -890,8 +910,10 @@ void cPlayer::drawSpecialCircle (const cPosition& position, int iRadius, cArrayC
 		int x2 = -rx + position.x();
 		for (int k = x2; k <= x1; k++)
 		{
-			if (k < 0) continue;
-			if (k >= mapsize.x()) break;
+			if (k < 0)
+				continue;
+			if (k >= mapsize.x())
+				break;
 			if (position.y() + ry >= 0 && position.y() + ry < mapsize.y())
 				map.set(k + (position.y() + ry) * mapsize.x(), 1);
 			if (position.y() - ry >= 0 && position.y() - ry < mapsize.y())
@@ -911,13 +933,18 @@ void cPlayer::drawSpecialCircle (const cPosition& position, int iRadius, cArrayC
 		}
 	}
 }
-
+void cPlayer::drawSpecialCircle (const cUnit& unit, int iRadius, cArrayCrc<uint8_t>& map, const cPosition& mapsize)
+{
+	drawSpecialCircle(unit.getPosition(), unit.getCellSize(), iRadius, map, mapSize);
+}
 //------------------------------------------------------------------------------
+#ifdef FUCK_THIS
 void cPlayer::drawSpecialCircleBig (const cPosition& position, int iRadius, cArrayCrc<uint8_t>& map, const cPosition& mapsize)
 {
 	const float PI_ON_180 = 0.017453f;
 	const float PI_ON_4 = PI_ON_180 * 45;
-	if (iRadius <= 0) return;
+	if (iRadius <= 0)
+		return;
 
 	--iRadius;
 	iRadius *= 10;
@@ -950,8 +977,10 @@ void cPlayer::drawSpecialCircleBig (const cPosition& position, int iRadius, cArr
 		x2 = -ry + position.x();
 		for (int k = x2; k <= x1 + 1; k++)
 		{
-			if (k < 0) continue;
-			if (k >= mapsize.x()) break;
+			if (k < 0)
+				continue;
+			if (k >= mapsize.x())
+				break;
 			if (position.y() + rx >= 0 && position.y() + rx < mapsize.y())
 				map.set(k + (position.y() + rx) *mapsize.x(), 1);
 			if (position.y() - rx >= 0 && position.y() - rx < mapsize.y())
@@ -964,6 +993,7 @@ void cPlayer::drawSpecialCircleBig (const cPosition& position, int iRadius, cArr
 		}
 	}
 }
+#endif
 
 //------------------------------------------------------------------------------
 bool cPlayer::getHasFinishedTurn() const

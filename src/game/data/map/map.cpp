@@ -269,71 +269,48 @@ bool cStaticMap::isGround(const cPosition& position) const
 
 bool cStaticMap::possiblePlace(const cStaticUnitData& data, const cPosition& position) const
 {
-	if (!isValidPosition(position)) return false;
-	if (data.isBig)
+	int size = data.cellSize;
+	// Check if we are inside the borders
+	if (!isValidPosition(position))
+		return false;
+	// Check another corner
+	if (size > 1)
 	{
-		if (!isValidPosition(position + cPosition(0, 1)) || 
-			!isValidPosition(position + cPosition(1, 0)) ||
-			!isValidPosition(position + cPosition(1, 1)) )
+		if (!isValidPosition(position + cPosition(size-1, size-1)))
 		{
 			return false;
 		}
 	}
 
-	if (data.factorAir > 0) return true;
+	if (data.factorAir > 0)
+		return true;
 
-	if (isBlocked(position)) return false;
-	if (data.isBig)
-	{
-		if (isBlocked(position + cPosition(0, 1)) ||
-			isBlocked(position + cPosition(1, 0)) ||
-			isBlocked(position + cPosition(1, 1)) )
-		{
-			return false;
-		}
-	}
+	int notSea = 0;
+	int notCoast = 0;
+	int notGround = 0;
 
-	if (data.factorSea == 0)
-	{
-		if (isWater(position)) return false;
-		if (data.isBig)
+	for(int y = 0; y < size; y++)
+		for(int x = 0; x < size; x++)
 		{
-			if (isWater(position + cPosition(0, 1)) ||
-				isWater(position + cPosition(1, 0)) ||
-				isWater(position + cPosition(1, 1)) )
-			{
+			auto pos = position.relative(x,y);
+			if (isBlocked(pos))
 				return false;
-			}
+			if(!isWater(pos))
+				notSea++;
+			if(!isCoast(pos))
+				notCoast++;
+			if(!isGround(pos))
+				notGround++;
 		}
-	}
 
-	if (data.factorCoast == 0)
-	{
-		if (isCoast(position)) return false;
-		if (data.isBig)
-		{
-			if (isCoast(position + cPosition(0, 1)) ||
-				isCoast(position + cPosition(1, 0)) ||
-				isCoast(position + cPosition(1, 1)) )
-			{
-				return false;
-			}
-		}
-	}
+	if (data.factorSea == 0 && notSea > 0)
+		return false;
 
-	if (data.factorGround == 0)
-	{
-		if (isGround(position)) return false;
-		if (data.isBig)
-		{
-			if (isGround(position + cPosition(0, 1)) ||
-				isGround(position + cPosition(1, 0)) ||
-				isGround(position + cPosition(1, 1)) )
-			{
-				return false;
-			}
-		}
-	}
+	if (data.factorCoast == 0 && notCoast > 0)
+		return false;
+
+	if (data.factorGround == 0 && notGround > 0)
+		return false;
 
 	return true;
 }
@@ -913,14 +890,32 @@ void cMap::placeRessources(cModel& model)
 
 void cMap::addBuilding (cBuilding& building, const cPosition& position)
 {
+	int size = building.getCellSize();
+
 	//big base building are not implemented
-	if (building.getStaticUnitData().surfacePosition != cStaticUnitData::SURFACE_POS_GROUND && building.getIsBig() && !building.isRubble()) return;
+	if (building.getStaticUnitData().surfacePosition != cStaticUnitData::SURFACE_POS_GROUND && size > 1 && !building.isRubble())
+		return;
 
 	const int mapLevel = cMap::getMapLevel (building);
 	size_t i = 0;
 
+	// We are iterating all over every position inside the building
+	for(int y = 0; y < size; y++)
+	{
+		for(int x = 0; x < size; i++)
+		{
+			auto& field = getField (position.relative(x,y));
+			i = 0;
+			// Adding to the last index. These iterations are really creepy...
+			while (i < field.getBuildings().size() && cMap::getMapLevel (*field.getBuildings()[i]) < mapLevel)
+				i++;
+			field.addBuilding (building, i);
+		}
+	}
+#ifdef FUCK_THIS
 	if (building.getIsBig())
 	{
+		// We are iterating all over every position inside the building
 		auto& field = getField (position);
 		i = 0;
 		while (i < field.getBuildings().size() && cMap::getMapLevel (*field.getBuildings()[i]) < mapLevel) i++;
@@ -945,9 +940,12 @@ void cMap::addBuilding (cBuilding& building, const cPosition& position)
 	{
 		auto& field = getField (position);
 
-		while (i < field.getBuildings().size() && cMap::getMapLevel (*field.getBuildings()[i]) < mapLevel) i++;
+		while (i < field.getBuildings().size() && cMap::getMapLevel (*field.getBuildings()[i]) < mapLevel)
+			i++;
 		field.addBuilding (building, i);
 	}
+#endif
+
 	addedUnit (building);
 }
 
@@ -963,44 +961,58 @@ void cMap::addVehicle (cVehicle& vehicle, const cPosition& position)
 		field.addVehicle (vehicle, 0);
 	}
 
-	if (vehicle.getIsBig())
+	if (vehicle.getCellSize() > 1)
 	{
 		moveVehicleBig(vehicle, position);
 	}
 	addedUnit (vehicle);
 }
 
-void cMap::deleteBuilding (const cBuilding& building)
+void cMap::deleteBuilding (const cBuilding& object)
 {
-	getField (building.getPosition()).removeBuilding (building);
+	// We are iterating all over every position inside the building
+	int size = object.getCellSize();
+	cPosition pos = object.getPosition();
 
-	if (building.getIsBig())
+	for(int y = 0; y < size; y++)
 	{
-		getField (building.getPosition() + cPosition (1, 0)).removeBuilding (building);
-		getField (building.getPosition() + cPosition (1, 1)).removeBuilding (building);
-		getField (building.getPosition() + cPosition (0, 1)).removeBuilding (building);
+		for(int x = 0; x < size; x++)
+		{
+			getField (pos.relative(x,y)).removeBuilding (object);
+		}
 	}
-	removedUnit (building);
+
+#ifdef FUCK_THIS
+	if (object.getIsBig())
+	{
+		getField (object.getPosition() + cPosition (1, 0)).removeBuilding (object);
+		getField (object.getPosition() + cPosition (1, 1)).removeBuilding (object);
+		getField (object.getPosition() + cPosition (0, 1)).removeBuilding (object);
+	}
+	removedUnit (object);
+#endif
 }
 
-void cMap::deleteVehicle (const cVehicle& vehicle)
+void cMap::deleteVehicle (const cVehicle& object)
 {
-	if (vehicle.getStaticUnitData().factorAir > 0)
+	if (object.getStaticUnitData().factorAir > 0)
 	{
-		getField (vehicle.getPosition()).removePlane (vehicle);
+		getField (object.getPosition()).removePlane (object);
 	}
 	else
 	{
-		getField (vehicle.getPosition()).removeVehicle (vehicle);
+		int size = object.getCellSize();
+		cPosition pos = object.getPosition();
 
-		if (vehicle.getIsBig())
+		for(int y = 0; y < size; y++)
 		{
-			getField (vehicle.getPosition() + cPosition (1, 0)).removeVehicle (vehicle);
-			getField (vehicle.getPosition() + cPosition (1, 1)).removeVehicle (vehicle);
-			getField (vehicle.getPosition() + cPosition (0, 1)).removeVehicle (vehicle);
+			for(int x = 0; x < size; x++)
+			{
+				getField (pos.relative(x,y)).removeVehicle (object);
+			}
 		}
 	}
-	removedUnit (vehicle);
+	removedUnit (object);
 }
 
 void cMap::deleteUnit (const cUnit& unit)
@@ -1030,6 +1042,15 @@ void cMap::moveVehicle (cVehicle& vehicle, const cPosition& position, int height
 	}
 	else
 	{
+		int size = vehicle.getCellSize();
+		for(int y = 0; y < size; y++)
+		{
+			for(int x = 0; x < size; x++)
+			{
+				getField (oldPosition.relative(x,y)).removeVehicle (vehicle);
+			}
+		}
+#ifdef FUCL_THIS
 		getField (oldPosition).removeVehicle (vehicle);
 
 		//check, whether the vehicle is centered on 4 map fields
@@ -1041,15 +1062,18 @@ void cMap::moveVehicle (cVehicle& vehicle, const cPosition& position, int height
 
 			vehicle.setIsBig(false);
 		}
+#endif
 
+		/// RLY only one cell?
 		getField (position).addVehicle (vehicle, 0);
+
 	}
 	movedVehicle (vehicle, oldPosition);
 }
 
 void cMap::moveVehicleBig (cVehicle& vehicle, const cPosition& position)
 {
-	if (vehicle.getIsBig())
+	if (vehicle.getCellSize() > 1)
 	{
 		Log.write ("Calling moveVehicleBig on a big vehicle", cLog::eLOG_TYPE_NET_ERROR);
 		//calling this function twice is always an error.
@@ -1068,7 +1092,8 @@ void cMap::moveVehicleBig (cVehicle& vehicle, const cPosition& position)
 	getField (position + cPosition (1, 1)).addVehicle (vehicle, 0);
 	getField (position + cPosition (0, 1)).addVehicle (vehicle, 0);
 
-	vehicle.setIsBig(true);
+	// WTF? TODO: Why we reset it here?
+	//vehicle.setIsBig(true);
 
 	movedVehicle (vehicle, oldPosition);
 }

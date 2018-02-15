@@ -59,21 +59,31 @@ void cActionStartBuild::execute(cModel& model) const
 	cMap& map = *model.getMap();
 
 	cVehicle* vehicle = model.getVehicleFromID(vehicleID);
-	if (vehicle == nullptr) return;
-	if (vehicle->getOwner()->getId() != playerNr) return;
+	if (vehicle == nullptr)
+		return;
+	if (vehicle->getOwner()->getId() != playerNr)
+		return;
 
-	if (!model.getUnitsData()->isValidId(buildingTypeID)) return;
-	if (!buildingTypeID.isABuilding()) return;
-	if (!map.isValidPosition(buildPosition)) return;
-	if (buildPath && !map.isValidPosition(pathEndPosition)) return;
-	if (buildSpeed > 2 || buildSpeed < 0) return;
+	if (!model.getUnitsData()->isValidId(buildingTypeID))
+		return;
+	if (!buildingTypeID.isABuilding())
+		return;
+	if (!map.isValidPosition(buildPosition))
+		return;
+	if (buildPath && !map.isValidPosition(pathEndPosition))
+		return;
+	if (buildSpeed > 2 || buildSpeed < 0)
+		return;
 	
-	if (vehicle->isUnitBuildingABuilding() || vehicle->BuildPath) return;
-	if (vehicle->isDisabled()) return;
+	if (vehicle->isUnitBuildingABuilding() || vehicle->BuildPath)
+		return;
+	if (vehicle->isDisabled())
+		return;
 
 	const cStaticUnitData& data = model.getUnitsData()->getStaticUnitData(buildingTypeID);
 
-	if (vehicle->getStaticUnitData().canBuild != data.buildAs) return;
+	if (vehicle->getStaticUnitData().canBuild != data.buildAs)
+		return;
 
 	std::array<int, 3> turboBuildRounds;
 	std::array<int, 3> turboBuildCosts;
@@ -88,7 +98,7 @@ void cActionStartBuild::execute(cModel& model) const
 	}
 
 	cPosition oldPosition = vehicle->getPosition();
-	if (data.isBig)
+	if (data.cellSize > 1)
 	{
 // 		model.sideStepStealthUnit(buildPosition, *vehicle, buildPosition);
 // 		model.sideStepStealthUnit(buildPosition + cPosition(1, 0), *vehicle, buildPosition);
@@ -131,7 +141,7 @@ void cActionStartBuild::execute(cModel& model) const
 	vehicle->setBuildingABuilding(true);
 	vehicle->BuildPath = buildPath;
 
-	model.addJob (new cStartBuildJob (*vehicle, oldPosition, data.isBig));
+	model.addJob (new cStartBuildJob (*vehicle, oldPosition, data.cellSize > 1));
 
 	if (vehicle->getMoveJob()) vehicle->getMoveJob()->stop();
 }

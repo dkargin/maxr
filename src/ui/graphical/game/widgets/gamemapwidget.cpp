@@ -1196,7 +1196,7 @@ bool cGameMapWidget::shouldDrawUnit (const cUnit& unit, const cPosition& visitin
 {
 	assert (unit.isAbove (visitingPosition));
 
-	if (!unit.getIsBig())
+	if (!(unit.getCellSize() > 1))
 	{
 		return true;
 	}
@@ -1209,7 +1209,10 @@ bool cGameMapWidget::shouldDrawUnit (const cUnit& unit, const cPosition& visitin
 
 			return visitingPosition == intersectedArea.getMinCorner();
 		}
-		else return visitingPosition == unit.getPosition();
+		else
+		{
+			return visitingPosition == unit.getPosition();
+		}
 	}
 }
 
@@ -1380,6 +1383,7 @@ void cGameMapWidget::drawUnitCircles()
 	auto selectedBuilding = unitSelection.getSelectedBuilding();
 
 	const auto zoomedTileSize = getZoomedTileSize();
+	int cellSize = selectedBuilding->getCellSize();
 
 	if (selectedVehicle && selectedVehicle->isDisabled() == false)
 	{
@@ -1387,19 +1391,17 @@ void cGameMapWidget::drawUnitCircles()
 		const auto screenPosition = getScreenPosition (*selectedVehicle, movementOffset);
 		if (shouldDrawScan)
 		{
-			if (selectedVehicle->getIsBig())
-			{
-				drawCircle (screenPosition.x() + zoomedTileSize.x(), screenPosition.y() + zoomedTileSize.y(), selectedVehicle->data.getScan() * zoomedTileSize.x(), SCAN_COLOR, *cVideo::buffer);
-			}
-			else
-			{
-				drawCircle (screenPosition.x() + zoomedTileSize.x() / 2, screenPosition.y() + zoomedTileSize.y() / 2, selectedVehicle->data.getScan() * zoomedTileSize.x(), SCAN_COLOR, *cVideo::buffer);
-			}
+			drawCircle (
+					screenPosition.x() + cellSize * zoomedTileSize.x() * 0.5,
+					screenPosition.y() + cellSize * zoomedTileSize.y() * 0.5,
+					selectedVehicle->data.getScan() * zoomedTileSize.x(), SCAN_COLOR, *cVideo::buffer);
 		}
 		if (shouldDrawRange)
 		{
-			if (selectedVehicle->getStaticUnitData().canAttack & TERRAIN_AIR) drawCircle(screenPosition.x() + zoomedTileSize.x() / 2, screenPosition.y() + zoomedTileSize.y() / 2, selectedVehicle->data.getRange() * zoomedTileSize.x() + 2, RANGE_AIR_COLOR, *cVideo::buffer);
-			else drawCircle (screenPosition.x() + zoomedTileSize.x() / 2, screenPosition.y() + zoomedTileSize.y() / 2, selectedVehicle->data.getRange() * zoomedTileSize.x() + 1, RANGE_GROUND_COLOR, *cVideo::buffer);
+			if (selectedVehicle->getStaticUnitData().canAttack & TERRAIN_AIR)
+				drawCircle(screenPosition.x() + zoomedTileSize.x() / 2, screenPosition.y() + zoomedTileSize.y() / 2, selectedVehicle->data.getRange() * zoomedTileSize.x() + 2, RANGE_AIR_COLOR, *cVideo::buffer);
+			else
+				drawCircle (screenPosition.x() + zoomedTileSize.x() / 2, screenPosition.y() + zoomedTileSize.y() / 2, selectedVehicle->data.getRange() * zoomedTileSize.x() + 1, RANGE_GROUND_COLOR, *cVideo::buffer);
 		}
 	}
 	else if (selectedBuilding && selectedBuilding->isDisabled() == false)
@@ -1407,30 +1409,24 @@ void cGameMapWidget::drawUnitCircles()
 		const auto screenPosition = getScreenPosition (*selectedBuilding);
 		if (shouldDrawScan)
 		{
-			if (selectedBuilding->getIsBig())
-			{
-				drawCircle (screenPosition. x() + zoomedTileSize.x(),
-							screenPosition. y() + zoomedTileSize.y(),
-							selectedBuilding->data.getScan() * zoomedTileSize.x(), SCAN_COLOR, *cVideo::buffer);
-			}
-			else
-			{
-				drawCircle (screenPosition. x() + zoomedTileSize.x() / 2,
-							screenPosition. y() + zoomedTileSize.y() / 2,
-							selectedBuilding->data.getScan() * zoomedTileSize.x(), SCAN_COLOR, *cVideo::buffer);
-			}
+			drawCircle (
+				screenPosition.x() + cellSize*zoomedTileSize.x()*0.5,
+				screenPosition.y() + cellSize*zoomedTileSize.y()*0.5,
+				selectedBuilding->data.getScan() * zoomedTileSize.x(), SCAN_COLOR, *cVideo::buffer);
 		}
 		if (shouldDrawRange && (selectedBuilding->getStaticUnitData().canAttack & TERRAIN_GROUND) && !selectedBuilding->getStaticUnitData().explodesOnContact)
 		{
-			drawCircle (screenPosition. x() + zoomedTileSize.x() / 2,
-						screenPosition. y() + zoomedTileSize.y() / 2,
-						selectedBuilding->data.getRange() * zoomedTileSize.x() + 2, RANGE_GROUND_COLOR, *cVideo::buffer);
+			drawCircle (
+				screenPosition. x() + cellSize*zoomedTileSize.x()*0.5,
+				screenPosition. y() + cellSize*zoomedTileSize.y()*0.5,
+				selectedBuilding->data.getRange() * zoomedTileSize.x() + 2, RANGE_GROUND_COLOR, *cVideo::buffer);
 		}
 		if (shouldDrawRange && (selectedBuilding->getStaticUnitData().canAttack & TERRAIN_AIR))
 		{
-			drawCircle (screenPosition. x() + zoomedTileSize.x() / 2,
-						screenPosition. y() + zoomedTileSize.y() / 2,
-						selectedBuilding->data.getRange() * zoomedTileSize.x() + 2, RANGE_AIR_COLOR, *cVideo::buffer);
+			drawCircle(
+				screenPosition. x() + cellSize*zoomedTileSize.x()*0.5,
+				screenPosition. y() + cellSize*zoomedTileSize.y()*0.5,
+				selectedBuilding->data.getRange() * zoomedTileSize.x() + 2, RANGE_AIR_COLOR, *cVideo::buffer);
 		}
 	}
 
@@ -1574,20 +1570,31 @@ void cGameMapWidget::drawLockList ()
 		}
 
 		const auto screenPosition = getScreenPosition (*unit);
+		int cellSize = unit->getCellSize();
 
 		if (shouldDrawScan)
 		{
-			if (unit->getIsBig())
-				drawCircle (screenPosition.x() + zoomedTileSize.x(), screenPosition.y() + zoomedTileSize.y(), unit->data.getScan() * zoomedTileSize.x(), SCAN_COLOR, *cVideo::buffer);
-			else
-				drawCircle (screenPosition.x() + zoomedTileSize.x() / 2, screenPosition.y() + zoomedTileSize.y() / 2, unit->data.getScan() * zoomedTileSize.x(), SCAN_COLOR, *cVideo::buffer);
+			drawCircle (
+					screenPosition.x() + cellSize * zoomedTileSize.x() / 2,
+					screenPosition.y() + cellSize * zoomedTileSize.y() / 2,
+					unit->data.getScan() * zoomedTileSize.x(), SCAN_COLOR, *cVideo::buffer);
 		}
+
 		if (shouldDrawRange && (unit->getStaticUnitData().canAttack & TERRAIN_GROUND))
-			drawCircle (screenPosition.x() + zoomedTileSize.x() / 2, screenPosition.y() + zoomedTileSize.y() / 2,
-						unit->data.getRange() * zoomedTileSize.x() + 1, RANGE_GROUND_COLOR, *cVideo::buffer);
-		if (shouldDrawRange && (unit->getIsBig() & TERRAIN_AIR))
-			drawCircle (screenPosition.x() + zoomedTileSize.x() / 2, screenPosition.y() + zoomedTileSize.y() / 2,
-						unit->data.getRange() * zoomedTileSize.x() + 2, RANGE_AIR_COLOR, *cVideo::buffer);
+		{
+			drawCircle (
+					screenPosition.x() + cellSize * zoomedTileSize.x() / 2,
+					screenPosition.y() + cellSize * zoomedTileSize.y() / 2,
+					unit->data.getRange() * zoomedTileSize.x() + 1, RANGE_GROUND_COLOR, *cVideo::buffer);
+		}
+
+		if (shouldDrawRange && (unit->getCellSize() > 1 & TERRAIN_AIR))
+		{
+			drawCircle (
+					screenPosition.x() + cellSize * zoomedTileSize.x() / 2,
+					screenPosition.y() + cellSize * zoomedTileSize.y() / 2,
+					unit->data.getRange() * zoomedTileSize.x() + 2, RANGE_AIR_COLOR, *cVideo::buffer);
+		}
 		//if (ammoChecked () && unit->data.canAttack)
 		//	drawMunBar (*unit, screenPos);
 		//if (hitsChecked ())
@@ -2075,8 +2082,8 @@ void cGameMapWidget::updateUnitMenuPosition()
 
 	auto position = getScreenPosition (unit);
 
+	// TODO: Check this size
 	auto unitSize = getZoomedTileSize();
-	if (unit.getIsBig()) unitSize *= 2;
 
 	if (position.x() + unitSize.x() + menuSize.x() >= getEndPosition().x())
 	{
@@ -2327,7 +2334,7 @@ void cGameMapWidget::renewDamageEffect (const cBuilding& building)
 		int intense = (int) (200 - 200 * ((float)building.data.getHitpoints() / building.data.getHitpointsMax()));
 		addEffect (std::make_shared<cFxDarkSmoke> (cPosition (building.getPosition().x() * 64 + building.DamageFXPointX, building.getPosition().y() * 64 + building.DamageFXPointY), intense, windDirection));
 
-		if (building.getIsBig() && intense > 50)
+		if (building.getCellSize() > 1 && intense > 50)
 		{
 			intense -= 50;
 			addEffect (std::make_shared<cFxDarkSmoke> (cPosition (building.getPosition().x() * 64 + building.DamageFXPointX2, building.getPosition().y() * 64 + building.DamageFXPointY2), intense, windDirection));

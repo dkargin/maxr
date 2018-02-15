@@ -1294,27 +1294,15 @@ void cBase::addBuilding (cBuilding* building, const cMap& map)
 	if (!building->getStaticUnitData().connectsToBase) return;
 	std::vector<cSubBase*> NeighbourList;
 
+	auto adjacent = generateAdjacentBorder(building->getPosition(), building->getCellSize());
 	// find all neighbouring subbases
-	if (building->getIsBig())
+	for(const auto& adjPos : adjacent)
 	{
-		// big building
-		if (cSubBase* SubBase = checkNeighbour (building->getPosition() + cPosition (0, -1), *building, map)) NeighbourList.push_back (SubBase);
-		if (cSubBase* SubBase = checkNeighbour (building->getPosition() + cPosition (1, -1), *building, map)) NeighbourList.push_back (SubBase);
-		if (cSubBase* SubBase = checkNeighbour (building->getPosition() + cPosition (2, 0), *building, map)) NeighbourList.push_back (SubBase);
-		if (cSubBase* SubBase = checkNeighbour (building->getPosition() + cPosition (2, 1), *building, map)) NeighbourList.push_back (SubBase);
-		if (cSubBase* SubBase = checkNeighbour (building->getPosition() + cPosition (0, 2), *building, map)) NeighbourList.push_back (SubBase);
-		if (cSubBase* SubBase = checkNeighbour (building->getPosition() + cPosition (1, 2), *building, map)) NeighbourList.push_back (SubBase);
-		if (cSubBase* SubBase = checkNeighbour (building->getPosition() + cPosition (-1, 0), *building, map)) NeighbourList.push_back (SubBase);
-		if (cSubBase* SubBase = checkNeighbour (building->getPosition() + cPosition (-1, 1), *building, map)) NeighbourList.push_back (SubBase);
+		const cPosition& pos = adjPos.first;
+		if (cSubBase* SubBase = checkNeighbour(pos, *building, map))
+			NeighbourList.push_back (SubBase);
 	}
-	else
-	{
-		// small building
-		if (cSubBase* SubBase = checkNeighbour (building->getPosition() + cPosition (0, -1), *building, map)) NeighbourList.push_back (SubBase);
-		if (cSubBase* SubBase = checkNeighbour (building->getPosition() + cPosition (1, 0), *building, map)) NeighbourList.push_back (SubBase);
-		if (cSubBase* SubBase = checkNeighbour (building->getPosition() + cPosition (0, 1), *building, map)) NeighbourList.push_back (SubBase);
-		if (cSubBase* SubBase = checkNeighbour (building->getPosition() + cPosition (-1, 0), *building, map)) NeighbourList.push_back (SubBase);
-	}
+
 	building->CheckNeighbours (map);
 
 	RemoveDuplicates (NeighbourList);

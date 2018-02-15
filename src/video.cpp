@@ -83,10 +83,14 @@ void cVideo::init()
 {
 	const auto title = PACKAGE_NAME " " PACKAGE_VERSION " " PACKAGE_REV " ";
 
+	int windowFlags = SDL_WINDOW_OPENGL;
+	windowFlags |= SDL_WINDOW_RESIZABLE;
+	windowFlags |= SDL_WINDOW_BORDERLESS;
+
 	sdlWindow = SDL_CreateWindow (title,
 								  SDL_WINDOWPOS_CENTERED_DISPLAY (getDisplayIndex()), SDL_WINDOWPOS_CENTERED_DISPLAY (getDisplayIndex()),
 								  MINWIDTH, MINHEIGHT,
-								  SDL_WINDOW_BORDERLESS | SDL_WINDOW_OPENGL);
+								  windowFlags);
 
 	{
 		auto icon = AutoSurface (SDL_LoadBMP (MAXR_ICON));

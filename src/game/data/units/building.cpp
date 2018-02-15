@@ -590,14 +590,37 @@ void cBuilding::updateNeighbours (const cMap& map)
 //--------------------------------------------------------------------------
 void cBuilding::CheckNeighbours (const cMap& map)
 {
+	/*
 #define CHECK_NEIGHBOUR(x, y, m) \
 	if (map.isValidPosition (cPosition(x, y))) \
 	{ \
 		const cBuilding* b = map.getField(cPosition(x, y)).getTopBuilding(); \
 		if (b && b->getOwner() == getOwner() && b->staticData->connectsToBase) \
 		{m = true;}else{m = false;} \
+	}*/
+
+	auto adjacent = generateAdjacentBorder(this->getPosition(), this->getCellSize());
+	// find all neighbouring subbases
+	for(const cAdjPosition& adjPos : adjacent)
+	{
+		const cPosition& pos = adjPos.first;
+		int side = ajdPos.second;
+		if (map.isValidPosition (pos))
+		{
+			const cBuilding* b = map.getField(pos).getTopBuilding();
+			bool val = b && b->getOwner() == getOwner() && b->staticData->connectsToBase;
+			// TODO: Connectors can deal with virtual ports themselves
+			switch(side)
+			{
+			case AdjLeft:
+			case AdjTop:
+			case AdjRight:
+			case AdjBottom:
+			}
+		}
 	}
 
+#ifdef FUCK_THIS
 	if (!isBig)
 	{
 		CHECK_NEIGHBOUR (getPosition().x()    , getPosition().y() - 1, BaseN)
@@ -616,6 +639,7 @@ void cBuilding::CheckNeighbours (const cMap& map)
 		CHECK_NEIGHBOUR (getPosition().x() - 1, getPosition().y()    , BaseW)
 		CHECK_NEIGHBOUR (getPosition().x() - 1, getPosition().y() + 1, BaseBW)
 	}
+#endif
 }
 
 //--------------------------------------------------------------------------
@@ -628,8 +652,10 @@ void cBuilding::drawConnectors (SDL_Surface* surface, SDL_Rect dest, float zoomF
 	CHECK_SCALING(*UnitsUiData.ptr_connector, *UnitsUiData.ptr_connector_org, zoomFactor);
 	CHECK_SCALING(*UnitsUiData.ptr_connector_shw, *UnitsUiData.ptr_connector_shw_org, zoomFactor);
 
-	if (alphaEffectValue) SDL_SetSurfaceAlphaMod(UnitsUiData.ptr_connector, alphaEffectValue);
-	else SDL_SetSurfaceAlphaMod(UnitsUiData.ptr_connector, 254);
+	if (alphaEffectValue)
+		SDL_SetSurfaceAlphaMod(UnitsUiData.ptr_connector, alphaEffectValue);
+	else
+		SDL_SetSurfaceAlphaMod(UnitsUiData.ptr_connector, 254);
 
 	src.y = 0;
 	src.x = 0;

@@ -41,16 +41,15 @@ cReportDisadvantagesListViewItem::cReportDisadvantagesListViewItem (const cStati
 	SDL_FillRect (unitSurface.get(), nullptr, 0x00FF00FF);
 	SDL_Rect dest = {0, 0, 0, 0};
 
+	const float zoomFactor = unitImageWidth / (data.cellSize *64.0f);
 	if (unitId.isAVehicle())
 	{
-		const float zoomFactor = unitImageWidth / 64.0f;
 		const auto& uiData = *UnitsUiData.getVehicleUI (unitId);
 		cVehicle::render_simple (unitSurface.get(), dest, zoomFactor, uiData, nullptr);
 		cVehicle::drawOverlayAnimation (unitSurface.get(), dest, zoomFactor, uiData);
 	}
 	else if (unitId.isABuilding())
 	{
-		const float zoomFactor = unitImageWidth / (data.isBig ? 128.0f : 64.0f);
 		const auto& uiData = *UnitsUiData.getBuildingUI (unitId);
 		cBuilding::render_simple (unitSurface.get(), dest, zoomFactor, uiData, nullptr);
 	}

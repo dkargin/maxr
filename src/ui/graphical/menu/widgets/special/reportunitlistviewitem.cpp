@@ -41,14 +41,14 @@ cReportUnitListViewItem::cReportUnitListViewItem (cUnit& unit_, const cUnitsData
 	if (unit.data.getId().isAVehicle())
 	{
 		const auto& vehicle = static_cast<const cVehicle&> (unit);
-		const float zoomFactor = unitImageSize / 64.0f;
+		const float zoomFactor = unitImageSize / (vehicle.getCellSize()*64.0f);
 		vehicle.render_simple (surface.get(), dest, zoomFactor);
 		vehicle.drawOverlayAnimation (surface.get(), dest, zoomFactor, 0);
 	}
 	else if (unit.data.getId().isABuilding())
 	{
 		const auto& building = static_cast<const cBuilding&> (unit);
-		const float zoomFactor = unitImageSize / (building.getIsBig() ? 128.0f : 64.0f);
+		const float zoomFactor = unitImageSize / (building.getCellSize()*64.0f);
 		building.render_simple (surface.get(), dest, zoomFactor, 0);
 	}
 	else surface = nullptr;

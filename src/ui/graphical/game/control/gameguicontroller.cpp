@@ -1533,7 +1533,7 @@ void cGameGuiController::showBuildBuildingsWindow (const cVehicle& vehicle)
 			const sID buildingId = *buildWindow->getSelectedUnitId();
 			const auto& model = activeClient->getModel();
 			const auto& buildingData = model.getUnitsData()->getStaticUnitData(buildingId);
-			if (buildingData.isBig)
+			if (buildingData.cellSize > 1)
 			{
 				const auto& map = model.getMap();
 				if (!gameGui->getGameMap().startFindBuildPosition(buildingId))
@@ -1684,17 +1684,27 @@ void cGameGuiController::showStorageWindow (const cUnit& unit)
 				const auto& storedUnit = *unit.storedUnits[i];
 
 				bool activated = false;
-				for (int ypos = unit.getPosition().y() - 1, poscount = 0; ypos <= unit.getPosition().y() + (unit.getIsBig() ? 2 : 1); ypos++)
+
+				int unitPosX = unit.getPosition().x();
+				int unitPosY = unit.getPosition().y();
+				int cellSize = unit.getCellSize();
+				for (int ypos = unitPosY - 1, poscount = 0; ypos <= unitPosY + cellSize; ypos++)
 				{
 					if (ypos < 0 || ypos >= mapView->getSize().y()) continue;
-					for (int xpos = unit.getPosition().x() - 1; xpos <= unit.getPosition().x() + (unit.getIsBig() ? 2 : 1); xpos++, poscount++)
+					//for (int xpos = unit.getPosition().x() - 1; xpos <= unit.getPosition().x() + (unit.getIsBig() ? 2 : 1); xpos++, poscount++)
+					for (int xpos = unitPosX - 1; xpos <= unitPosX + cellSize; xpos++, poscount++)
 					{
 						if (hasCheckedPlace[poscount]) continue;
 
 						if (xpos < 0 || xpos >= mapView->getSize().x()) continue;
 
-						if (((ypos == unit.getPosition().y() && unit.getStaticUnitData().factorAir == 0) || (ypos == unit.getPosition().y() + 1 && unit.getIsBig())) &&
-							((xpos == unit.getPosition().x() && unit.getStaticUnitData().factorAir == 0) || (xpos == unit.getPosition().x() + 1 && unit.getIsBig()))) continue;
+						/// WTF is that?
+						// TODO: check it better
+						/*
+						if (((ypos == unitPosY && unit.getStaticUnitData().factorAir == 0) || (ypos == unitPosY + 1 && unit.getIsBig())) &&
+							((xpos == unitPosX && unit.getStaticUnitData().factorAir == 0) || (xpos == unitPosX + 1 && unit.getIsBig())))
+							continue;
+							*/
 
 						if (unit.canExitTo (cPosition (xpos, ypos), *mapView, storedUnit.getStaticUnitData()))
 						{

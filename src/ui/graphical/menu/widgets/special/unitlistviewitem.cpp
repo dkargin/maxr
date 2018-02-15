@@ -39,14 +39,15 @@ cUnitListViewItem::cUnitListViewItem (unsigned int width, const sID& unitId_, co
 	const auto& data = unitsData.getStaticUnitData(unitId);
 	if (unitId.isAVehicle())
 	{
-		const float zoomFactor = unitImageSize / 64.0f;
+		const float zoomFactor = unitImageSize / (data.cellSize * 64.0f);
 		const auto& uiData = *UnitsUiData.getVehicleUI (unitId);
 		cVehicle::render_simple (surface.get(), dest, zoomFactor, uiData, &owner);
 		cVehicle::drawOverlayAnimation (surface.get(), dest, zoomFactor, uiData);
 	}
 	else if (unitId.isABuilding())
 	{
-		const float zoomFactor = unitImageSize / (data.isBig ? 128.0f : 64.0f);
+		//const float zoomFactor = unitImageSize / (data.isBig ? 128.0f : 64.0f);
+		const float zoomFactor = unitImageSize / (data.cellSize * 64.0f);
 		const auto& uiData = *UnitsUiData.getBuildingUI (unitId);
 		cBuilding::render_simple (surface.get(), dest, zoomFactor, uiData, &owner);
 	}
