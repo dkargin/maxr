@@ -173,6 +173,9 @@ bool cActionInitNewGame::isValidLandingPosition(cPosition position, std::shared_
 		blockedPositions.push_back(position + cPosition(0,  0));
 	}
 
+	int maxRaduis = 6;
+	float maxRadiusMult = 3.0; 	// 1.5
+
 	for (const auto& unit : units)
 	{
 		const cStaticUnitData& unitData = unitsData->getStaticUnitData(unit.unitID);
@@ -184,14 +187,16 @@ bool cActionInitNewGame::isValidLandingPosition(cPosition position, std::shared_
 			landingRadius += 1;
 
 			// prevent, that units are placed far away from the starting position 
-			if (landingRadius > 1.5 * sqrt(units.size()) && landingRadius > 3) return false;
+			if (landingRadius > maxRadiusMult*sqrt(units.size()) && landingRadius > maxRaduis)
+				return false;
 
 			for (int offY = -landingRadius; (offY < landingRadius) && !placed; ++offY)
 			{
 				for (int offX = -landingRadius; (offX < landingRadius) && !placed; ++offX)
 				{
 					const cPosition place = position + cPosition(offX, offY);
-					if (map->possiblePlace(unitData, place) && !Contains(blockedPositions, place))
+					bool fits = map->possiblePlace(unitData, place);
+					if (fits && !Contains(blockedPositions, place))
 					{
 						blockedPositions.push_back(place);
 						placed = true;
@@ -258,6 +263,11 @@ cVehicle* cActionInitNewGame::landVehicle(const cPosition& landingPosition, int 
 
 bool cActionInitNewGame::findPositionForStartMine(cPosition& position, std::shared_ptr<const cUnitsData> unitsData, std::shared_ptr<const cStaticMap> map)
 {
+	const auto& smallGenData = unitsData->getSmallGeneratorData();
+	const auto& mineData = unitsData->getMineData();
+
+	const int maxRadius = 2;
+
 	int radius = 0;
 	while (true)
 	{
@@ -266,8 +276,11 @@ bool cActionInitNewGame::findPositionForStartMine(cPosition& position, std::shar
 			for (int offX = -radius; offX <= radius; ++offX)
 			{
 				const cPosition place = position + cPosition(offX, offY);
-				if (map->possiblePlace(unitsData->getSmallGeneratorData(), place + cPosition(-1, 0)) &&
-					map->possiblePlace(unitsData->getMineData(), place + cPosition(0, -1)))
+
+				bool placeSmallGen = map->possiblePlace(smallGenData, place + cPosition(-smallGenData.cellSize, 0));
+				bool placeMine = map->possiblePlace(mineData, place + cPosition(0, -mineData.cellSize));
+
+				if ( placeSmallGen && placeMine )
 				{
 					position = place;
 					return true;
@@ -276,7 +289,7 @@ bool cActionInitNewGame::findPositionForStartMine(cPosition& position, std::shar
 		}
 		radius += 1;
 
-		if (radius > 2)
+		if (radius > maxRadius)
 		{
 			return false;
 		}

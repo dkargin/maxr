@@ -1376,6 +1376,7 @@ void cGameMapWidget::drawSelectionBox()
 //------------------------------------------------------------------------------
 void cGameMapWidget::drawUnitCircles()
 {
+	// Why should we have two separate branches for vehicle and building?
 	auto clipRect = getArea().toSdlRect();
 	SDL_SetClipRect (cVideo::buffer, &clipRect);
 
@@ -1383,10 +1384,10 @@ void cGameMapWidget::drawUnitCircles()
 	auto selectedBuilding = unitSelection.getSelectedBuilding();
 
 	const auto zoomedTileSize = getZoomedTileSize();
-	int cellSize = selectedBuilding->getCellSize();
 
 	if (selectedVehicle && selectedVehicle->isDisabled() == false)
 	{
+		int cellSize = selectedVehicle->getCellSize();
 		const bool movementOffset = !selectedVehicle->isUnitBuildingABuilding() && !selectedVehicle->isUnitClearing();
 		const auto screenPosition = getScreenPosition (*selectedVehicle, movementOffset);
 		if (shouldDrawScan)
@@ -1406,6 +1407,7 @@ void cGameMapWidget::drawUnitCircles()
 	}
 	else if (selectedBuilding && selectedBuilding->isDisabled() == false)
 	{
+		int cellSize = selectedBuilding->getCellSize();
 		const auto screenPosition = getScreenPosition (*selectedBuilding);
 		if (shouldDrawScan)
 		{

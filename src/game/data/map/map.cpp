@@ -285,9 +285,9 @@ bool cStaticMap::possiblePlace(const cStaticUnitData& data, const cPosition& pos
 	if (data.factorAir > 0)
 		return true;
 
-	int notSea = 0;
-	int notCoast = 0;
-	int notGround = 0;
+	int sea = 0;
+	int coast = 0;
+	int ground = 0;
 
 	for(int y = 0; y < size; y++)
 		for(int x = 0; x < size; x++)
@@ -295,21 +295,24 @@ bool cStaticMap::possiblePlace(const cStaticUnitData& data, const cPosition& pos
 			auto pos = position.relative(x,y);
 			if (isBlocked(pos))
 				return false;
-			if(!isWater(pos))
-				notSea++;
-			if(!isCoast(pos))
-				notCoast++;
+			if(isWater(pos))
+				sea++;
+			if(isCoast(pos))
+				coast++;
 			if(!isGround(pos))
-				notGround++;
+				ground++;
 		}
 
-	if (data.factorSea == 0 && notSea > 0)
+	// Check for the units which can not stand on sea tiles
+	if (data.factorSea == 0 && sea > 0)
 		return false;
 
-	if (data.factorCoast == 0 && notCoast > 0)
+	// Check for the units which can not stand on coastal tiles
+	if (data.factorCoast == 0 && coast > 0)
 		return false;
 
-	if (data.factorGround == 0 && notGround > 0)
+	// Check for the units which can not stand on ground tiles
+	if (data.factorGround == 0 && ground > 0)
 		return false;
 
 	return true;
