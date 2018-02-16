@@ -286,6 +286,11 @@ struct sUnitLess
 // @param size - size of the object
 std::vector<cPosition> generateBorder(const cPosition& corner, int size);
 
+// Generates array of coordinates belonging to outer border of an object with specified size
+// @param corner - coordinate of left topmost corner of the object
+// @param size - size of the object
+std::vector<cPosition> generateOuterBorder(const cPosition& corner, int size);
+
 enum AdjSide
 {
 	AdjLeft = 1,

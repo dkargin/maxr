@@ -20,6 +20,12 @@ Notable problems:
 
 1. void cActionStartBuild::execute(cModel& model) const uses old object size
 
+Broken stuff:
+ - `void cVehicle::render_smallClearing`
+ - `void cVehicle::render_BuildingOrBigClearing`
+ - `void cBuilding::render_rubble`
+ - `bool cUnit::isInRange (const cPosition& position) const` does inproper range calculations
+ - `bool cUnit::isNextTo (const cPosition& position) const` does inproper adjacency calculation
 
 # Scaling rework #
 

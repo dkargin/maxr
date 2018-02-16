@@ -32,6 +32,8 @@
 #include "ui/graphical/framecounter.h"
 #include "game/data/map/mapfieldview.h"
 
+// Why do we need such a logic-specific drawing cache?
+
 sDrawingCacheEntry::sDrawingCacheEntry()
 {}
 
@@ -47,7 +49,7 @@ sDrawingCacheEntry::sDrawingCacheEntry(sDrawingCacheEntry&& other) :
 	clan(other.clan),
 	frame(other.frame),
 	flightHigh(other.flightHigh),
-	big(other.big),
+	size(other.size),
 	isBuilding(other.isBuilding),
 	isClearing(other.isClearing),
 	stealth(other.stealth),
@@ -74,7 +76,7 @@ sDrawingCacheEntry& sDrawingCacheEntry::operator=(sDrawingCacheEntry&& other)
 
 	frame = other.frame;
 	flightHigh = other.flightHigh;
-	big = other.big;
+	size = other.size;
 	isBuilding = other.isBuilding;
 	isClearing = other.isClearing;
 	stealth = other.stealth;
@@ -98,7 +100,7 @@ void sDrawingCacheEntry::init (const cVehicle& vehicle, const cMapView& map, con
 	isBuilding = vehicle.isUnitBuildingABuilding();
 	isClearing = vehicle.isUnitClearing();
 	flightHigh = vehicle.getFlightHeight();
-	big = vehicle.getIsBig();
+	size = vehicle.getCellSize();
 	id = vehicle.data.getId();
 	if (vehicle.uiData->animationMovement)
 		frame = vehicle.WalkFrame;
@@ -147,6 +149,7 @@ void sDrawingCacheEntry::init (const cVehicle& vehicle, const cMapView& map, con
 
 void sDrawingCacheEntry::init (const cBuilding& building, double zoom_, unsigned long long frameNr)
 {
+#ifdef FUCK_THIS
 	BaseN  = building.BaseN;
 	BaseBN = building.BaseBN;
 	BaseE  = building.BaseE;
@@ -155,6 +158,7 @@ void sDrawingCacheEntry::init (const cBuilding& building, double zoom_, unsigned
 	BaseBS = building.BaseBS;
 	BaseW  = building.BaseW;
 	BaseBW = building.BaseBW;
+#endif
 	dir = building.dir;
 	owner = building.getOwner();
 	id = building.data.getId();
@@ -205,6 +209,7 @@ SDL_Surface* cDrawingCache::getCachedImage (const cBuilding& building, double zo
 		if (entry.owner != building.getOwner()) continue;
 		if (building.subBase)
 		{
+#ifdef FUCK_THIS
 			if (building.BaseN != entry.BaseN ||
 				building.BaseE != entry.BaseE ||
 				building.BaseS != entry.BaseS ||
@@ -217,6 +222,7 @@ SDL_Surface* cDrawingCache::getCachedImage (const cBuilding& building, double zo
 					building.BaseBS != entry.BaseBS ||
 					building.BaseBW != entry.BaseBW) continue;
 			}
+#endif
 
 		}
 		if (building.uiData->hasFrames && !building.uiData->isAnimated)
@@ -247,11 +253,16 @@ SDL_Surface* cDrawingCache::getCachedImage (const cVehicle& vehicle, double zoom
 		sDrawingCacheEntry& entry = cachedImages[i];
 
 		// check whether the entry's properties are equal to the building
-		if (entry.id != vehicle.data.getId()) continue;
-		if (entry.owner != vehicle.getOwner()) continue;
-		if (entry.big != vehicle.getIsBig()) continue;
-		if (entry.isBuilding != vehicle.isUnitBuildingABuilding()) continue;
-		if (entry.isClearing != vehicle.isUnitClearing()) continue;
+		if (entry.id != vehicle.data.getId())
+			continue;
+		if (entry.owner != vehicle.getOwner())
+			continue;
+		if (entry.size != vehicle.getCellSize())
+			continue;
+		if (entry.isBuilding != vehicle.isUnitBuildingABuilding())
+			continue;
+		if (entry.isClearing != vehicle.isUnitClearing())
+			continue;
 
 		if (entry.flightHigh != vehicle.getFlightHeight()) continue;
 		if (entry.dir != vehicle.dir) continue;
@@ -426,7 +437,7 @@ bool cDrawingCache::canCache (const cVehicle& vehicle)
 		return false;
 	}
 
-	if (vehicle.isUnitBuildingABuilding() && vehicle.getIsBig() && vehicle.bigBetonAlpha < 254)
+	if (vehicle.isUnitBuildingABuilding() && /*vehicle.getIsBig() &&*/ vehicle.bigBetonAlpha < 254)
 	{
 		notCached++;
 		return false;

@@ -56,7 +56,7 @@ struct sDrawingCacheEntry
 	//vehicle properties
 	unsigned int frame;
 	int flightHigh;
-	bool big;
+	int size;
 	bool isBuilding;
 	bool isClearing;
 	bool stealth;

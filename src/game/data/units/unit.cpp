@@ -60,7 +60,8 @@ cUnit::cUnit (const cDynamicUnitData* unitData, const cStaticUnitData* staticDat
 	data.setMaximumCurrentValues();
 
 	//isBig = (staticData && staticData->isBig);
-	cellSize = (staticData && staticData->isBig) ? 6 : 3;
+	//cellSize = (staticData && staticData->isBig) ? 6 : 3;
+	cellSize = (staticData && staticData->cellSize ) ? staticData->cellSize : 1;
 
 	disabledChanged.connect ([&]() { statusChanged(); });
 	sentryChanged.connect ([&]() { statusChanged(); });
@@ -111,35 +112,7 @@ void cUnit::setPosition (cPosition position_)
 //------------------------------------------------------------------------------
 std::vector<cPosition> cUnit::getAdjacentPositions() const
 {
-	std::vector<cPosition> adjacentPositions;
-
-	if (isBig)
-	{
-		adjacentPositions.push_back (position + cPosition (-1, -1));
-		adjacentPositions.push_back (position + cPosition (0, -1));
-		adjacentPositions.push_back (position + cPosition (1, -1));
-		adjacentPositions.push_back (position + cPosition (2, -1));
-		adjacentPositions.push_back (position + cPosition (-1, 0));
-		adjacentPositions.push_back (position + cPosition (2, 0));
-		adjacentPositions.push_back (position + cPosition (-1, 1));
-		adjacentPositions.push_back (position + cPosition (2, 1));
-		adjacentPositions.push_back (position + cPosition (-1, 2));
-		adjacentPositions.push_back (position + cPosition (0, 2));
-		adjacentPositions.push_back (position + cPosition (1, 2));
-		adjacentPositions.push_back (position + cPosition (2, 2));
-	}
-	else
-	{
-		adjacentPositions.push_back (position + cPosition (-1, -1));
-		adjacentPositions.push_back (position + cPosition (0, -1));
-		adjacentPositions.push_back (position + cPosition (1, -1));
-		adjacentPositions.push_back (position + cPosition (-1, 0));
-		adjacentPositions.push_back (position + cPosition (1, 0));
-		adjacentPositions.push_back (position + cPosition (-1, 1));
-		adjacentPositions.push_back (position + cPosition (0, 1));
-		adjacentPositions.push_back (position + cPosition (1, 1));
-	}
-	return adjacentPositions;
+	return generateOuterBorder(position, cellSize);
 }
 
 //------------------------------------------------------------------------------
@@ -172,7 +145,8 @@ bool cUnit::isNextTo (const cPosition& position) const
 	if (position.x() + 1 < this->position.x() || position.y() + 1 < this->position.y())
 		return false;
 
-	const int size = isBig ? 2 : 1;
+	//const int size = isBig ? 2 : 1;
+	int size = cellSize;
 
 	if (position.x() - size > this->position.x() || position.y() - size > this->position.y())
 		return false;
@@ -186,10 +160,11 @@ bool cUnit::isAbove (const cPosition& position) const
 }
 
 //------------------------------------------------------------------------------
+/*
 bool cUnit::getIsBig() const
 {
 	return cellSize > 1;
-}
+}*/
 
 //------------------------------------------------------------------------------
 
@@ -225,7 +200,7 @@ uint32_t cUnit::getChecksum(uint32_t crc) const
 		crc = calcCheckSum(p->getId(), crc);
 	for (const auto& p : detectedByPlayerList)
 		crc = calcCheckSum(p->getId(), crc); 
-	crc = calcCheckSum(isBig, crc);
+	crc = calcCheckSum(cellSize, crc);
 	crc = calcCheckSum(owner, crc);
 	crc = calcCheckSum(position, crc);
 	crc = calcCheckSum(customName, crc);
@@ -243,7 +218,7 @@ uint32_t cUnit::getChecksum(uint32_t crc) const
 //------------------------------------------------------------------------------
 cBox<cPosition> cUnit::getArea() const
 {
-	return cBox<cPosition> (position, position + (isBig ? cPosition (1, 1) : cPosition (0, 0)));
+	return cBox<cPosition> (position, position + cellSize);
 }
 
 // http://rosettacode.org/wiki/Roman_numerals/Encode#C.2B.2B
@@ -596,6 +571,12 @@ std::vector<cPosition> generateBorder(const cPosition& corner, int size)
 	return std::move(result);
 }
 
+std::vector<cPosition> generateOuterBorder(const cPosition& corner, int size)
+{
+	return generateBorder(corner-1, size+1);
+}
+
+
 // Generate array of adjacent cells
 // Direct adjacency is checked: left, right, upper and bottom sides are concidered adjacent
 // Corner sides are skipped
@@ -604,7 +585,7 @@ std::vector<cAdjPosition> generateAdjacentBorder(const cPosition& corner, int si
 	if (size < 1)
 			size = 1;
 
-	std::vector<cPosition> result(size*4);
+	std::vector<cAdjPosition> result(size*4);
 	for(int i = 0; i < size; i++)
 	{
 		// Left side

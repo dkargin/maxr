@@ -31,15 +31,23 @@
 class cStartBuildJob : public cJob
 {
 public:
-	cStartBuildJob (cVehicle& vehicle, const cPosition& org, bool big);
+	cStartBuildJob (cVehicle& vehicle, const cPosition& org, int buildingSize);
 	template <typename T>
 	cStartBuildJob(T& archive) { serializeThis(archive); }
 
 	virtual void run (cModel& model) MAXR_OVERRIDE_FUNCTION;
 	virtual eJobType getType() const MAXR_OVERRIDE_FUNCTION;
 
-	virtual void serialize(cBinaryArchiveIn& archive) { archive << serialization::makeNvp("type", getType()); serializeThis(archive); }
-	virtual void serialize(cXmlArchiveIn& archive) { archive << serialization::makeNvp("type", getType()); serializeThis(archive); }
+	virtual void serialize(cBinaryArchiveIn& archive)
+	{
+		archive << serialization::makeNvp("type", getType());
+		serializeThis(archive);
+	}
+	virtual void serialize(cXmlArchiveIn& archive)
+	{
+		archive << serialization::makeNvp("type", getType());
+		serializeThis(archive);
+	}
 	
 	virtual uint32_t getChecksum(uint32_t crc) const MAXR_OVERRIDE_FUNCTION;
 private:
@@ -48,7 +56,7 @@ private:
 	{
 		archive & NVP(unit);
 		archive & NVP(org);
-		archive & NVP(big);
+		archive & NVP(buildingSize);
 
 		if (!archive.isWriter)
 		{
@@ -59,7 +67,7 @@ private:
 		}
 	}
 	cPosition org;
-	bool big;
+	int buildingSize;
 };
 
 #endif

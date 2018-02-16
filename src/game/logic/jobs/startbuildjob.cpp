@@ -24,10 +24,10 @@
 #include "game/data/model.h"
 
 
-cStartBuildJob::cStartBuildJob (cVehicle& vehicle_, const cPosition& org_, bool big_) :
+cStartBuildJob::cStartBuildJob (cVehicle& vehicle_, const cPosition& org_, int size_) :
 	cJob (vehicle_),
 	org (org_),
-	big (big_)
+	buildingSize (size_)
 {
 	vehicle_.setMovementOffset (cPosition (vehicle_.getPosition().x() < org.x() ? 64 : 0, vehicle_.getPosition().y() < org.y() ? 64 : 0));
 }
@@ -45,7 +45,7 @@ void cStartBuildJob::run (cModel& model)
 		vehicle->setMovementOffset (cPosition (0, 0));
 	}
 
-	if (big)
+	if (buildingSize > 1)
 	{
 		int deltaX = (vehicle->getPosition().x() < org.x() ? -1 : 1) * MOVE_SPEED;
 		int deltaY = (vehicle->getPosition().y() < org.y() ? -1 : 1) * MOVE_SPEED;
@@ -106,7 +106,7 @@ uint32_t cStartBuildJob::getChecksum(uint32_t crc) const
 	crc = calcCheckSum(getType(), crc);
 	crc = calcCheckSum(unit ? unit->getId() : 0, crc);
 	crc = calcCheckSum(org, crc);
-	crc = calcCheckSum(big, crc);
+	crc = calcCheckSum(buildingSize, crc);
 
 	return crc;
 }

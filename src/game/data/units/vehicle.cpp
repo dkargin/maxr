@@ -140,10 +140,12 @@ void cVehicle::drawOverlayAnimation (unsigned long long animationTime, SDL_Surfa
 
 void cVehicle::render_BuildingOrBigClearing (const cMapView& map, unsigned long long animationTime, SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, bool drawShadow) const
 {
-	assert ((isUnitBuildingABuilding() || (isUnitClearing() && isBig)) && job == nullptr);
+	int size = getCellSize();
+	assert ((isUnitBuildingABuilding() || (isUnitClearing() && size > 1)) && job == nullptr);
 	// draw beton if necessary
 	SDL_Rect tmp = dest;
-	if (isUnitBuildingABuilding() && getIsBig() && (!map.isWaterOrCoast (getPosition()) || map.getField (getPosition()).getBaseBuilding()))
+
+	if (isUnitBuildingABuilding() && size > 1 && (!map.isWaterOrCoast (getPosition()) || map.getField (getPosition()).getBaseBuilding()))
 	{
 		SDL_SetSurfaceAlphaMod (GraphicsData.gfx_big_beton.get(), bigBetonAlpha);
 		CHECK_SCALING (*GraphicsData.gfx_big_beton, *GraphicsData.gfx_big_beton_org, zoomFactor);
@@ -152,7 +154,8 @@ void cVehicle::render_BuildingOrBigClearing (const cMapView& map, unsigned long 
 
 	// draw shadow
 	tmp = dest;
-	if (drawShadow) blitWithPreScale (uiData->build_shw_org.get(), uiData->build_shw.get(), nullptr, surface, &tmp, zoomFactor);
+	if (drawShadow)
+		blitWithPreScale (uiData->build_shw_org.get(), uiData->build_shw.get(), nullptr, surface, &tmp, zoomFactor);
 
 	// draw player color
 	SDL_Rect src;
@@ -172,7 +175,8 @@ void cVehicle::render_BuildingOrBigClearing (const cMapView& map, unsigned long 
 
 void cVehicle::render_smallClearing (unsigned long long animationTime, SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, bool drawShadow) const
 {
-	assert (isUnitClearing() && !isBig && job == nullptr);
+	int size = getCellSize();
+	assert (isUnitClearing() && size == 1 && job == nullptr);
 
 	// draw shadow
 	SDL_Rect tmp = dest;
@@ -268,12 +272,13 @@ void cVehicle::render (const cMapView* map, unsigned long long animationTime, co
 	// draw working engineers and bulldozers:
 	if (map && job == nullptr)
 	{
-		if (isUnitBuildingABuilding() || (isUnitClearing() && isBig))
+		/// TODO: Make a proper rendering
+		if (isUnitBuildingABuilding() || (isUnitClearing() && cellSize > 1))
 		{
 			render_BuildingOrBigClearing (*map, animationTime, surface, dest, zoomFactor, drawShadow);
 			return;
 		}
-		if (isUnitClearing() && !isBig)
+		if (isUnitClearing() && !cellSize == 1)
 		{
 			render_smallClearing (animationTime, surface, dest, zoomFactor, drawShadow);
 			return;
@@ -397,7 +402,7 @@ void cVehicle::continuePathBuilding(cModel& model)
 
 	if (getStoredResources() >= getBuildCostsStart() && model.getMap()->possiblePlaceBuilding(model.getUnitsData()->getStaticUnitData(getBuildingType()), getPosition(), nullptr, this))
 	{
-		model.addJob(new cStartBuildJob(*this, getPosition(), getIsBig()));
+		model.addJob(new cStartBuildJob(*this, getPosition(), getCellSize()));
 		setBuildingABuilding(true);
 		setBuildCosts(getBuildCostsStart());
 		setBuildTurns(getBuildTurnsStart());

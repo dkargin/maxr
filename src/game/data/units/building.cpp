@@ -142,6 +142,8 @@ cBuilding::cBuilding (const cStaticUnitData* staticData, const cDynamicUnitData*
 	uiData = staticData ? UnitsUiData.getBuildingUI(staticData->ID) : nullptr;
 	points = 0;
 
+	/*
+	// Let the connectors deal with connections
 	BaseN = false;
 	BaseBN = false;
 	BaseE = false;
@@ -150,6 +152,7 @@ cBuilding::cBuilding (const cStaticUnitData* staticData, const cDynamicUnitData*
 	BaseBS = false;
 	BaseW = false;
 	BaseBW = false;
+	*/
 	repeatBuild = false;
 
 	maxMetalProd = 0;
@@ -162,12 +165,12 @@ cBuilding::cBuilding (const cStaticUnitData* staticData, const cDynamicUnitData*
 	subBase = nullptr;
 	buildSpeed = 0;
 
-	if (isBig)
+	if (cellSize > 1)
 	{
-		DamageFXPointX  = random (64) + 32;
-		DamageFXPointY  = random (64) + 32;
-		DamageFXPointX2 = random (64) + 32;
-		DamageFXPointY2 = random (64) + 32;
+		DamageFXPointX  = random (cellSize*64) + 32;
+		DamageFXPointY  = random (cellSize*64) + 32;
+		DamageFXPointX2 = random (cellSize*64) + 32;
+		DamageFXPointY2 = random (cellSize*64) + 32;
 	}
 	else
 	{
@@ -364,17 +367,20 @@ void cBuilding::render_rubble (SDL_Surface* surface, const SDL_Rect& dest, float
 	assert (isRubble());
 
 	SDL_Rect src;
-
+#ifdef FUCK_THIS
 	if (isBig)
 	{
-		if (!UnitsUiData.rubbleBig->img) return;
+		if (!UnitsUiData.rubbleBig->img)
+			return;
 		src.w = src.h = (int) (UnitsUiData.rubbleBig->img_org->h * zoomFactor);
 	}
 	else
 	{
-		if (!UnitsUiData.rubbleSmall->img) return;
+		if (!UnitsUiData.rubbleSmall->img)
+			return;
 		src.w = src.h = (int) (UnitsUiData.rubbleSmall->img_org->h * zoomFactor);
 	}
+#endif
 
 	src.x = src.w * rubbleTyp;
 	SDL_Rect tmp = dest;
@@ -383,6 +389,7 @@ void cBuilding::render_rubble (SDL_Surface* surface, const SDL_Rect& dest, float
 	// draw the shadows
 	if (drawShadow)
 	{
+#ifdef FUCK_THIS
 		if (isBig)
 		{
 			CHECK_SCALING (*UnitsUiData.rubbleBig->shw, *UnitsUiData.rubbleBig->shw_org, zoomFactor);
@@ -393,11 +400,12 @@ void cBuilding::render_rubble (SDL_Surface* surface, const SDL_Rect& dest, float
 			CHECK_SCALING (*UnitsUiData.rubbleSmall->shw, *UnitsUiData.rubbleSmall->shw_org, zoomFactor);
 			SDL_BlitSurface (UnitsUiData.rubbleSmall->shw.get(), &src, surface, &tmp);
 		}
+#endif
 	}
 
 	// draw the building
 	tmp = dest;
-
+#ifdef FUCK_THIS
 	if (isBig)
 	{
 		CHECK_SCALING (*UnitsUiData.rubbleBig->img, *UnitsUiData.rubbleBig->img_org, zoomFactor);
@@ -408,24 +416,16 @@ void cBuilding::render_rubble (SDL_Surface* surface, const SDL_Rect& dest, float
 		CHECK_SCALING (*UnitsUiData.rubbleSmall->img, *UnitsUiData.rubbleSmall->img_org, zoomFactor);
 		SDL_BlitSurface (UnitsUiData.rubbleSmall->img.get(), &src, surface, &tmp);
 	}
+#endif
 }
 
 //------------------------------------------------------------------------------
 void cBuilding::render_beton (SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor) const
 {
 	SDL_Rect tmp = dest;
-	if (isBig)
-	{
-		CHECK_SCALING (*GraphicsData.gfx_big_beton, *GraphicsData.gfx_big_beton_org, zoomFactor);
-
-		if (alphaEffectValue && cSettings::getInstance().isAlphaEffects())
-			SDL_SetSurfaceAlphaMod (GraphicsData.gfx_big_beton.get(), alphaEffectValue);
-		else
-			SDL_SetSurfaceAlphaMod (GraphicsData.gfx_big_beton.get(), 254);
-
-		SDL_BlitSurface (GraphicsData.gfx_big_beton.get(), nullptr, surface, &tmp);
-	}
-	else
+	// TODO: Properly fill in the whole area
+	int size = cellSize;
+	if (size & 1)	// if size is even - fill land by 1x1 floor tiles
 	{
 		CHECK_SCALING (*UnitsUiData.ptr_small_beton, *UnitsUiData.ptr_small_beton_org, zoomFactor);
 		if (alphaEffectValue && cSettings::getInstance().isAlphaEffects())
@@ -435,6 +435,17 @@ void cBuilding::render_beton (SDL_Surface* surface, const SDL_Rect& dest, float 
 
 		SDL_BlitSurface(UnitsUiData.ptr_small_beton, nullptr, surface, &tmp);
 		SDL_SetSurfaceAlphaMod(UnitsUiData.ptr_small_beton, 254);
+	}
+	else // or use 2x2 tiles
+	{
+		CHECK_SCALING (*GraphicsData.gfx_big_beton, *GraphicsData.gfx_big_beton_org, zoomFactor);
+
+		if (alphaEffectValue && cSettings::getInstance().isAlphaEffects())
+			SDL_SetSurfaceAlphaMod (GraphicsData.gfx_big_beton.get(), alphaEffectValue);
+		else
+			SDL_SetSurfaceAlphaMod (GraphicsData.gfx_big_beton.get(), 254);
+
+		SDL_BlitSurface (GraphicsData.gfx_big_beton.get(), nullptr, surface, &tmp);
 	}
 }
 
@@ -564,6 +575,13 @@ void cBuilding::render (unsigned long long animationTime, SDL_Surface* surface, 
 //--------------------------------------------------------------------------
 void cBuilding::updateNeighbours (const cMap& map)
 {
+	auto adjacent = generateAdjacentBorder(this->getPosition(), this->getCellSize());
+		// find all neighbouring subbases
+	for(const cAdjPosition& adjPos : adjacent)
+	{
+		getOwner()->base.checkNeighbour (adjPos.first, *this, map);
+	}
+	/*
 	if (!isBig)
 	{
 		getOwner()->base.checkNeighbour (getPosition() + cPosition ( 0, -1), *this, map);
@@ -581,7 +599,7 @@ void cBuilding::updateNeighbours (const cMap& map)
 		getOwner()->base.checkNeighbour (getPosition() + cPosition ( 1,  2), *this, map);
 		getOwner()->base.checkNeighbour (getPosition() + cPosition (-1,  0), *this, map);
 		getOwner()->base.checkNeighbour (getPosition() + cPosition (-1,  1), *this, map);
-	}
+	}*/
 	CheckNeighbours (map);
 }
 
@@ -604,7 +622,7 @@ void cBuilding::CheckNeighbours (const cMap& map)
 	for(const cAdjPosition& adjPos : adjacent)
 	{
 		const cPosition& pos = adjPos.first;
-		int side = ajdPos.second;
+		int side = adjPos.second;
 		if (map.isValidPosition (pos))
 		{
 			const cBuilding* b = map.getField(pos).getTopBuilding();
@@ -616,6 +634,7 @@ void cBuilding::CheckNeighbours (const cMap& map)
 			case AdjTop:
 			case AdjRight:
 			case AdjBottom:
+				break;
 			}
 		}
 	}
@@ -648,7 +667,7 @@ void cBuilding::CheckNeighbours (const cMap& map)
 void cBuilding::drawConnectors (SDL_Surface* surface, SDL_Rect dest, float zoomFactor, bool drawShadow) const
 {
 	SDL_Rect src, temp;
-
+#ifdef FUCK_THIS
 	CHECK_SCALING(*UnitsUiData.ptr_connector, *UnitsUiData.ptr_connector_org, zoomFactor);
 	CHECK_SCALING(*UnitsUiData.ptr_connector_shw, *UnitsUiData.ptr_connector_shw_org, zoomFactor);
 
@@ -728,9 +747,12 @@ void cBuilding::drawConnectors (SDL_Surface* surface, SDL_Rect dest, float zoomF
 		// lower right field
 		src.x = 0;
 		dest.y += Round (64.0f * zoomFactor);
-		if (BaseBE && BaseBS) src.x = 9;
-		else if (BaseBE && !BaseBS) src.x = 2;
-		else if (!BaseBE && BaseBS) src.x = 3;
+		if (BaseBE && BaseBS)
+			src.x = 9;
+		else if (BaseBE && !BaseBS)
+			src.x = 2;
+		else if (!BaseBE && BaseBS)
+			src.x = 3;
 		src.x *= src.h;
 
 		if (src.x != 0)
@@ -744,9 +766,12 @@ void cBuilding::drawConnectors (SDL_Surface* surface, SDL_Rect dest, float zoomF
 		// lower left field
 		src.x = 0;
 		dest.x -= Round (64.0f * zoomFactor);
-		if (BaseS && BaseBW) src.x = 10;
-		else if (BaseS && !BaseBW) src.x = 3;
-		else if (!BaseS && BaseBW) src.x = 4;
+		if (BaseS && BaseBW)
+			src.x = 10;
+		else if (BaseS && !BaseBW)
+			src.x = 3;
+		else if (!BaseS && BaseBW)
+			src.x = 4;
 		src.x *= src.h;
 
 		if (src.x != 0)
@@ -757,6 +782,7 @@ void cBuilding::drawConnectors (SDL_Surface* surface, SDL_Rect dest, float zoomF
 			SDL_BlitSurface (UnitsUiData.ptr_connector, &src, surface, &temp);
 		}
 	}
+#endif
 }
 
 //--------------------------------------------------------------------------
@@ -1121,6 +1147,24 @@ void cBuilding::initMineRessourceProd (const cMap& map)
 	maxMetalProd = 0;
 	maxGoldProd = 0;
 	maxOilProd = 0;
+
+	cPosition pos = position;
+	int size = this->getCellSize();
+	for(int y = 0; y < size; y++)
+	{
+		for(int x = 0; x < size; x++)
+		{
+			const sResources* res = &map.getResource (pos.relative(x,y));
+			switch (res->typ)
+			{
+				case eResourceType::Metal: maxMetalProd += res->value; break;
+				case eResourceType::Gold:  maxGoldProd  += res->value; break;
+				case eResourceType::Oil:   maxOilProd   += res->value; break;
+			}
+		}
+	}
+
+	/*
 	const sResources* res = &map.getResource (position);
 
 	switch (res->typ)
@@ -1129,6 +1173,7 @@ void cBuilding::initMineRessourceProd (const cMap& map)
 		case eResourceType::Gold:  maxGoldProd  += res->value; break;
 		case eResourceType::Oil:   maxOilProd   += res->value; break;
 	}
+
 
 	if (isBig)
 	{
@@ -1159,6 +1204,7 @@ void cBuilding::initMineRessourceProd (const cMap& map)
 		case eResourceType::Oil:   maxOilProd += res->value; break;
 		}
 	}
+	*/
 
 	maxMetalProd = min (maxMetalProd, staticData->canMineMaxRes);
 	maxGoldProd  = min (maxGoldProd, staticData->canMineMaxRes);
@@ -1540,6 +1586,9 @@ void cBuilding::setRubbleValue(int value, cCrossPlattformRandom& randomGenerator
 {
 	rubbleValue = value;
 
+	/*
+	// TODO: Rubble mechanic is quite flawed
+	// It is better to reimplement it in scripts
 	if (isBig)
 	{
 		rubbleTyp = randomGenerator.get(2);
@@ -1550,6 +1599,7 @@ void cBuilding::setRubbleValue(int value, cCrossPlattformRandom& randomGenerator
 		rubbleTyp = randomGenerator.get(5);
 		uiData = UnitsUiData.rubbleSmall;
 	}
+	*/
 }
 
 //------------------------------------------------------------------------------
@@ -1564,6 +1614,7 @@ uint32_t cBuilding::getChecksum(uint32_t crc) const
 	crc = cUnit::getChecksum(crc);
 	crc = calcCheckSum(rubbleTyp, crc);
 	crc = calcCheckSum(rubbleValue, crc);
+	/*
 	crc = calcCheckSum(BaseN, crc);
 	crc = calcCheckSum(BaseE, crc);
 	crc = calcCheckSum(BaseS, crc);
@@ -1572,6 +1623,7 @@ uint32_t cBuilding::getChecksum(uint32_t crc) const
 	crc = calcCheckSum(BaseBE, crc);
 	crc = calcCheckSum(BaseBS, crc);
 	crc = calcCheckSum(BaseBW, crc);
+	*/
 	crc = calcCheckSum(metalProd, crc);
 	crc = calcCheckSum(oilProd, crc);
 	crc = calcCheckSum(goldProd, crc);

@@ -80,8 +80,10 @@ cUnitsData::cUnitsData() :
 	crcValid(false),
 	crcCache(0)
 {
-	rubbleBig.isBig = true;
-	rubbleSmall.isBig = false;
+	/// WTF is that ?
+	/// Maybe it is better to place it in LUA?
+	//rubbleBig.isBig = true;
+	//rubbleSmall.isBig = false;
 }
 
 //------------------------------------------------------------------------------
@@ -298,7 +300,7 @@ cStaticUnitData::cStaticUnitData()
 	canWork = false;
 	explodesOnContact = false;
 	isHuman = false;
-	isBig = false;
+	cellSize = 1;
 
 	// Storage
 	storageResMax = 0;
@@ -374,7 +376,7 @@ uint32_t cStaticUnitData::getChecksum(uint32_t crc) const
 	crc = calcCheckSum(canWork, crc);
 	crc = calcCheckSum(explodesOnContact, crc);
 	crc = calcCheckSum(isHuman, crc);
-	crc = calcCheckSum(isBig, crc);
+	crc = calcCheckSum(cellSize, crc);
 	crc = calcCheckSum(storageResMax, crc);
 	crc = calcCheckSum(storeResType, crc);
 	crc = calcCheckSum(storageUnitsMax, crc);
