@@ -1,5 +1,7 @@
 # MAXR
 
+This is the fork of https://git.maxr.org/maxr. All the good guys are doing their development there. 
+
 ## Introduction
 
 Mechanized Assault & eXploration Reloaded
