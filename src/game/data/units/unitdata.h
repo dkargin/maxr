@@ -400,6 +400,7 @@ public:
 
 	uint32_t getChecksum(uint32_t crc) const;
 
+	// O RLY?
 	const cStaticUnitData& getConstructorData() const { return getStaticUnitData(constructorID); }
 	const cStaticUnitData& getEngineerData() const { return getStaticUnitData(engineerID); }
 	const cStaticUnitData& getSurveyorData() const { return getStaticUnitData(surveyorID); }

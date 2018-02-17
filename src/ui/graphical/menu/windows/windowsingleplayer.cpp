@@ -67,185 +67,113 @@ cWindowSinglePlayer::~cWindowSinglePlayer()
 
 // TODO: find nice place
 //------------------------------------------------------------------------------
-std::vector<std::pair<sID, int>> createInitialLandingUnitsList(int clan, const cGameSettings& gameSettings, const cUnitsData& unitsData)
+
+void createInitial(sLandingConfig& config, int clan, const cGameSettings& gameSettings, const cUnitsData& unitsData)
 {
-	std::vector<std::pair<sID, int>> initialLandingUnits;
+    if (gameSettings.getBridgeheadType() == eGameSettingsBridgeheadType::Mobile)
+        return;
 
-	if (gameSettings.getBridgeheadType() == eGameSettingsBridgeheadType::Mobile) return initialLandingUnits;
+    if(config.state != 0)
+        return;
 
-	const auto& constructorID = unitsData.getConstructorData().ID;
-	const auto& engineerID = unitsData.getEngineerData().ID;
-	const auto& surveyorID = unitsData.getSurveyorData().ID;
+    const auto& constructorID = unitsData.getConstructorData().ID;
+    const auto& engineerID = unitsData.getEngineerData().ID;
+    const auto& surveyorID = unitsData.getSurveyorData().ID;
 
-	initialLandingUnits.push_back (std::make_pair (constructorID, 40));
-	initialLandingUnits.push_back (std::make_pair (engineerID, 20));
-	initialLandingUnits.push_back (std::make_pair (surveyorID, 0));
+    config.landingUnits.push_back(sLandingUnit::make(constructorID, 40));
+    config.landingUnits.push_back(sLandingUnit::make(engineerID, 20));
+    config.landingUnits.push_back(sLandingUnit::make(surveyorID, 0));
 
-	if (clan == 7)
-	{
-		const int startCredits = gameSettings.getStartCredits();
+    const auto& smallGenData = unitsData.getSmallGeneratorData();
+    const auto& mineData = unitsData.getMineData();
 
-		size_t numAddConstructors = 0;
-		size_t numAddEngineers = 0;
+    config.baseLayout.push_back(cLayoutItem{cPosition(-1, 0), &smallGenData});
+    config.baseLayout.push_back(cLayoutItem{cPosition(0, 0), &mineData});
 
-		if (startCredits < 100)
-		{
-			numAddEngineers = 1;
-		}
-		else if (startCredits < 150)
-		{
-			numAddEngineers = 1;
-			numAddConstructors = 1;
-		}
-		else if (startCredits < 200)
-		{
-			numAddEngineers = 2;
-			numAddConstructors = 1;
-		}
-		else if (startCredits < 300)
-		{
-			numAddEngineers = 2;
-			numAddConstructors = 2;
-		}
-		else
-		{
-			numAddEngineers = 3;
-			numAddConstructors = 2;
-		}
+    if (clan == 7)
+    {
+        const int startCredits = gameSettings.getStartCredits();
 
-		for (size_t i = 0; i != numAddConstructors; ++i)
-		{
-			initialLandingUnits.push_back (std::make_pair (constructorID, 0));
-		}
-		for (size_t i = 0; i != numAddEngineers; ++i)
-		{
-			initialLandingUnits.push_back (std::make_pair (engineerID, 0));
-		}
-	}
+        size_t numAddConstructors = 0;
+        size_t numAddEngineers = 0;
 
-	return initialLandingUnits;
+        if (startCredits < 100)
+        {
+            numAddEngineers = 1;
+        }
+        else if (startCredits < 150)
+        {
+            numAddEngineers = 1;
+            numAddConstructors = 1;
+        }
+        else if (startCredits < 200)
+        {
+            numAddEngineers = 2;
+            numAddConstructors = 1;
+        }
+        else if (startCredits < 300)
+        {
+            numAddEngineers = 2;
+            numAddConstructors = 2;
+        }
+        else
+        {
+            numAddEngineers = 3;
+            numAddConstructors = 2;
+        }
+
+        for (size_t i = 0; i != numAddConstructors; ++i)
+        {
+            config.landingUnits.push_back (sLandingUnit::make(constructorID, 0));
+        }
+        for (size_t i = 0; i != numAddEngineers; ++i)
+        {
+            config.landingUnits.push_back (sLandingUnit::make(engineerID, 0));
+        }
+    }
+    config.state = 1;
 }
+
 
 //------------------------------------------------------------------------------
 void cWindowSinglePlayer::newGameClicked()
 {
-	if (!getActiveApplication()) return;
+    if (!getActiveApplication())
+        return;
 
-	auto application = getActiveApplication();
+    application = getActiveApplication();
 
-	auto game = std::make_shared<cLocalSingleplayerGameNew> ();
-
+    cLocalSingleplayerGameNew* newGame = new cLocalSingleplayerGameNew();
+    game.reset(newGame);
 	//initialize copy of unitsData that will be used in game
-	game->setUnitsData(std::make_shared<const cUnitsData>(UnitsDataGlobal));
-	game->setClanData(std::make_shared<const cClanData>(ClanDataGlobal));
+    newGame->setUnitsData(std::make_shared<const cUnitsData>(UnitsDataGlobal));
+    newGame->setClanData(std::make_shared<const cClanData>(ClanDataGlobal));
 
-	auto windowGameSettings = getActiveApplication()->show (std::make_shared<cWindowGameSettings> ());
+    windowGameSettings.reset(new cWindowGameSettings());
 	windowGameSettings->applySettings (cGameSettings());
 
-	windowGameSettings->done.connect ([ = ]()
-	{
-		auto gameSettings = std::make_shared<cGameSettings> (windowGameSettings->getGameSettings());
-		game->setGameSettings (gameSettings);
-
-		auto windowMapSelection = application->show (std::make_shared<cWindowMapSelection> ());
-
-		windowMapSelection->done.connect ([ = ]()
-		{
-			auto staticMap = std::make_shared<cStaticMap>();
-			if (!windowMapSelection->loadSelectedMap (*staticMap))
-			{
-				// TODO: error dialog: could not load selected map!
-				return;
-			}
-			game->setStaticMap (staticMap);
-
-			if (gameSettings->getClansEnabled())
-			{
-				auto windowClanSelection = application->show (std::make_shared<cWindowClanSelection> (game->getUnitsData(), game->getClanData()));
-
-				signalConnectionManager.connect (windowClanSelection->canceled, [windowClanSelection]() { windowClanSelection->close(); });
-				windowClanSelection->done.connect ([ = ]()
-				{
-					game->setPlayerClan (windowClanSelection->getSelectedClan());
-
-					auto initialLandingUnits = createInitialLandingUnitsList (windowClanSelection->getSelectedClan(), *gameSettings, *game->getUnitsData());
-
-					auto windowLandingUnitSelection = application->show (std::make_shared<cWindowLandingUnitSelection> (cPlayerColor(), windowClanSelection->getSelectedClan(), initialLandingUnits, gameSettings->getStartCredits(), game->getUnitsData()));
-
-					signalConnectionManager.connect (windowLandingUnitSelection->canceled, [windowLandingUnitSelection]() { windowLandingUnitSelection->close(); });
-					windowLandingUnitSelection->done.connect ([ = ]()
-					{
-						game->setLandingUnits (windowLandingUnitSelection->getLandingUnits());
-						game->setUnitUpgrades (windowLandingUnitSelection->getUnitUpgrades());
-
-						bool fixedBridgeHead = gameSettings->getBridgeheadType() == eGameSettingsBridgeheadType::Definite;
-						auto landingUnits = windowLandingUnitSelection->getLandingUnits();
-						auto unitsdata = game->getUnitsData();
-						auto windowLandingPositionSelection = application->show (std::make_shared<cWindowLandingPositionSelection> (staticMap, fixedBridgeHead, landingUnits, unitsdata, false));
-
-						signalConnectionManager.connect (windowLandingPositionSelection->canceled, [windowLandingPositionSelection]() { windowLandingPositionSelection->close(); });
-						windowLandingPositionSelection->selectedPosition.connect ([ = ] (cPosition landingPosition)
-						{
-							game->setLandingPosition (landingPosition);
-
-							game->start (*application);
-
-							windowLandingPositionSelection->close();
-							windowLandingUnitSelection->close();
-							windowClanSelection->close();
-							windowMapSelection->close();
-							windowGameSettings->close();
-						});
-					});
-				});
-			}
-			else
-			{
-				auto initialLandingUnits = createInitialLandingUnitsList (-1, *gameSettings, *game->getUnitsData());
-
-				auto windowLandingUnitSelection = application->show (std::make_shared<cWindowLandingUnitSelection> (cPlayerColor(), -1, initialLandingUnits, gameSettings->getStartCredits(), game->getUnitsData()));
-
-				signalConnectionManager.connect (windowLandingUnitSelection->canceled, [windowLandingUnitSelection]() { windowLandingUnitSelection->close(); });
-				windowLandingUnitSelection->done.connect ([ = ]()
-				{
-					game->setLandingUnits (windowLandingUnitSelection->getLandingUnits());
-					game->setUnitUpgrades (windowLandingUnitSelection->getUnitUpgrades());
-
-					bool fixedBridgeHead = gameSettings->getBridgeheadType() == eGameSettingsBridgeheadType::Definite;
-					auto landingUnits = windowLandingUnitSelection->getLandingUnits();
-					auto unitsdata = game->getUnitsData();
-					auto windowLandingPositionSelection = application->show(std::make_shared<cWindowLandingPositionSelection>(staticMap, fixedBridgeHead, landingUnits, unitsdata, false));
-
-					signalConnectionManager.connect (windowLandingPositionSelection->canceled, [windowLandingPositionSelection]() { windowLandingPositionSelection->close(); });
-					windowLandingPositionSelection->selectedPosition.connect ([ = ] (cPosition landingPosition)
-					{
-						game->setLandingPosition (landingPosition);
-
-						game->start (*application);
-
-						windowLandingPositionSelection->close();
-						windowLandingUnitSelection->close();
-						windowMapSelection->close();
-						windowGameSettings->close();
-					});
-				});
-			}
-		});
+    windowGameSettings->done.connect ([this]()
+    {
+        game->setGameSettings (std::make_shared<cGameSettings> (windowGameSettings->getGameSettings()));
+        stateSelectMap();
 	});
+
+    application->show (windowGameSettings);
 }
 
 //------------------------------------------------------------------------------
 void cWindowSinglePlayer::loadGameClicked()
 {
-	if (!getActiveApplication()) return;
+    if (!getActiveApplication())
+        return;
 
-	auto application = getActiveApplication();
+    application = getActiveApplication();
 
-	auto windowLoad = getActiveApplication()->show (std::make_shared<cWindowLoad> ());
-	windowLoad->load.connect ([ = ] (const cSaveGameInfo& saveInfo)
+    windowLoad.reset(new cWindowLoad());
+    windowLoad->load.connect ([this] (const cSaveGameInfo& saveInfo)
 	{
-		auto game = std::make_shared<cLocalSingleplayerGameSaved> ();
-		game->setSaveGameNumber (saveInfo.number);
+        auto game = std::make_shared<cLocalSingleplayerGameSaved>(saveInfo.number);
+
 		try
 		{
 			game->start(*application);
@@ -258,9 +186,113 @@ void cWindowSinglePlayer::loadGameClicked()
 			return;
 		}
 
-
 		windowLoad->close();
 	});
+
+    application->show (windowLoad);
+}
+
+void cWindowSinglePlayer::stateSelectMap()
+{
+    windowMapSelection.reset(new cWindowMapSelection());
+    windowMapSelection->done.connect ([this]()
+    {
+        auto gameSettings = game->getGameSettings();
+        auto staticMap = std::make_shared<cStaticMap>();
+
+        if (!windowMapSelection->loadSelectedMap (*staticMap))
+        {
+            // TODO: error dialog: could not load selected map!
+            return;
+        }
+
+        game->setStaticMap (staticMap);
+
+        if (gameSettings->getClansEnabled())
+        {
+            this->stateSelectClan();
+        }
+        else
+        {
+            auto config = game->getLandingConfig();
+            this->stateSetupUnits();
+        }
+    });
+
+    application->show(windowMapSelection);
+}
+
+void cWindowSinglePlayer::stateSelectClan()
+{
+    windowClanSelection.reset(new cWindowClanSelection(game->getUnitsData(), game->getClanData()));
+
+    signalConnectionManager.connect (windowClanSelection->canceled, [this]() { windowClanSelection->close(); });
+    windowClanSelection->done.connect ([this]()
+    {
+        auto gameSettings = game->getGameSettings();
+        int clan = windowClanSelection->getSelectedClan();
+        game->setPlayerClan (clan);
+
+        stateSetupUnits();
+    });
+
+    application->show(windowClanSelection);
+}
+
+void cWindowSinglePlayer::stateSetupUnits()
+{
+    auto gameSettings = game->getGameSettings();
+    auto config = game->getLandingConfig();
+    createInitial(*config, -1, *gameSettings, *game->getUnitsData());
+
+    windowLandingUnitSelection.reset(
+            new cWindowLandingUnitSelection(
+                    cPlayerColor(),
+                    windowClanSelection->getSelectedClan(),
+                    *config,
+                    gameSettings->getStartCredits(),
+                    game->getUnitsData()));
+
+    signalConnectionManager.connect (windowLandingUnitSelection->canceled,
+                                     [this]() { windowLandingUnitSelection->close(); });
+    windowLandingUnitSelection->done.connect ([this]()
+    {
+        windowLandingUnitSelection->updateConfig(game->getLandingConfig());
+        stateSelectLanding();
+    });
+
+    application->show (windowLandingUnitSelection);
+}
+
+void cWindowSinglePlayer::stateSelectLanding()
+{
+    auto gameSettings = game->getGameSettings();
+    bool fixedBridgeHead = gameSettings->getBridgeheadType() == eGameSettingsBridgeheadType::Definite;
+    //auto landingUnits = windowLandingUnitSelection->getLandingUnits();
+    auto unitsdata = game->getUnitsData();
+
+    windowLandingPositionSelection.reset(new cWindowLandingPositionSelection(
+                    game->getStaticMap(),
+                    fixedBridgeHead,
+                    game->getLandingConfig(),
+                    unitsdata, false));
+
+    signalConnectionManager.connect (windowLandingPositionSelection->canceled,
+                                     [this]() { windowLandingPositionSelection->close(); });
+
+    windowLandingPositionSelection->selectedPosition.connect([this] (cPosition landingPosition)
+    {
+        game->getLandingConfig()->landingPosition = landingPosition;
+        game->start (*application);
+
+        windowLandingPositionSelection->close();
+        windowLandingUnitSelection->close();
+        if(windowClanSelection)
+            windowClanSelection->close();
+        windowMapSelection->close();
+        windowGameSettings->close();
+    });
+    application->show (windowLandingPositionSelection);
 }
 
 //------------------------------------------------------------------------------

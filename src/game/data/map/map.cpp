@@ -905,7 +905,7 @@ void cMap::addBuilding (cBuilding& building, const cPosition& position)
 	// We are iterating all over every position inside the building
 	for(int y = 0; y < size; y++)
 	{
-		for(int x = 0; x < size; i++)
+		for(int x = 0; x < size; x++, i++)
 		{
 			auto& field = getField (position.relative(x,y));
 			i = 0;
@@ -1108,7 +1108,8 @@ bool cMap::possiblePlace (const cVehicle& vehicle, const cPosition& position, bo
 
 bool cMap::possiblePlaceVehicle (const cStaticUnitData& vehicleData, const cPosition& position, const cPlayer* player, bool ignoreMovingVehicles) const
 {
-	if (isValidPosition (position) == false) return false;
+	if (isValidPosition (position) == false)
+		return false;
 	const auto field = cMapFieldView(getField(position), staticMap->getTerrain(position), player);
 
 	const std::vector<cBuilding*> buildings = field.getBuildings();
@@ -1116,16 +1117,19 @@ bool cMap::possiblePlaceVehicle (const cStaticUnitData& vehicleData, const cPosi
 	std::vector<cBuilding*>::const_iterator b_end = buildings.end();
 
 	//search first building, that is not a connector
-	if (b_it != b_end && (*b_it)->getStaticUnitData().surfacePosition == cStaticUnitData::SURFACE_POS_ABOVE) ++b_it;
+	if (b_it != b_end && (*b_it)->getStaticUnitData().surfacePosition == cStaticUnitData::SURFACE_POS_ABOVE)
+		++b_it;
 
 	if (vehicleData.factorAir > 0)
 	{
-		if (player && !player->canSeeAt (position)) return true;
+		if (player && !player->canSeeAt (position))
+			return true;
 
 		const auto& planes = field.getPlanes();
 		if (!ignoreMovingVehicles)
 		{
-			if (planes.size() >= MAX_PLANES_PER_FIELD) return false;
+			if (planes.size() >= MAX_PLANES_PER_FIELD)
+				return false;
 		}
 		else
 		{
@@ -1137,12 +1141,14 @@ bool cMap::possiblePlaceVehicle (const cStaticUnitData& vehicleData, const cPosi
 					notMovingPlanes++;
 				}
 			}
-			if (notMovingPlanes >= MAX_PLANES_PER_FIELD) return false;
+			if (notMovingPlanes >= MAX_PLANES_PER_FIELD)
+				return false;
 		}
 	}
 	if (vehicleData.factorGround > 0)
 	{
-		if (isBlocked (position)) return false;
+		if (isBlocked (position))
+			return false;
 
 		if ((isWater (position) && vehicleData.factorSea == 0) ||
 			(isCoast (position) && vehicleData.factorCoast == 0))
@@ -1150,10 +1156,13 @@ bool cMap::possiblePlaceVehicle (const cStaticUnitData& vehicleData, const cPosi
 			if (player && !player->canSeeAt (position)) return false;
 
 			//vehicle can drive on water, if there is a bridge, platform or road
-			if (b_it == b_end) return false;
-			if ((*b_it)->getStaticUnitData().surfacePosition != cStaticUnitData::SURFACE_POS_ABOVE_SEA &&
-				(*b_it)->getStaticUnitData().surfacePosition != cStaticUnitData::SURFACE_POS_BASE &&
-				(*b_it)->getStaticUnitData().surfacePosition != cStaticUnitData::SURFACE_POS_ABOVE_BASE) return false;
+			if (b_it == b_end)
+				return false;
+			auto surfacePosition = (*b_it)->getStaticUnitData().surfacePosition;
+			if (surfacePosition != cStaticUnitData::SURFACE_POS_ABOVE_SEA &&
+					surfacePosition != cStaticUnitData::SURFACE_POS_BASE &&
+					surfacePosition != cStaticUnitData::SURFACE_POS_ABOVE_BASE)
+				return false;
 		}
 		//check for enemy mines
 		if (player &&
@@ -1175,11 +1184,13 @@ bool cMap::possiblePlaceVehicle (const cStaticUnitData& vehicleData, const cPosi
 		{
 			// only base buildings and rubble is allowed on the same field with a vehicle
 			// (connectors have been skiped, so doesn't matter here)
-			if ((*b_it)->getStaticUnitData().surfacePosition != cStaticUnitData::SURFACE_POS_ABOVE_SEA &&
-				(*b_it)->getStaticUnitData().surfacePosition != cStaticUnitData::SURFACE_POS_BASE &&
-				(*b_it)->getStaticUnitData().surfacePosition != cStaticUnitData::SURFACE_POS_ABOVE_BASE &&
-				(*b_it)->getStaticUnitData().surfacePosition != cStaticUnitData::SURFACE_POS_BENEATH_SEA &&
-				!(*b_it)->isRubble()) return false;
+			auto surfacePosition = (*b_it)->getStaticUnitData().surfacePosition;
+			if (surfacePosition != cStaticUnitData::SURFACE_POS_ABOVE_SEA &&
+					surfacePosition != cStaticUnitData::SURFACE_POS_BASE &&
+					surfacePosition != cStaticUnitData::SURFACE_POS_ABOVE_BASE &&
+					surfacePosition != cStaticUnitData::SURFACE_POS_BENEATH_SEA &&
+					!(*b_it)->isRubble())
+				return false;
 		}
 	}
 	else if (vehicleData.factorSea > 0)

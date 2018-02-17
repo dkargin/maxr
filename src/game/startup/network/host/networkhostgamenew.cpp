@@ -30,7 +30,9 @@
 //------------------------------------------------------------------------------
 cNetworkHostGameNew::cNetworkHostGameNew() :
 	localPlayerClan (-1)
-{}
+{
+    landingConfig.reset(new sLandingConfig());
+}
 
 //------------------------------------------------------------------------------
 void cNetworkHostGameNew::start (cApplication& application)
@@ -60,18 +62,16 @@ void cNetworkHostGameNew::start (cApplication& application)
 	server->start();
 
 	cActionInitNewGame action;
-	action.clan = localPlayerClan;
-	action.landingUnits = localPlayerLandingUnits;
-	action.landingPosition = localPlayerLandingPosition;
-	action.unitUpgrades = localPlayerUnitUpgrades;
-	localClient->sendNetMessage(action);
+    action.landingConfig = *this->landingConfig;
+    action.landingConfig.clan = localPlayerClan;
+    localClient->sendNetMessage(action);
 
 	gameGuiController = std::make_unique<cGameGuiController> (application, staticMap);
 	gameGuiController->setSingleClient(localClient);
 	gameGuiController->setServer(server.get());
 
 	cGameGuiState playerGameGuiState;
-	playerGameGuiState.setMapPosition (localPlayerLandingPosition);
+    playerGameGuiState.setMapPosition (landingConfig->landingPosition);
 	gameGuiController->addPlayerGameGuiState (localPlayerNr, std::move (playerGameGuiState));
 
 	gameGuiController->start();
@@ -111,19 +111,19 @@ void cNetworkHostGameNew::setLocalPlayerClan (int clan)
 //------------------------------------------------------------------------------
 void cNetworkHostGameNew::setLocalPlayerLandingUnits (std::vector<sLandingUnit> landingUnits_)
 {
-	localPlayerLandingUnits = std::move (landingUnits_);
+    landingConfig->landingUnits = std::move (landingUnits_);
 }
 
 //------------------------------------------------------------------------------
 void cNetworkHostGameNew::setLocalPlayerUnitUpgrades (std::vector<std::pair<sID, cUnitUpgrade>> unitUpgrades_)
 {
-	localPlayerUnitUpgrades = std::move (unitUpgrades_);
+    landingConfig->unitUpgrades = std::move (unitUpgrades_);
 }
 
 //------------------------------------------------------------------------------
 void cNetworkHostGameNew::setLocalPlayerLandingPosition (const cPosition& landingPosition_)
 {
-	localPlayerLandingPosition = landingPosition_;
+    landingConfig->landingPosition = landingPosition_;
 }
 
 //------------------------------------------------------------------------------
@@ -150,12 +150,18 @@ const cPlayerBasicData& cNetworkHostGameNew::getLocalPlayer()
 	return *std::find_if(players.begin(), players.end(), [&](const cPlayerBasicData& player) { return player.getNr() == localPlayerNr; });
 }
 
+std::shared_ptr<sLandingConfig>& cNetworkHostGameNew::getLandingConfig()
+{
+    return this->landingConfig;
+}
+
 //------------------------------------------------------------------------------
+/*
 const std::vector<sLandingUnit>& cNetworkHostGameNew::getLandingUnits()
 {
 	return localPlayerLandingUnits;
 }
-
+*/
 //------------------------------------------------------------------------------
 int cNetworkHostGameNew::getLocalPlayerClan() const
 {

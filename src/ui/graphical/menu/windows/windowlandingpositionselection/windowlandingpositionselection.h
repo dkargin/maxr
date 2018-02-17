@@ -40,12 +40,16 @@ class cLobbyChatBoxListViewItem;
 
 struct sTerrain;
 struct sLandingUnit;
+struct sLandingConfig;
 class cUnitsData;
 
 class cWindowLandingPositionSelection : public cWindow
 {
 public:
-	cWindowLandingPositionSelection (std::shared_ptr<cStaticMap> staticMap, bool fixedBridgeHead, const std::vector<sLandingUnit>& landingUnits, std::shared_ptr<const cUnitsData> unitsdata, bool withChatBox);
+    cWindowLandingPositionSelection (std::shared_ptr<cStaticMap> staticMap,
+                                     bool fixedBridgeHead,
+                                     const std::shared_ptr<sLandingConfig>& landingConfig,
+                                     std::shared_ptr<const cUnitsData> unitsdata, bool withChatBox);
 	~cWindowLandingPositionSelection();
 
 	const cPosition& getSelectedPosition() const;

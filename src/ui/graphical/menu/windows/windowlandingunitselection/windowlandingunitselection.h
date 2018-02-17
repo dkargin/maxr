@@ -33,19 +33,27 @@ class cUnitUpgrade;
 class cUnitListViewItemCargo;
 struct sID;
 struct sLandingUnit;
+struct sLandingConfig;
 class cUnitsData;
 
 class cWindowLandingUnitSelection : public cWindowAdvancedHangar<cUnitListViewItemCargo>
 {
 public:
-	cWindowLandingUnitSelection (cPlayerColor playerColor, int playerClan, const std::vector<std::pair<sID, int>>& initialUnits, unsigned int initialGold, std::shared_ptr<const cUnitsData> unitsData);
+    cWindowLandingUnitSelection (
+            cPlayerColor playerColor,
+            int playerClan,
+            const sLandingConfig& landingConfig,
+            unsigned int initialGold,
+            std::shared_ptr<const cUnitsData> unitsData);
+
 	~cWindowLandingUnitSelection();
 
-	std::vector<sLandingUnit> getLandingUnits() const;
-
-	std::vector<std::pair<sID, cUnitUpgrade>> getUnitUpgrades() const;
-
+    // Fill in updated data to landing config
+    void updateConfig(std::shared_ptr<sLandingConfig> landingConfig) const;
 protected:
+    std::vector<sLandingUnit> getLandingUnits() const;
+    std::vector<std::pair<sID, cUnitUpgrade>> getUnitUpgrades() const;
+
 	virtual bool tryAddSelectedUnit (const cUnitListViewItemBuy& unitItem) const MAXR_OVERRIDE_FUNCTION;
 	virtual bool tryRemoveSelectedUnit (const cUnitListViewItemCargo& unitItem) const MAXR_OVERRIDE_FUNCTION;
 

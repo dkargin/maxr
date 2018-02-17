@@ -22,7 +22,6 @@
 
 #include "action.h"
 #include "game/data/units/landingunit.h"
-#include "game/logic/upgradecalculator.h"
 #include "utility/position.h"
 
 class cVehicle;
@@ -39,24 +38,23 @@ public:
 	virtual void serialize(cTextArchiveIn& archive)   { cAction::serialize(archive); serializeThis(archive); }
 
 	virtual void execute(cModel& model) const override;
-	static bool isValidLandingPosition(cPosition position, std::shared_ptr<cStaticMap> map, bool fixedBridgeHead, const std::vector<sLandingUnit>& units, std::shared_ptr<const cUnitsData> unitsData);
 
-	std::vector<sLandingUnit> landingUnits;
-	int clan;
-	std::vector<std::pair<sID, cUnitUpgrade>> unitUpgrades;
-	cPosition landingPosition;
+	static bool isValidLandingPosition(cPosition position, const cStaticMap& map, bool fixedBridgeHead, const sLandingConfig& landingConfig, const cUnitsData& unitsData);
+
+    sLandingConfig landingConfig;
 private:
 	template<typename T>
 	void serializeThis(T& archive)
 	{
-		archive & landingUnits;
-		archive & clan;
-		archive & unitUpgrades;
-		archive & landingPosition;
+		archive & landingConfig;
 	}
-	void makeLanding(cPlayer& player, const std::vector<sLandingUnit>& landingUnits, cModel& model) const;
+
+	void makeLanding(cPlayer& player, const sLandingConfig& landingConfig, cModel& model) const;
+
 	cVehicle* landVehicle(const cPosition& landingPosition, int radius, const sID& id, cPlayer& player, cModel& model) const;
-	static bool findPositionForStartMine(cPosition& position, std::shared_ptr<const cUnitsData> unitsData, std::shared_ptr<const cStaticMap> map);
+
+	//static bool findPositionForStartMine(cPosition& position, const cUnitsData& unitsData, const cStaticMap& map);
+	static bool findPositionForLayout(cPosition& position, const std::list<cLayoutItem>& layout, const cStaticMap& map, int maxRadius = 2);
 };
 
 

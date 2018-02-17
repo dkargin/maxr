@@ -20,19 +20,81 @@
 #ifndef game_data_units_landingunitH
 #define game_data_units_landingunitH
 
+#include <list>
+#include <vector>
+
 #include "main.h" // sID
+#include "game/logic/upgradecalculator.h"
+#include "utility/position.h"
+
 
 struct sLandingUnit
 {
 	sID unitID;
 	unsigned cargo;
+	cPosition position;
+
+    static sLandingUnit make(sID id, unsigned cargo)
+    {
+        sLandingUnit unit;
+        unit.unitID = id;
+        unit.cargo = cargo;
+        unit.position = cPosition(0,0);
+        return unit;
+    }
 
 	template<typename T>
 	void serialize(T& archive)
 	{
 		archive & unitID;
 		archive & cargo;
+		archive & position;
 	}
 };
+
+
+struct cLayoutItem
+{
+	cPosition pos;
+	const cStaticUnitData* data;
+
+	template<typename T>
+	void serialize(T& archive)
+	{
+		archive & pos;
+		archive & data->ID;
+	}
+};
+
+// Contains the data for embark
+struct sLandingConfig
+{
+    // Landing state
+    int state = 0;
+	// Units that player have picked
+	std::vector<sLandingUnit> landingUnits;
+	// Selected clan
+    int clan = -1;
+    // Upgrades that player has picked
+    // TODO: should it be here?
+	std::vector<std::pair<sID, cUnitUpgrade>> unitUpgrades;
+	cPosition landingPosition;
+
+	// Initial layout of the base. Should be filled in XML
+    std::list<cLayoutItem> baseLayout;
+
+	template<typename T>
+	void serialize(T& archive)
+	{
+		archive & landingUnits;
+		archive & landingPosition;
+		archive & unitUpgrades;
+		//archive & baseLayout;
+	}
+};
+
+class cGameSettings;
+// Creates initial landing config
+void createInitial(sLandingConfig& config, int clan, const cGameSettings& gameSettings, const cUnitsData& unitsData);
 
 #endif // game_data_units_landingunitH

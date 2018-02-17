@@ -32,7 +32,7 @@
 #include "ui/graphical/menu/widgets/special/unitlistviewitemcargo.h"
 
 //------------------------------------------------------------------------------
-cWindowLandingUnitSelection::cWindowLandingUnitSelection (cPlayerColor playerColor, int playerClan, const std::vector<std::pair<sID, int>>& initialUnits, unsigned int initialGold, std::shared_ptr<const cUnitsData> unitsData) :
+cWindowLandingUnitSelection::cWindowLandingUnitSelection (cPlayerColor playerColor, int playerClan, const sLandingConfig& landingConfig, unsigned int initialGold, std::shared_ptr<const cUnitsData> unitsData) :
 	cWindowAdvancedHangar<cUnitListViewItemCargo> (LoadPCX (GFXOD_HANGAR), unitsData, playerColor, playerClan),
 	selectedCargoUnit (nullptr)
 {
@@ -111,10 +111,10 @@ cWindowLandingUnitSelection::cWindowLandingUnitSelection (cPlayerColor playerCol
 	// Initialization
 	//
 
-	for (size_t i = 0; i < initialUnits.size(); ++i)
+    for (const auto& item : landingConfig.landingUnits)
 	{
-		auto& addedItem = addSelectedUnit (initialUnits[i].first);
-		addedItem.setCargo (initialUnits[i].second);
+        auto& addedItem = addSelectedUnit (item.unitID);
+        addedItem.setCargo (item.cargo);
 		fixedSelectedUnits.push_back (&addedItem);
 	}
 
@@ -149,6 +149,15 @@ std::vector<sLandingUnit> cWindowLandingUnitSelection::getLandingUnits() const
 	return result;
 }
 
+void cWindowLandingUnitSelection::updateConfig(std::shared_ptr<sLandingConfig> config) const
+{
+    config->landingUnits = getLandingUnits();
+    config->unitUpgrades = getUnitUpgrades();
+
+   //game->setLandingUnits (playerIndex, windowLandingUnitSelection->getLandingUnits());
+   //game->setUnitUpgrades (playerIndex, windowLandingUnitSelection->getUnitUpgrades());
+   //game->setLandingConfig(playerIndex, landingConfig);
+}
 //------------------------------------------------------------------------------
 std::vector<std::pair<sID, cUnitUpgrade>> cWindowLandingUnitSelection::getUnitUpgrades() const
 {

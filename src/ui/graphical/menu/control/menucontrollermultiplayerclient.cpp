@@ -279,9 +279,13 @@ void cMenuControllerMultiplayerClient::startLandingUnitSelection(bool isFirstWin
 {
 	if (!newGame || !newGame->getGameSettings()) return;
 
-	auto initialLandingUnits = createInitialLandingUnitsList (newGame->getLocalPlayerClan(), *newGame->getGameSettings(), *newGame->getUnitsData());
+    auto config = newGame->getLandingConfig();
+    createInitial(*config, newGame->getLocalPlayerClan(), *newGame->getGameSettings(), *newGame->getUnitsData());
 
-	auto windowLandingUnitSelection = application.show (std::make_shared<cWindowLandingUnitSelection> (cPlayerColor(), newGame->getLocalPlayerClan(), initialLandingUnits, newGame->getGameSettings()->getStartCredits(), newGame->getUnitsData()));
+    auto windowLandingUnitSelection = std::make_shared<cWindowLandingUnitSelection> (
+                cPlayerColor(), newGame->getLocalPlayerClan(), *config, newGame->getGameSettings()->getStartCredits(), newGame->getUnitsData());
+
+    application.show (windowLandingUnitSelection);
 
 	signalConnectionManager.connect (windowLandingUnitSelection->canceled, [this, windowLandingUnitSelection, isFirstWindowOnGamePreparation]()
 	{
@@ -296,9 +300,6 @@ void cMenuControllerMultiplayerClient::startLandingUnitSelection(bool isFirstWin
 	});
 	signalConnectionManager.connect (windowLandingUnitSelection->done, [this, windowLandingUnitSelection]()
 	{
-		newGame->setLocalPlayerLandingUnits (windowLandingUnitSelection->getLandingUnits());
-		newGame->setLocalPlayerUnitUpgrades (windowLandingUnitSelection->getUnitUpgrades());
-
 		startLandingPositionSelection();
 	});
 }
@@ -310,9 +311,10 @@ void cMenuControllerMultiplayerClient::startLandingPositionSelection()
 
 	auto& map = newGame->getStaticMap();
 	bool fixedBridgeHead = newGame->getGameSettings()->getBridgeheadType() == eGameSettingsBridgeheadType::Definite;
-	auto& landingUnits = newGame->getLandingUnits();
+    auto landingConfig = newGame->getLandingConfig();
 	auto unitsData = newGame->getUnitsData();
-	windowLandingPositionSelection = std::make_shared<cWindowLandingPositionSelection> (map, fixedBridgeHead, landingUnits, unitsData, true);
+
+    windowLandingPositionSelection = std::make_shared<cWindowLandingPositionSelection> (map, fixedBridgeHead, landingConfig, unitsData, true);
 
 	signalConnectionManager.connect (windowLandingPositionSelection->opened, [this]()
 	{

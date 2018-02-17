@@ -48,9 +48,6 @@
 #include "utility/string/toString.h"
 #include "game/logic/action/action.h"
 
-// TODO: remove
-std::vector<std::pair<sID, int>> createInitialLandingUnitsList(int clan, const cGameSettings& gameSettings, const cUnitsData& unitsData); // defined in windowsingleplayer.cpp
-
 //------------------------------------------------------------------------------
 cMenuControllerMultiplayerHost::cMenuControllerMultiplayerHost (cApplication& application_) :
 	application (application_),
@@ -506,9 +503,13 @@ void cMenuControllerMultiplayerHost::startLandingUnitSelection(bool isFirstWindo
 {
 	if (!newGame || !newGame->getGameSettings()) return;
 
-	auto initialLandingUnits = createInitialLandingUnitsList (newGame->getLocalPlayerClan(), *newGame->getGameSettings(), *newGame->getUnitsData());
+    auto config = newGame->getLandingConfig();
+    createInitial(*config, newGame->getLocalPlayerClan(), *newGame->getGameSettings(), *newGame->getUnitsData());
 
-	auto windowLandingUnitSelection = application.show (std::make_shared<cWindowLandingUnitSelection> (cPlayerColor(), newGame->getLocalPlayerClan(), initialLandingUnits, newGame->getGameSettings()->getStartCredits(), newGame->getUnitsData()));
+    auto windowLandingUnitSelection = std::make_shared<cWindowLandingUnitSelection> (
+                cPlayerColor(), newGame->getLocalPlayerClan(), *config, newGame->getGameSettings()->getStartCredits(), newGame->getUnitsData());
+
+    application.show (windowLandingUnitSelection);
 
 	signalConnectionManager.connect (windowLandingUnitSelection->canceled, [this, windowLandingUnitSelection, isFirstWindowOnGamePreparation]()
 	{
@@ -523,8 +524,10 @@ void cMenuControllerMultiplayerHost::startLandingUnitSelection(bool isFirstWindo
 	});
 	signalConnectionManager.connect (windowLandingUnitSelection->done, [this, windowLandingUnitSelection]()
 	{
-		newGame->setLocalPlayerLandingUnits (windowLandingUnitSelection->getLandingUnits());
-		newGame->setLocalPlayerUnitUpgrades (windowLandingUnitSelection->getUnitUpgrades());
+        auto config = newGame->getLandingConfig();
+        windowLandingUnitSelection->updateConfig(config);
+        //newGame->setLocalPlayerLandingUnits (windowLandingUnitSelection->getLandingUnits());
+        //newGame->setLocalPlayerUnitUpgrades (windowLandingUnitSelection->getUnitUpgrades());
 
 		startLandingPositionSelection();
 	});
@@ -537,9 +540,9 @@ void cMenuControllerMultiplayerHost::startLandingPositionSelection()
 
 	auto& map = newGame->getStaticMap();
 	bool fixedBridgeHead = newGame->getGameSettings()->getBridgeheadType() == eGameSettingsBridgeheadType::Definite;
-	auto& landingUnits = newGame->getLandingUnits();
+    auto landingConfig = newGame->getLandingConfig();
 	auto unitsData = newGame->getUnitsData();
-	windowLandingPositionSelection = std::make_shared<cWindowLandingPositionSelection>(map, fixedBridgeHead, landingUnits, unitsData, true);
+    windowLandingPositionSelection = std::make_shared<cWindowLandingPositionSelection>(map, fixedBridgeHead, landingConfig, unitsData, true);
 
 	application.show (windowLandingPositionSelection);
 

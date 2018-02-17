@@ -29,11 +29,11 @@
 #include "game/logic/action/actioninitnewgame.h"
 
 //------------------------------------------------------------------------------
-cLandingPositionSelectionMap::cLandingPositionSelectionMap(const cBox<cPosition>& area, std::shared_ptr<cStaticMap> map_, bool fixedBridgeHead, const std::vector<sLandingUnit>& landingUnits, std::shared_ptr<const cUnitsData> unitsData) :
+cLandingPositionSelectionMap::cLandingPositionSelectionMap(const cBox<cPosition>& area, std::shared_ptr<cStaticMap> map_, bool fixedBridgeHead, std::shared_ptr<sLandingConfig> landingConfig, std::shared_ptr<const cUnitsData> unitsData) :
 	cClickableWidget (area),
 	map (std::move (map_)),
 	fixedBridgeHead(fixedBridgeHead),
-	landingUnits(landingUnits),
+	landingConfig(landingConfig),
 	unitsData(unitsData)
 {
 	mapSurface = map->createBigSurface (getSize().x(), getSize().y());
@@ -82,5 +82,5 @@ bool cLandingPositionSelectionMap::handleMouseMoved (cApplication& application, 
 //------------------------------------------------------------------------------
 bool cLandingPositionSelectionMap::isValidLandingLocation(const cPosition& position)
 {
-	return cActionInitNewGame::isValidLandingPosition(position, map, fixedBridgeHead, landingUnits, unitsData);
+    return cActionInitNewGame::isValidLandingPosition(position, *map, fixedBridgeHead, *landingConfig, *unitsData);
 }

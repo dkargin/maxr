@@ -43,7 +43,10 @@
 
 
 //------------------------------------------------------------------------------
-cWindowLandingPositionSelection::cWindowLandingPositionSelection(std::shared_ptr<cStaticMap> staticMap_, bool fixedBridgeHead, const std::vector<sLandingUnit>& landingUnits, std::shared_ptr<const cUnitsData> unitsData, bool withChatBox) :
+cWindowLandingPositionSelection::cWindowLandingPositionSelection(std::shared_ptr<cStaticMap> staticMap_,
+                                                                 bool fixedBridgeHead,
+                                                                 const std::shared_ptr<sLandingConfig>& landingConfig,
+                                                                 std::shared_ptr<const cUnitsData> unitsData, bool withChatBox) :
 	cWindow (nullptr),
 	staticMap (std::move (staticMap_)),
 	animationTimer (std::make_shared<cAnimationTimer> ()),
@@ -56,7 +59,12 @@ cWindowLandingPositionSelection::cWindowLandingPositionSelection(std::shared_ptr
 	auto hudImageOwned = std::make_unique<cImage> (cPosition (0, 0), createHudSurface().get());
 	hudImageOwned->disableAtTransparent();
 
-	mapWidget = addChild (std::make_unique<cLandingPositionSelectionMap> (cBox<cPosition> (cPosition (cHud::panelLeftWidth, cHud::panelTopHeight), hudImageOwned->getEndPosition() - cPosition (cHud::panelRightWidth, cHud::panelBottomHeight)), staticMap, fixedBridgeHead, landingUnits, unitsData));
+	cBox<cPosition> mapWidgetRect(
+			cPosition (cHud::panelLeftWidth, cHud::panelTopHeight),
+			hudImageOwned->getEndPosition() - cPosition (cHud::panelRightWidth, cHud::panelBottomHeight));
+
+    auto landingSelection = std::make_unique<cLandingPositionSelectionMap>(mapWidgetRect, staticMap, fixedBridgeHead, landingConfig, unitsData);
+	mapWidget = addChild (std::move(landingSelection));
 	signalConnectionManager.connect (mapWidget->clickedTile, std::bind (&cWindowLandingPositionSelection::mapClicked, this, _1));
 
 	circlesImage = addChild (std::make_unique<cImage> (cPosition (cHud::panelLeftWidth, cHud::panelTopHeight)));

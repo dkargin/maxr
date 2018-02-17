@@ -91,7 +91,7 @@ void cLocalHotSeatGameNew::start (cApplication& application)
 //		sendReadyToStart (*clients[i]);
 
 		cGameGuiState gameGuiState;
-		gameGuiState.setMapPosition (playersData[i].landingPosition);
+        gameGuiState.setMapPosition (playersData[i].config->landingPosition);
 		gameGuiController->addPlayerGameGuiState (clientPlayer.getId(), gameGuiState);
 	}
 
@@ -131,31 +131,27 @@ void cLocalHotSeatGameNew::setPlayers (const std::vector<cPlayerBasicData>& play
 	for (size_t i = 0; i < players.size(); ++i)
 	{
 		playersData[i].basicData = players[i];
+        playersData[i].config.reset(new sLandingConfig());
 	}
 }
 
 //------------------------------------------------------------------------------
 void cLocalHotSeatGameNew::setPlayerClan (size_t playerIndex, int clan)
 {
-	playersData[playerIndex].clan = clan;
+    playersData[playerIndex].config->clan = clan;
 }
 
-//------------------------------------------------------------------------------
-void cLocalHotSeatGameNew::setLandingUnits (size_t playerIndex, std::vector<sLandingUnit> landingUnits_)
-{
-	playersData[playerIndex].landingUnits = std::move (landingUnits_);
-}
 
-//------------------------------------------------------------------------------
-void cLocalHotSeatGameNew::setUnitUpgrades (size_t playerIndex, std::vector<std::pair<sID, cUnitUpgrade>> unitUpgrades_)
+/*
+void cLocalHotSeatGameNew::setLandingConfig(size_t playerIndex, std::shared_ptr<sLandingConfig> config)
 {
-	playersData[playerIndex].unitUpgrades = std::move (unitUpgrades_);
-}
+    playersData[playerIndex].config = config;
+}*/
 
 //------------------------------------------------------------------------------
 void cLocalHotSeatGameNew::setLandingPosition (size_t playerIndex, const cPosition& landingPosition_)
 {
-	playersData[playerIndex].landingPosition = landingPosition_;
+    playersData[playerIndex].config->landingPosition = landingPosition_;
 }
 
 //------------------------------------------------------------------------------
@@ -173,7 +169,12 @@ const std::shared_ptr<cGameSettings>& cLocalHotSeatGameNew::getGameSettings()
 //------------------------------------------------------------------------------
 const std::vector<sLandingUnit>& cLocalHotSeatGameNew::getLandingUnits(size_t playerIndex)
 {
-	return playersData[playerIndex].landingUnits;
+    return playersData[playerIndex].config->landingUnits;
+}
+
+std::shared_ptr<sLandingConfig> cLocalHotSeatGameNew::getLandingConfig(size_t playerIndex)
+{
+    return playersData[playerIndex].config;
 }
 
 //------------------------------------------------------------------------------
@@ -191,5 +192,5 @@ const cPlayerBasicData& cLocalHotSeatGameNew::getPlayer (size_t playerIndex) con
 //------------------------------------------------------------------------------
 int cLocalHotSeatGameNew::getPlayerClan (size_t playerIndex) const
 {
-	return playersData[playerIndex].clan;
+    return playersData[playerIndex].config->clan;
 }

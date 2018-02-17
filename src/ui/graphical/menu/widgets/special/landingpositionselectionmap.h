@@ -27,12 +27,13 @@
 
 class cStaticMap;
 struct sLandingUnit;
+struct sLandingConfig;
 class cUnitsData;
 
 class cLandingPositionSelectionMap : public cClickableWidget
 {
 public:
-	cLandingPositionSelectionMap(const cBox<cPosition>& area, std::shared_ptr<cStaticMap> map, bool fixedBridgeHead, const std::vector<sLandingUnit>& landingUnits, std::shared_ptr<const cUnitsData> unitsData);
+	cLandingPositionSelectionMap(const cBox<cPosition>& area, std::shared_ptr<cStaticMap> map, bool fixedBridgeHead, std::shared_ptr<sLandingConfig> landingConfig, std::shared_ptr<const cUnitsData> unitsData);
 
 	virtual void draw (SDL_Surface& destination, const cBox<cPosition>& clipRect) MAXR_OVERRIDE_FUNCTION;
 
@@ -47,7 +48,8 @@ private:
 
 	std::shared_ptr<cStaticMap> map;
 	bool fixedBridgeHead;
-	const std::vector<sLandingUnit> landingUnits;
+
+	std::shared_ptr<sLandingConfig> landingConfig;
 	std::shared_ptr<const cUnitsData> unitsData;
 
 	bool isValidLandingLocation(const cPosition& position);

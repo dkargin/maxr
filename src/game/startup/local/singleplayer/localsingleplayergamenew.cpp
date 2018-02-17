@@ -31,9 +31,10 @@
 #include "game/logic/action/actioninitnewgame.h"
 
 //------------------------------------------------------------------------------
-cLocalSingleplayerGameNew::cLocalSingleplayerGameNew() :
-	playerClan (-1)
-{}
+cLocalSingleplayerGameNew::cLocalSingleplayerGameNew()
+{
+    landingConfig.reset(new sLandingConfig());
+}
 
 //------------------------------------------------------------------------------
 void cLocalSingleplayerGameNew::start (cApplication& application)
@@ -65,10 +66,9 @@ void cLocalSingleplayerGameNew::start (cApplication& application)
 	server->start();
 
 	cActionInitNewGame action;
-	action.clan = playerClan;
-	action.landingUnits = landingUnits;
-	action.landingPosition = landingPosition;
-	action.unitUpgrades = unitUpgrades;
+    action.landingConfig.landingUnits = landingConfig->landingUnits;
+    action.landingConfig.landingPosition = landingConfig->landingPosition;
+    action.landingConfig.unitUpgrades = landingConfig->unitUpgrades;
 	client->sendNetMessage(action);
 
 	gameGuiController = std::make_unique<cGameGuiController> (application, staticMap);
@@ -77,7 +77,7 @@ void cLocalSingleplayerGameNew::start (cApplication& application)
 	gameGuiController->setServer(server.get());
 
 	cGameGuiState playerGameGuiState;
-	playerGameGuiState.setMapPosition (landingPosition);
+    playerGameGuiState.setMapPosition (landingConfig->landingPosition);
 	gameGuiController->addPlayerGameGuiState (0, std::move (playerGameGuiState));
 
 	gameGuiController->start();
@@ -96,18 +96,31 @@ void cLocalSingleplayerGameNew::setGameSettings (std::shared_ptr<cGameSettings> 
 }
 
 //------------------------------------------------------------------------------
+std::shared_ptr<cGameSettings> cLocalSingleplayerGameNew::getGameSettings()
+{
+    return gameSettings;
+}
+
+//------------------------------------------------------------------------------
 void cLocalSingleplayerGameNew::setStaticMap (std::shared_ptr<cStaticMap> staticMap_)
 {
 	staticMap = staticMap_;
 }
 
 //------------------------------------------------------------------------------
-void cLocalSingleplayerGameNew::setPlayerClan (int clan)
+std::shared_ptr<cStaticMap> cLocalSingleplayerGameNew::getStaticMap ()
 {
-	playerClan = clan;
+    return staticMap;
 }
 
 //------------------------------------------------------------------------------
+void cLocalSingleplayerGameNew::setPlayerClan (int clan)
+{
+    landingConfig->clan = clan;
+}
+
+//------------------------------------------------------------------------------
+/*
 void cLocalSingleplayerGameNew::setLandingUnits (std::vector<sLandingUnit> landingUnits_)
 {
 	landingUnits = std::move (landingUnits_);
@@ -119,12 +132,23 @@ void cLocalSingleplayerGameNew::setUnitUpgrades (std::vector<std::pair<sID, cUni
 	unitUpgrades = std::move (unitUpgrades_);
 }
 
+void cLocalSingleplayerGameNew::setLandingConfig(std::shared_ptr<sLandingConfig> config)
+{
+    this->landingConfig = config;
+}*/
+
+std::shared_ptr<sLandingConfig> cLocalSingleplayerGameNew::getLandingConfig()
+{
+    return landingConfig;
+}
+
+/*
 //------------------------------------------------------------------------------
 void cLocalSingleplayerGameNew::setLandingPosition (const cPosition& landingPosition_)
 {
 	landingPosition = landingPosition_;
 }
-
+*/
 //------------------------------------------------------------------------------
 cPlayerBasicData cLocalSingleplayerGameNew::createPlayer()
 {

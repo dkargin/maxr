@@ -37,7 +37,7 @@ class cPlayer;
 class cPosition;
 class cUnitUpgrade;
 
-struct sLandingUnit;
+struct sLandingConfig;
 struct sID;
 
 class cLocalSingleplayerGameNew : public cLocalSingleplayerGame
@@ -48,16 +48,17 @@ public:
 	void start (cApplication& application);
 
 	void setGameSettings (std::shared_ptr<cGameSettings> gameSettings);
+    std::shared_ptr<cGameSettings> getGameSettings();
 
 	void setStaticMap (std::shared_ptr<cStaticMap> staticMap);
+    std::shared_ptr<cStaticMap> getStaticMap();
 
 	void setPlayerClan (int clan);
 
-	void setLandingUnits (std::vector<sLandingUnit> landingUnits);
+    //void setLandingConfig(std::shared_ptr<sLandingConfig> config);
+    std::shared_ptr<sLandingConfig> getLandingConfig();
 
-	void setUnitUpgrades (std::vector<std::pair<sID, cUnitUpgrade>> unitUpgrades);
-
-	void setLandingPosition (const cPosition& landingPosition);
+    //void setLandingPosition (const cPosition& landingPosition);
 
 	cPlayerBasicData createPlayer();
 private:
@@ -66,10 +67,10 @@ private:
 	std::shared_ptr<cStaticMap> staticMap;
 	std::shared_ptr<cGameSettings> gameSettings;
 
-	int playerClan;
-	std::vector<sLandingUnit> landingUnits;
-	std::vector<std::pair<sID, cUnitUpgrade>> unitUpgrades;
-	cPosition landingPosition;
+    //std::vector<sLandingUnit> landingUnits;
+    //std::vector<std::pair<sID, cUnitUpgrade>> unitUpgrades;
+    std::shared_ptr<sLandingConfig> landingConfig;
+    //cPosition landingPosition;
 };
 
 #endif // game_startup_local_singleplayer_localsingleplayergamenewH

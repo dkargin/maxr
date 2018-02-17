@@ -39,6 +39,7 @@ class cPosition;
 class cUnitUpgrade;
 
 struct sLandingUnit;
+struct sLandingConfig;
 struct sID;
 
 class cNetworkHostGameNew : public cNetworkHostGame
@@ -57,16 +58,16 @@ public:
 	void setLocalPlayerClan (int clan);
 
 	void setLocalPlayerLandingUnits (std::vector<sLandingUnit> landingUnits);
-
 	void setLocalPlayerUnitUpgrades (std::vector<std::pair<sID, cUnitUpgrade>> unitUpgrades);
-
 	void setLocalPlayerLandingPosition (const cPosition& landingPosition);
 
 	const std::shared_ptr<cGameSettings>& getGameSettings();
 	const std::shared_ptr<cStaticMap>& getStaticMap();
 	const std::vector<cPlayerBasicData>& getPlayers();
 	const cPlayerBasicData& getLocalPlayer();
-	const std::vector<sLandingUnit>& getLandingUnits();
+
+    //const std::vector<sLandingUnit>& getLandingUnits();
+    std::shared_ptr<sLandingConfig>& getLandingConfig();
 
 	int getLocalPlayerClan() const;
 private:
@@ -80,9 +81,10 @@ private:
 
 	int localPlayerClan;
 
-	std::vector<sLandingUnit> localPlayerLandingUnits;
-	std::vector<std::pair<sID, cUnitUpgrade>> localPlayerUnitUpgrades;
-	cPosition localPlayerLandingPosition;
+    std::shared_ptr<sLandingConfig> landingConfig;
+    //std::vector<sLandingUnit> localPlayerLandingUnits;
+    //std::vector<std::pair<sID, cUnitUpgrade>> localPlayerUnitUpgrades;
+    //cPosition localPlayerLandingPosition;
 };
 
 #endif // game_startup_network_host_networkhostgamenewH

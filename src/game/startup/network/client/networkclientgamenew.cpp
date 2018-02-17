@@ -49,10 +49,10 @@ void cNetworkClientGameNew::start (cApplication& application)
 	localClient->setUnitsData(unitsData);
 
 	cActionInitNewGame action;
-	action.clan = localPlayerClan;
-	action.landingUnits = localPlayerLandingUnits;
-	action.landingPosition = localPlayerLandingPosition;
-	action.unitUpgrades = localPlayerUnitUpgrades;
+    action.landingConfig.clan = localPlayerClan;
+    action.landingConfig.landingUnits = landingConfig->landingUnits;
+    action.landingConfig.landingPosition = landingConfig->landingPosition;
+    action.landingConfig.unitUpgrades = landingConfig->unitUpgrades;
 	localClient->sendNetMessage(action);
 
 	gameGuiController = std::make_unique<cGameGuiController> (application, staticMap);
@@ -60,7 +60,7 @@ void cNetworkClientGameNew::start (cApplication& application)
 	gameGuiController->setSingleClient (localClient);
 
 	cGameGuiState playerGameGuiState;
-	playerGameGuiState.setMapPosition (localPlayerLandingPosition);
+    playerGameGuiState.setMapPosition (this->landingConfig->landingPosition);
 	gameGuiController->addPlayerGameGuiState (localPlayerNr, std::move (playerGameGuiState));
 
 	gameGuiController->start();
@@ -97,6 +97,7 @@ void cNetworkClientGameNew::setLocalPlayerClan (int clan)
 	localPlayerClan = clan;
 }
 
+/*
 //------------------------------------------------------------------------------
 void cNetworkClientGameNew::setLocalPlayerLandingUnits (std::vector<sLandingUnit> landingUnits_)
 {
@@ -108,11 +109,12 @@ void cNetworkClientGameNew::setLocalPlayerUnitUpgrades (std::vector<std::pair<sI
 {
 	localPlayerUnitUpgrades = std::move (unitUpgrades_);
 }
-
+*/
 //------------------------------------------------------------------------------
 void cNetworkClientGameNew::setLocalPlayerLandingPosition (const cPosition& landingPosition_)
 {
-	localPlayerLandingPosition = landingPosition_;
+    this->landingConfig->landingPosition = landingPosition_;
+    //this->localPlayerLandingPosition = landingPosition_;
 }
 
 //------------------------------------------------------------------------------
@@ -133,9 +135,9 @@ const std::vector<cPlayerBasicData>& cNetworkClientGameNew::getPlayers()
 	return players;
 }
 
-const std::vector<sLandingUnit>& cNetworkClientGameNew::getLandingUnits()
+std::shared_ptr<sLandingConfig> cNetworkClientGameNew::getLandingConfig()
 {
-	return localPlayerLandingUnits;
+    return landingConfig;
 }
 
 //------------------------------------------------------------------------------

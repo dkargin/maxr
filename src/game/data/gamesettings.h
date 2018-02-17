@@ -205,7 +205,7 @@ public:
 		archive & NVP(turnEndDeadlineActive);
 		archive & NVP(turnLimit);
 		archive & NVP(turnLimitActive);
-	}
+    }
 
 private:
 	eGameSettingsResourceAmount metalAmount;

@@ -52,7 +52,7 @@ public:
 	// Get a position, relative to current position
 	cPosition relative(int x, int y) const
 	{
-		return *this + cPosition(x, y);
+		return cPosition(this->x()+x, this->y()+y);
 	}
 
 	uint32_t getChecksum(uint32_t crc) const;

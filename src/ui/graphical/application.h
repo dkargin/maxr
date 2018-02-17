@@ -142,7 +142,7 @@ WindowType* cApplication::show (std::shared_ptr<WindowType> window)
 		center (*window);
 	}
 
-	modalWindows.push_back (std::move (window));
+    modalWindows.push_back (std::move(window));
 
 	return static_cast<WindowType*> (modalWindows.back().get());
 }

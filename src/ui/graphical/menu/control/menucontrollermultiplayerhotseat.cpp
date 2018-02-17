@@ -34,9 +34,6 @@
 #include "game/data/map/map.h"
 #include "game/logic/upgradecalculator.h"
 
-// TODO: remove
-std::vector<std::pair<sID, int>> createInitialLandingUnitsList(int clan, const cGameSettings& gameSettings, const cUnitsData& unitsData); // defined in windowsingleplayer.cpp
-
 //------------------------------------------------------------------------------
 cMenuControllerMultiplayerHotSeat::cMenuControllerMultiplayerHotSeat (cApplication& application_) :
 	application (application_)
@@ -214,18 +211,24 @@ void cMenuControllerMultiplayerHotSeat::selectClan (size_t playerIndex, bool fir
 //------------------------------------------------------------------------------
 void cMenuControllerMultiplayerHotSeat::selectLandingUnits (size_t playerIndex, bool firstForPlayer)
 {
-	if (!game) return;
+    if (!game)
+        return;
 
-	auto initialLandingUnits = createInitialLandingUnitsList (game->getPlayerClan (playerIndex), *game->getGameSettings(), *game->getUnitsData());
+    auto landingConfig = game->getLandingConfig(playerIndex);
 
-	auto windowLandingUnitSelection = application.show (std::make_shared<cWindowLandingUnitSelection> (game->getPlayer (playerIndex).getColor(), game->getPlayerClan (playerIndex), initialLandingUnits, game->getGameSettings()->getStartCredits(), game->getUnitsData()));
+    createInitial(*landingConfig, landingConfig->clan, *game->getGameSettings(), *game->getUnitsData());
+
+    auto windowLandingUnitSelection = std::make_shared<cWindowLandingUnitSelection> (
+                game->getPlayer(playerIndex).getColor(),
+                game->getPlayerClan(playerIndex),
+                *landingConfig,
+                game->getGameSettings()->getStartCredits(),
+                game->getUnitsData());
 
 	windowLandingUnitSelection->done.connect ([ = ]()
 	{
-		game->setLandingUnits (playerIndex, windowLandingUnitSelection->getLandingUnits());
-		game->setUnitUpgrades (playerIndex, windowLandingUnitSelection->getUnitUpgrades());
-
-		selectLandingPosition (playerIndex);
+        windowLandingUnitSelection->updateConfig(landingConfig);
+        selectLandingPosition (playerIndex);
 	});
 
 	if (firstForPlayer)
@@ -239,6 +242,8 @@ void cMenuControllerMultiplayerHotSeat::selectLandingUnits (size_t playerIndex, 
 	{
 		windowLandingUnitSelection->canceled.connect ([ = ]() { windowLandingUnitSelection->close(); });
 	}
+
+    application.show(windowLandingUnitSelection);
 }
 
 //------------------------------------------------------------------------------
@@ -249,9 +254,11 @@ void cMenuControllerMultiplayerHotSeat::selectLandingPosition (size_t playerInde
 
 	auto& map = game->getStaticMap();
 	bool fixedBridgeHead = game->getGameSettings()->getBridgeheadType() == eGameSettingsBridgeheadType::Definite;
-	auto& landingUnits = game->getLandingUnits(playerIndex);
+
+    auto landingConfig = game->getLandingConfig(playerIndex);
 	auto unitsData = game->getUnitsData();
-	playerLandingSelectionWindows[playerIndex] = std::make_shared<cWindowLandingPositionSelection>(map, fixedBridgeHead, landingUnits, unitsData, true);
+
+    playerLandingSelectionWindows[playerIndex] = std::make_shared<cWindowLandingPositionSelection>(map, fixedBridgeHead, landingConfig, unitsData, true);
 
 	auto windowLandingPositionSelection = application.show (playerLandingSelectionWindows[playerIndex]);
 

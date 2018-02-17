@@ -17,6 +17,8 @@
 *   59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.             *
 ***************************************************************************/
 
+#include <set>
+
 #include "actioninitnewgame.h"
 #include "game/data/model.h"
 #include "game/data/gamesettings.h"
@@ -27,15 +29,10 @@
 #include "game/data/player/clans.h"
 #include "utility/string/toString.h"
 
-// TODO: remove
-std::vector<std::pair<sID, int>> createInitialLandingUnitsList(int clan, const cGameSettings& gameSettings, const cUnitsData& unitsData); // defined in windowsingleplayer.cpp
-
-
 //------------------------------------------------------------------------------
 cActionInitNewGame::cActionInitNewGame() : 
-	cAction(eActiontype::ACTION_INIT_NEW_GAME), 
-	clan(-1)
-{};
+    cAction(eActiontype::ACTION_INIT_NEW_GAME)
+{}
 
 //------------------------------------------------------------------------------
 cActionInitNewGame::cActionInitNewGame(cBinaryArchiveOut& archive)
@@ -57,6 +54,7 @@ void cActionInitNewGame::execute(cModel& model) const
 	player.removeAllUnits();
 	Log.write(" GameId: " + toString(model.getGameId()), cLog::eLOG_TYPE_NET_DEBUG);
 
+    int clan = landingConfig.clan;
 	// init clan
 	if (model.getGameSettings()->getClansEnabled())
 	{
@@ -65,7 +63,7 @@ void cActionInitNewGame::execute(cModel& model) const
 			Log.write(" Landing failed. Invalid clan number.", cLog::eLOG_TYPE_NET_ERROR);
 			return;
 		}
-		player.setClan(clan, unitsdata);
+        player.setClan(clan, unitsdata);
 	}
 	else
 	{
@@ -73,21 +71,23 @@ void cActionInitNewGame::execute(cModel& model) const
 	}
 
 	// init landing position
-	if (!model.getMap()->isValidPosition(landingPosition))
+    if (!model.getMap()->isValidPosition(landingConfig.landingPosition))
 	{
 		Log.write(" Received invalid landing position", cLog::eLOG_TYPE_NET_ERROR);
 		return;
 	}
-	cPosition updatedLandingPosition = landingPosition;
+
+    cPosition updatedLandingPosition = landingConfig.landingPosition;
 	if (model.getGameSettings()->getBridgeheadType() == eGameSettingsBridgeheadType::Definite)
 	{
 		// Find place for mine if bridgehead is fixed
-		if (!findPositionForStartMine(updatedLandingPosition, model.getUnitsData(), model.getMap()->staticMap))
+        if (!findPositionForLayout(updatedLandingPosition, landingConfig.baseLayout, *model.getMap()->staticMap))
 		{
 			Log.write("couldn't place player start mine: " + player.getName(), cLog::eLOG_TYPE_NET_ERROR);
 			return;
 		}
 	}
+
 	player.setLandingPos(updatedLandingPosition);
 
 	// place new ressources
@@ -95,7 +95,7 @@ void cActionInitNewGame::execute(cModel& model) const
 
 	// apply upgrades
 	int credits = model.getGameSettings()->getStartCredits();
-	for (const auto& upgrade : unitUpgrades)
+    for (const auto& upgrade : landingConfig.unitUpgrades)
 	{
 		const sID& unitId = upgrade.first;
 		const cUnitUpgrade& upgradeValues = upgrade.second;
@@ -120,9 +120,9 @@ void cActionInitNewGame::execute(cModel& model) const
 		upgradeValues.updateUnitData(*player.getUnitDataCurrentVersion(unitId));
 	}
 
-	// land vehicles
-	auto initialLandingUnits = createInitialLandingUnitsList(clan, *model.getGameSettings(), unitsdata);
-	for (const auto& landing : landingUnits)
+    // Recalculation of credits. Do we need it right here in such a way?
+#ifdef FUCK_THIS
+    for (const auto& landing : landingConfig.landingUnits)
 	{
 		if (!unitsdata.isValidId(landing.unitID))
 		{
@@ -130,7 +130,9 @@ void cActionInitNewGame::execute(cModel& model) const
 			return;
 		}
 
-		auto it = std::find_if(initialLandingUnits.begin(), initialLandingUnits.end(), [landing](std::pair<sID, int> unit){ return unit.first == landing.unitID; });
+        auto it = std::find_if(initialLandingUnits.begin(), initialLandingUnits.end(),
+                               [landing](std::pair<sID, int> unit){ return unit.first == landing.unitID; });
+
 		if (it != initialLandingUnits.end())
 		{
 			// landing unit is one of the initial landing units, that the player gets for free
@@ -144,41 +146,91 @@ void cActionInitNewGame::execute(cModel& model) const
 			credits -= unitsdata.getDynamicUnitData(landing.unitID, clan).getBuildCost();
 		}
 	}
+#endif
 	if (credits < 0)
 	{
 		Log.write(" Landing failed. Used more than the available credits", cLog::eLOG_TYPE_ERROR);
 		return;
 	}
-	makeLanding(player, landingUnits, model);
+
+    makeLanding(player, landingConfig, model);
 
 	//transfer remaining credits to player
 	player.setCredits(credits);
 }
 
-bool cActionInitNewGame::isValidLandingPosition(cPosition position, std::shared_ptr<cStaticMap> map, bool fixedBridgeHead, const std::vector<sLandingUnit>& units, std::shared_ptr<const cUnitsData> unitsData)
+
+struct sPositionUtils
 {
-	std::vector<cPosition> blockedPositions;
+	// Comparator
+	bool operator()(const cPosition& a, const cPosition& b) const
+	{
+		if (a.x() == b.x())
+			return a.y() < b.y();
+		return a.x() < b.x();
+	}
+};
+
+class cPositionSet : public std::set<cPosition, sPositionUtils>
+{
+public:
+	typedef std::set<cPosition, sPositionUtils> set_type;
+
+	// Check if object with specified size fits to this position
+	bool fits(const cPosition& pos, int size) const
+	{
+		for(int y = pos.y(); y < pos.y() + size; y++)
+		{
+			for(int x = pos.x(); x < pos.x() + size; x++)
+			{
+				if(this->count(cPosition(x,y)))
+					return false;
+			}
+		}
+		return true;
+	}
+
+	// Add positions that occupied by object with specified size
+	void insert(const cPosition& pos, int size)
+	{
+		for(int y = pos.y(); y < pos.y() + size; y++)
+			for(int x = pos.x(); x < pos.x() + size; x++)
+				this->set_type::insert(cPosition(x, y));
+	}
+};
+
+bool cActionInitNewGame::isValidLandingPosition(cPosition position, const cStaticMap& map, bool fixedBridgeHead, const sLandingConfig& config, const cUnitsData& unitsData)
+{
+	cPositionSet blockedPositions;
+
 	if (fixedBridgeHead)
 	{
-		bool found = findPositionForStartMine(position, unitsData, map);
+        bool found = findPositionForLayout(position, config.baseLayout, map);
+
 		if (!found)
 			return false;
 
+		// TODO: fill in blocked positions
+        for(const auto& item: config.baseLayout)
+		{
+            blockedPositions.insert(item.pos + position, item.data->cellSize);
+		}
+		/*
 		//small generator
 		blockedPositions.push_back(position + cPosition(-1, 0));
 		//mine
 		blockedPositions.push_back(position + cPosition(0, -1));
 		blockedPositions.push_back(position + cPosition(1, -1));
 		blockedPositions.push_back(position + cPosition(1,  0));
-		blockedPositions.push_back(position + cPosition(0,  0));
+		blockedPositions.push_back(position + cPosition(0,  0));*/
 	}
 
 	int maxRaduis = 6;
 	float maxRadiusMult = 3.0; 	// 1.5
 
-	for (const auto& unit : units)
+    for (const auto& unit : config.landingUnits)
 	{
-		const cStaticUnitData& unitData = unitsData->getStaticUnitData(unit.unitID);
+        const cStaticUnitData& unitData = unitsData.getStaticUnitData(unit.unitID);
 		bool placed = false;
 		int landingRadius = 1;
 
@@ -187,7 +239,7 @@ bool cActionInitNewGame::isValidLandingPosition(cPosition position, std::shared_
 			landingRadius += 1;
 
 			// prevent, that units are placed far away from the starting position 
-			if (landingRadius > maxRadiusMult*sqrt(units.size()) && landingRadius > maxRaduis)
+            if (landingRadius > maxRadiusMult*sqrt(config.landingUnits.size()) && landingRadius > maxRaduis)
 				return false;
 
 			for (int offY = -landingRadius; (offY < landingRadius) && !placed; ++offY)
@@ -195,12 +247,21 @@ bool cActionInitNewGame::isValidLandingPosition(cPosition position, std::shared_
 				for (int offX = -landingRadius; (offX < landingRadius) && !placed; ++offX)
 				{
 					const cPosition place = position + cPosition(offX, offY);
-					bool fits = map->possiblePlace(unitData, place);
+                    bool fitsMap = map.possiblePlace(unitData, place);
+
+					bool fitsBlocks = blockedPositions.fits(place, unitData.cellSize);
+					if(fitsMap && fitsBlocks)
+					{
+						blockedPositions.insert(place, unitData.cellSize);
+						placed = true;
+					}
+					/*
 					if (fits && !Contains(blockedPositions, place))
 					{
 						blockedPositions.push_back(place);
 						placed = true;
 					}
+					*/
 				}
 			}
 		}
@@ -210,7 +271,7 @@ bool cActionInitNewGame::isValidLandingPosition(cPosition position, std::shared_
 }
 
 //------------------------------------------------------------------------------
-void cActionInitNewGame::makeLanding(cPlayer& player, const std::vector<sLandingUnit>& landingUnits, cModel& model) const
+void cActionInitNewGame::makeLanding(cPlayer& player, const sLandingConfig& landingConfig, cModel& model) const
 {
 	cMap& map = *model.getMap();
 	cPosition landingPosition = player.getLandingPos();
@@ -222,9 +283,8 @@ void cActionInitNewGame::makeLanding(cPlayer& player, const std::vector<sLanding
 		model.addBuilding(landingPosition + cPosition(0, -1), model.getUnitsData()->getSpecialIDMine(), &player, true);
 	}
 
-	for (size_t i = 0; i != landingUnits.size(); ++i)
+    for (const sLandingUnit& landing: landingConfig.landingUnits)
 	{
-		const sLandingUnit& landing = landingUnits[i];
 		cVehicle* vehicle = nullptr;
 		int radius = 1;
 
@@ -237,6 +297,10 @@ void cActionInitNewGame::makeLanding(cPlayer& player, const std::vector<sLanding
 		while (!vehicle)
 		{
 			vehicle = landVehicle(landingPosition, radius, landing.unitID, player, model);
+			if(vehicle == nullptr)
+			{
+				Log.write(" Landing of unit failed. Invalid location", cLog::eLOG_TYPE_NET_ERROR);
+			}
 			radius += 1;
 		}
 		if (landing.cargo && vehicle)
@@ -249,11 +313,15 @@ void cActionInitNewGame::makeLanding(cPlayer& player, const std::vector<sLanding
 //------------------------------------------------------------------------------
 cVehicle* cActionInitNewGame::landVehicle(const cPosition& landingPosition, int radius, const sID& id, cPlayer& player, cModel& model) const
 {
+	const cMap& map = *model.getMap();
+	const cStaticUnitData& unitData = model.getUnitsData()->getStaticUnitData(id);
+
 	for (int offY = -radius; offY < radius; ++offY)
 	{
 		for (int offX = -radius; offX < radius; ++offX)
 		{
-			if (!model.getMap()->possiblePlaceVehicle(model.getUnitsData()->getStaticUnitData(id), landingPosition + cPosition(offX, offY), &player)) continue;
+			if (!map.possiblePlaceVehicle(unitData, landingPosition + cPosition(offX, offY), &player))
+				continue;
 
 			return &model.addVehicle(landingPosition + cPosition(offX, offY), id, &player, true);
 		}
@@ -261,7 +329,8 @@ cVehicle* cActionInitNewGame::landVehicle(const cPosition& landingPosition, int 
 	return nullptr;
 }
 
-bool cActionInitNewGame::findPositionForStartMine(cPosition& position, std::shared_ptr<const cUnitsData> unitsData, std::shared_ptr<const cStaticMap> map)
+/*
+bool cActionInitNewGame::findPositionForStartMine(cPosition& position, const cUnitsData& unitsData, const cStaticMap& map)
 {
 	const auto& smallGenData = unitsData->getSmallGeneratorData();
 	const auto& mineData = unitsData->getMineData();
@@ -294,5 +363,44 @@ bool cActionInitNewGame::findPositionForStartMine(cPosition& position, std::shar
 			return false;
 		}
 	}
+}
+*/
 
+bool cActionInitNewGame::findPositionForLayout(cPosition& position, const std::list<cLayoutItem>& layout, const cStaticMap& map, int maxRadius)
+{
+	int radius = 0;
+
+	while (true)
+	{
+		for (int offY = -radius; offY <= radius; ++offY)
+		{
+			for (int offX = -radius; offX <= radius; ++offX)
+			{
+				const cPosition place = position.relative(offX, offY);
+
+				bool allFit = true;
+				for(const auto& item: layout)
+				{
+                    assert(item.data != nullptr);
+                    if(!map.possiblePlace(*item.data, place+item.pos))
+					{
+						allFit = false;
+						break;
+					}
+				}
+
+				if ( allFit == true )
+				{
+					position = place;
+					return true;
+				}
+			}
+		}
+		radius += 1;
+
+		if (radius > maxRadius)
+		{
+			return false;
+		}
+	}
 }

@@ -39,17 +39,15 @@ class cPosition;
 class cUnitUpgrade;
 
 struct sLandingUnit;
+struct sLandingConfig;
 struct sID;
 
 class cLocalHotSeatGameNew : public cLocalHotSeatGame
 {
 	struct sPlayerData
 	{
-		cPlayerBasicData basicData;
-		int clan;
-		std::vector<sLandingUnit> landingUnits;
-		std::vector<std::pair<sID, cUnitUpgrade>> unitUpgrades;
-		cPosition landingPosition;
+        cPlayerBasicData basicData;
+        std::shared_ptr<sLandingConfig> config;
 	};
 public:
 	cLocalHotSeatGameNew();
@@ -64,15 +62,17 @@ public:
 
 	void setPlayerClan (size_t playerIndex, int clan);
 
-	void setLandingUnits (size_t playerIndex, std::vector<sLandingUnit> landingUnits);
-
-	void setUnitUpgrades (size_t playerIndex, std::vector<std::pair<sID, cUnitUpgrade>> unitUpgrades);
+    //void setLandingConfig(size_t playerIndex, std::shared_ptr<sLandingConfig> config);
+    //void setLandingUnits (size_t playerIndex, std::vector<sLandingUnit> landingUnits);
+    //void setUnitUpgrades (size_t playerIndex, std::vector<std::pair<sID, cUnitUpgrade>> unitUpgrades);
 
 	void setLandingPosition (size_t playerIndex, const cPosition& landingPosition);
 
 	const std::shared_ptr<cStaticMap>& getStaticMap();
 	const std::shared_ptr<cGameSettings>& getGameSettings();
-	const std::vector<sLandingUnit>& getLandingUnits(size_t playerIndex);
+    const std::vector<sLandingUnit>& getLandingUnits(size_t playerIndex);
+
+    std::shared_ptr<sLandingConfig> getLandingConfig(size_t playerIndex);
 
 	size_t getPlayerCount() const;
 	const cPlayerBasicData& getPlayer (size_t playerIndex) const;
@@ -82,7 +82,6 @@ private:
 
 	std::shared_ptr<cStaticMap> staticMap;
 	std::shared_ptr<cGameSettings> gameSettings;
-
 	std::vector<sPlayerData> playersData;
 };
 

@@ -34,9 +34,8 @@ class cApplication;
 class cLocalSingleplayerGameSaved : public cLocalSingleplayerGame
 {
 public:
+    cLocalSingleplayerGameSaved(int saveGameNumber);
 	void start (cApplication& application);
-
-	void setSaveGameNumber (int saveGameNumber);
 
 private:
 	cSignalConnectionManager signalConnectionManager;
