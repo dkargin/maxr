@@ -160,13 +160,6 @@ bool cUnit::isAbove (const cPosition& position) const
 }
 
 //------------------------------------------------------------------------------
-/*
-bool cUnit::getIsBig() const
-{
-	return cellSize > 1;
-}*/
-
-//------------------------------------------------------------------------------
 
 int cUnit::getCellSize() const
 {
@@ -179,15 +172,6 @@ void cUnit::setCellSize(int cs)
 	if (cellSize != cs)
 		unitSizeChanged();
 }
-
-/*
-void cUnit::setIsBig(bool value)
-{
-	std::swap(iscell, value);
-	if (isBig != value)
-		isBigChanged();
-}
-*/
 
 uint32_t cUnit::getChecksum(uint32_t crc) const
 {

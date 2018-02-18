@@ -130,8 +130,6 @@ public:
 	virtual bool buildingCanBeUpgraded() const { return false; }
 	virtual bool canBeStoppedViaUnitMenu() const = 0;
 
-	//bool getIsBig() const;
-	//void setIsBig(bool value);
 	int getCellSize() const;
 	void setCellSize(int cs);
 

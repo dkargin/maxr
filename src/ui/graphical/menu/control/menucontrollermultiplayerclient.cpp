@@ -280,7 +280,7 @@ void cMenuControllerMultiplayerClient::startLandingUnitSelection(bool isFirstWin
 	if (!newGame || !newGame->getGameSettings()) return;
 
     auto config = newGame->getLandingConfig();
-    createInitial(*config, newGame->getLocalPlayerClan(), *newGame->getGameSettings(), *newGame->getUnitsData());
+    createInitial(*config, *newGame->getGameSettings(), *newGame->getUnitsData());
 
     auto windowLandingUnitSelection = std::make_shared<cWindowLandingUnitSelection> (
                 cPlayerColor(), newGame->getLocalPlayerClan(), *config, newGame->getGameSettings()->getStartCredits(), newGame->getUnitsData());

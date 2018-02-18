@@ -491,8 +491,10 @@ void cBuilding::render_simple (SDL_Surface* surface, const SDL_Rect& dest, float
 	}
 
 	// blit the players color and building graphic
-	if (uiData.hasPlayerColor && owner) SDL_BlitSurface(owner->getColor().getTexture(), nullptr, GraphicsData.gfx_tmp.get(), nullptr);
-	else SDL_FillRect (GraphicsData.gfx_tmp.get(), nullptr, 0x00FF00FF);
+    if (uiData.hasPlayerColor && owner)
+        SDL_BlitSurface(owner->getColor().getTexture(), nullptr, GraphicsData.gfx_tmp.get(), nullptr);
+    else
+        SDL_FillRect (GraphicsData.gfx_tmp.get(), nullptr, 0x00FF00FF);
 
 	if (uiData.hasFrames)
 	{
@@ -581,41 +583,27 @@ void cBuilding::updateNeighbours (const cMap& map)
 	{
 		getOwner()->base.checkNeighbour (adjPos.first, *this, map);
 	}
-	/*
-	if (!isBig)
-	{
-		getOwner()->base.checkNeighbour (getPosition() + cPosition ( 0, -1), *this, map);
-		getOwner()->base.checkNeighbour (getPosition() + cPosition ( 1,  0), *this, map);
-		getOwner()->base.checkNeighbour (getPosition() + cPosition ( 0,  1), *this, map);
-		getOwner()->base.checkNeighbour (getPosition() + cPosition (-1,  0), *this, map);
-	}
-	else
-	{
-		getOwner()->base.checkNeighbour (getPosition() + cPosition ( 0, -1), *this, map);
-		getOwner()->base.checkNeighbour (getPosition() + cPosition ( 1, -1), *this, map);
-		getOwner()->base.checkNeighbour (getPosition() + cPosition ( 2,  0), *this, map);
-		getOwner()->base.checkNeighbour (getPosition() + cPosition ( 2,  1), *this, map);
-		getOwner()->base.checkNeighbour (getPosition() + cPosition ( 0,  2), *this, map);
-		getOwner()->base.checkNeighbour (getPosition() + cPosition ( 1,  2), *this, map);
-		getOwner()->base.checkNeighbour (getPosition() + cPosition (-1,  0), *this, map);
-		getOwner()->base.checkNeighbour (getPosition() + cPosition (-1,  1), *this, map);
-	}*/
 	CheckNeighbours (map);
 }
 
 //--------------------------------------------------------------------------
-/** Checks, if there are neighbours */
+/**
+ * Checks, if there are neighbours
+ * It was necessary to show pretty connections between connectors and buildings
+ * I guess it should be moved to connector logic
+ */
+
 //--------------------------------------------------------------------------
 void cBuilding::CheckNeighbours (const cMap& map)
 {
-	/*
+    /*
 #define CHECK_NEIGHBOUR(x, y, m) \
-	if (map.isValidPosition (cPosition(x, y))) \
-	{ \
-		const cBuilding* b = map.getField(cPosition(x, y)).getTopBuilding(); \
-		if (b && b->getOwner() == getOwner() && b->staticData->connectsToBase) \
-		{m = true;}else{m = false;} \
-	}*/
+    if (map.isValidPosition (cPosition(x, y))) \
+    { \
+        const cBuilding* b = map.getField(cPosition(x, y)).getTopBuilding(); \
+        if (b && b->getOwner() == getOwner() && b->staticData->connectsToBase) \
+        {m = true;}else{m = false;} \
+    }*/
 
 	auto adjacent = generateAdjacentBorder(this->getPosition(), this->getCellSize());
 	// find all neighbouring subbases
@@ -640,24 +628,24 @@ void cBuilding::CheckNeighbours (const cMap& map)
 	}
 
 #ifdef FUCK_THIS
-	if (!isBig)
-	{
-		CHECK_NEIGHBOUR (getPosition().x()    , getPosition().y() - 1, BaseN)
-		CHECK_NEIGHBOUR (getPosition().x() + 1, getPosition().y()    , BaseE)
-		CHECK_NEIGHBOUR (getPosition().x()    , getPosition().y() + 1, BaseS)
-		CHECK_NEIGHBOUR (getPosition().x() - 1, getPosition().y()    , BaseW)
-	}
-	else
-	{
-		CHECK_NEIGHBOUR (getPosition().x()    , getPosition().y() - 1, BaseN)
-		CHECK_NEIGHBOUR (getPosition().x() + 1, getPosition().y() - 1, BaseBN)
-		CHECK_NEIGHBOUR (getPosition().x() + 2, getPosition().y()    , BaseE)
-		CHECK_NEIGHBOUR (getPosition().x() + 2, getPosition().y() + 1, BaseBE)
-		CHECK_NEIGHBOUR (getPosition().x()    , getPosition().y() + 2, BaseS)
-		CHECK_NEIGHBOUR (getPosition().x() + 1, getPosition().y() + 2, BaseBS)
-		CHECK_NEIGHBOUR (getPosition().x() - 1, getPosition().y()    , BaseW)
-		CHECK_NEIGHBOUR (getPosition().x() - 1, getPosition().y() + 1, BaseBW)
-	}
+    if (!isBig)
+    {
+        CHECK_NEIGHBOUR (getPosition().x()    , getPosition().y() - 1, BaseN)
+        CHECK_NEIGHBOUR (getPosition().x() + 1, getPosition().y()    , BaseE)
+        CHECK_NEIGHBOUR (getPosition().x()    , getPosition().y() + 1, BaseS)
+        CHECK_NEIGHBOUR (getPosition().x() - 1, getPosition().y()    , BaseW)
+    }
+    else
+    {
+        CHECK_NEIGHBOUR (getPosition().x()    , getPosition().y() - 1, BaseN)
+        CHECK_NEIGHBOUR (getPosition().x() + 1, getPosition().y() - 1, BaseBN)
+        CHECK_NEIGHBOUR (getPosition().x() + 2, getPosition().y()    , BaseE)
+        CHECK_NEIGHBOUR (getPosition().x() + 2, getPosition().y() + 1, BaseBE)
+        CHECK_NEIGHBOUR (getPosition().x()    , getPosition().y() + 2, BaseS)
+        CHECK_NEIGHBOUR (getPosition().x() + 1, getPosition().y() + 2, BaseBS)
+        CHECK_NEIGHBOUR (getPosition().x() - 1, getPosition().y()    , BaseW)
+        CHECK_NEIGHBOUR (getPosition().x() - 1, getPosition().y() + 1, BaseBW)
+    }
 #endif
 }
 
@@ -1163,48 +1151,6 @@ void cBuilding::initMineRessourceProd (const cMap& map)
 			}
 		}
 	}
-
-	/*
-	const sResources* res = &map.getResource (position);
-
-	switch (res->typ)
-	{
-		case eResourceType::Metal: maxMetalProd += res->value; break;
-		case eResourceType::Gold:  maxGoldProd  += res->value; break;
-		case eResourceType::Oil:   maxOilProd   += res->value; break;
-	}
-
-
-	if (isBig)
-	{
-		position.x()++;
-		res = &map.getResource(position);
-		switch (res->typ)
-		{
-		case eResourceType::Metal: maxMetalProd += res->value; break;
-		case eResourceType::Gold:  maxGoldProd += res->value; break;
-		case eResourceType::Oil:   maxOilProd += res->value; break;
-		}
-
-		position.y()++;
-		res = &map.getResource(position);
-		switch (res->typ)
-		{
-		case eResourceType::Metal: maxMetalProd += res->value; break;
-		case eResourceType::Gold:  maxGoldProd += res->value; break;
-		case eResourceType::Oil:   maxOilProd += res->value; break;
-		}
-
-		position.x()--;
-		res = &map.getResource(position);
-		switch (res->typ)
-		{
-		case eResourceType::Metal: maxMetalProd += res->value; break;
-		case eResourceType::Gold:  maxGoldProd += res->value; break;
-		case eResourceType::Oil:   maxOilProd += res->value; break;
-		}
-	}
-	*/
 
 	maxMetalProd = min (maxMetalProd, staticData->canMineMaxRes);
 	maxGoldProd  = min (maxGoldProd, staticData->canMineMaxRes);

@@ -504,7 +504,7 @@ void cMenuControllerMultiplayerHost::startLandingUnitSelection(bool isFirstWindo
 	if (!newGame || !newGame->getGameSettings()) return;
 
     auto config = newGame->getLandingConfig();
-    createInitial(*config, newGame->getLocalPlayerClan(), *newGame->getGameSettings(), *newGame->getUnitsData());
+    createInitial(*config, *newGame->getGameSettings(), *newGame->getUnitsData());
 
     auto windowLandingUnitSelection = std::make_shared<cWindowLandingUnitSelection> (
                 cPlayerColor(), newGame->getLocalPlayerClan(), *config, newGame->getGameSettings()->getStartCredits(), newGame->getUnitsData());
@@ -526,9 +526,6 @@ void cMenuControllerMultiplayerHost::startLandingUnitSelection(bool isFirstWindo
 	{
         auto config = newGame->getLandingConfig();
         windowLandingUnitSelection->updateConfig(config);
-        //newGame->setLocalPlayerLandingUnits (windowLandingUnitSelection->getLandingUnits());
-        //newGame->setLocalPlayerUnitUpgrades (windowLandingUnitSelection->getUnitUpgrades());
-
 		startLandingPositionSelection();
 	});
 }

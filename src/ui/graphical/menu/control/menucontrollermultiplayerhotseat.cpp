@@ -216,7 +216,7 @@ void cMenuControllerMultiplayerHotSeat::selectLandingUnits (size_t playerIndex, 
 
     auto landingConfig = game->getLandingConfig(playerIndex);
 
-    createInitial(*landingConfig, landingConfig->clan, *game->getGameSettings(), *game->getUnitsData());
+    createInitial(*landingConfig, *game->getGameSettings(), *game->getUnitsData());
 
     auto windowLandingUnitSelection = std::make_shared<cWindowLandingUnitSelection> (
                 game->getPlayer(playerIndex).getColor(),

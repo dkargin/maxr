@@ -1,6 +1,12 @@
 1. Increase map resolution x3
-	- Fix compiler errors here and there
-	- Fix building process. 
+	- Fix compiler errors here and there 			OK
+	- Fix the rendeding of anysize units
+		- fix sprite scaling, up to full size
+		- fix rendering of the underlay. Maybe we should bring here some sort of tiling generator
+	- Fix building process.  
+		- fix selection of build position
+	- Replace all XML fields
+	- Make constructor 2x2
 	- Fix pathfinder to deal with increased map size
 	- Update unit sizes according to this change
 1. Lua AI in screeps style
@@ -18,7 +24,9 @@
 
 Notable problems:
 
-1. void cActionStartBuild::execute(cModel& model) const uses old object size
+ - Axis corp does not add new units - FIXED
+ - Multi tile mining? 				- FIXED
+ - Rendering connector's attachments to the buildings is broken now. I've cut this part of code from the buildings. Connectors themselves should deal with it, not the buildings
 
 Broken stuff:
  - `void cVehicle::render_smallClearing`
@@ -26,8 +34,9 @@ Broken stuff:
  - `void cBuilding::render_rubble`
  - `bool cUnit::isInRange (const cPosition& position) const` does inproper range calculations
  - `bool cUnit::isNextTo (const cPosition& position) const` does inproper adjacency calculation
- - `void cActionInitNewGame::execute(cModel& model) const`
- - `void cActionInitNewGame::makeLanding(cPlayer& player, const sLandingConfig& landingConfig, cModel& model) const` seems not getting proper landing position
+ - `void cActionInitNewGame::execute(cModel& model) const` - disabled check for credits. Players can overspend
+ - broken the rendering of building's underlay tiles. This shit should be specified from XML, not the code!
+ std::pair<bool, cPosition> cMouseModeSelectBuildPosition::findNextBuildPosition seems like broken
 
 # Scaling rework #
 

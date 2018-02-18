@@ -34,12 +34,16 @@ struct sLandingUnit
 	unsigned cargo;
 	cPosition position;
 
-    static sLandingUnit make(sID id, unsigned cargo)
+    // If unit is provided by default settings, and can not be removed from unit selection
+    bool isDefault = false;
+
+    static sLandingUnit make(sID id, unsigned cargo, bool isDefault = false)
     {
         sLandingUnit unit;
         unit.unitID = id;
         unit.cargo = cargo;
         unit.position = cPosition(0,0);
+        unit.isDefault = isDefault;
         return unit;
     }
 
@@ -49,6 +53,7 @@ struct sLandingUnit
 		archive & unitID;
 		archive & cargo;
 		archive & position;
+        archive & isDefault;
 	}
 };
 
@@ -102,6 +107,6 @@ struct sLandingConfig
 
 class cGameSettings;
 // Creates initial landing config
-void createInitial(sLandingConfig& config, int clan, const cGameSettings& gameSettings, const cUnitsData& unitsData);
+void createInitial(sLandingConfig& config, const cGameSettings& gameSettings, const cUnitsData& unitsData);
 
 #endif // game_data_units_landingunitH

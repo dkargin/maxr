@@ -73,76 +73,6 @@ void sLandingConfig::loadUnitsData(const cUnitsData &unitsData) const
     }
 }
 
-// TODO: find nice place
-//------------------------------------------------------------------------------
-
-void createInitial(sLandingConfig& config, int clan, const cGameSettings& gameSettings, const cUnitsData& unitsData)
-{
-    if (gameSettings.getBridgeheadType() == eGameSettingsBridgeheadType::Mobile)
-        return;
-
-    if(config.state != 0)
-        return;
-
-    const auto& constructorID = unitsData.getConstructorData().ID;
-    const auto& engineerID = unitsData.getEngineerData().ID;
-    const auto& surveyorID = unitsData.getSurveyorData().ID;
-
-    config.landingUnits.push_back(sLandingUnit::make(constructorID, 40));
-    config.landingUnits.push_back(sLandingUnit::make(engineerID, 20));
-    config.landingUnits.push_back(sLandingUnit::make(surveyorID, 0));
-
-    const auto& smallGenData = unitsData.getSmallGeneratorData();
-    const auto& mineData = unitsData.getMineData();
-
-    config.baseLayout.push_back(cBaseLayoutItem{cPosition(-1, 0), smallGenData.ID});
-    config.baseLayout.push_back(cBaseLayoutItem{cPosition(0, 0), mineData.ID});
-
-    if (clan == 7)
-    {
-        const int startCredits = gameSettings.getStartCredits();
-
-        size_t numAddConstructors = 0;
-        size_t numAddEngineers = 0;
-
-        if (startCredits < 100)
-        {
-            numAddEngineers = 1;
-        }
-        else if (startCredits < 150)
-        {
-            numAddEngineers = 1;
-            numAddConstructors = 1;
-        }
-        else if (startCredits < 200)
-        {
-            numAddEngineers = 2;
-            numAddConstructors = 1;
-        }
-        else if (startCredits < 300)
-        {
-            numAddEngineers = 2;
-            numAddConstructors = 2;
-        }
-        else
-        {
-            numAddEngineers = 3;
-            numAddConstructors = 2;
-        }
-
-        for (size_t i = 0; i != numAddConstructors; ++i)
-        {
-            config.landingUnits.push_back (sLandingUnit::make(constructorID, 0));
-        }
-        for (size_t i = 0; i != numAddEngineers; ++i)
-        {
-            config.landingUnits.push_back (sLandingUnit::make(engineerID, 0));
-        }
-    }
-    config.state = 1;
-}
-
-
 //------------------------------------------------------------------------------
 void cWindowSinglePlayer::newGameClicked()
 {
@@ -222,7 +152,6 @@ void cWindowSinglePlayer::stateSelectMap()
         }
         else
         {
-            auto config = game->getLandingConfig();
             this->stateSetupUnits();
         }
     });
@@ -251,7 +180,7 @@ void cWindowSinglePlayer::stateSetupUnits()
 {
     auto gameSettings = game->getGameSettings();
     auto config = game->getLandingConfig();
-    createInitial(*config, -1, *gameSettings, *game->getUnitsData());
+    createInitial(*config, *gameSettings, *game->getUnitsData());
 
     windowLandingUnitSelection.reset(
             new cWindowLandingUnitSelection(

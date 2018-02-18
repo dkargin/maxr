@@ -212,19 +212,10 @@ bool cActionInitNewGame::isValidLandingPosition(cPosition position, const cStati
 		if (!found)
 			return false;
 
-		// TODO: fill in blocked positions
         for(const auto& item: config.baseLayout)
 		{
             blockedPositions.insert(item.pos + position, item.data->cellSize);
-		}
-		/*
-		//small generator
-		blockedPositions.push_back(position + cPosition(-1, 0));
-		//mine
-		blockedPositions.push_back(position + cPosition(0, -1));
-		blockedPositions.push_back(position + cPosition(1, -1));
-		blockedPositions.push_back(position + cPosition(1,  0));
-		blockedPositions.push_back(position + cPosition(0,  0));*/
+        }
 	}
 
 	int maxRaduis = 6;
@@ -257,13 +248,6 @@ bool cActionInitNewGame::isValidLandingPosition(cPosition position, const cStati
 						blockedPositions.insert(place, unitData.cellSize);
 						placed = true;
 					}
-					/*
-					if (fits && !Contains(blockedPositions, place))
-					{
-						blockedPositions.push_back(place);
-						placed = true;
-					}
-					*/
 				}
 			}
 		}
@@ -367,6 +351,7 @@ bool cActionInitNewGame::findPositionForLayout(cPosition& position,
 				}
 			}
 		}
+
 		radius += 1;
 
 		if (radius > maxRadius)
