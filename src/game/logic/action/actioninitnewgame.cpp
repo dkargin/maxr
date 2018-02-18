@@ -49,7 +49,9 @@ void cActionInitNewGame::execute(cModel& model) const
 	model.initGameId();
 
 	cPlayer& player = *model.getPlayer(playerNr);
+
 	const cUnitsData& unitsdata = *model.getUnitsData();
+    landingConfig.loadUnitsData(unitsdata);
 
 	player.removeAllUnits();
 	Log.write(" GameId: " + toString(model.getGameId()), cLog::eLOG_TYPE_NET_DEBUG);
@@ -279,8 +281,11 @@ void cActionInitNewGame::makeLanding(cPlayer& player, const sLandingConfig& land
 	if (model.getGameSettings()->getBridgeheadType() == eGameSettingsBridgeheadType::Definite)
 	{
 		// place buildings:
-		model.addBuilding(landingPosition + cPosition(-1, 0), model.getUnitsData()->getSpecialIDSmallGen(), &player, true);
-		model.addBuilding(landingPosition + cPosition(0, -1), model.getUnitsData()->getSpecialIDMine(), &player, true);
+        for(const auto& item: landingConfig.baseLayout)
+        {
+            if(item.data)
+                model.addBuilding(landingPosition + item.pos, item.data->ID, &player, true);
+        }
 	}
 
     for (const sLandingUnit& landing: landingConfig.landingUnits)
@@ -303,6 +308,7 @@ void cActionInitNewGame::makeLanding(cPlayer& player, const sLandingConfig& land
 			}
 			radius += 1;
 		}
+
 		if (landing.cargo && vehicle)
 		{
 			if (vehicle->getStaticUnitData().storeResType != eResourceType::Gold)
@@ -329,44 +335,9 @@ cVehicle* cActionInitNewGame::landVehicle(const cPosition& landingPosition, int 
 	return nullptr;
 }
 
-/*
-bool cActionInitNewGame::findPositionForStartMine(cPosition& position, const cUnitsData& unitsData, const cStaticMap& map)
-{
-	const auto& smallGenData = unitsData->getSmallGeneratorData();
-	const auto& mineData = unitsData->getMineData();
-
-	const int maxRadius = 2;
-
-	int radius = 0;
-	while (true)
-	{
-		for (int offY = -radius; offY <= radius; ++offY)
-		{
-			for (int offX = -radius; offX <= radius; ++offX)
-			{
-				const cPosition place = position + cPosition(offX, offY);
-
-				bool placeSmallGen = map->possiblePlace(smallGenData, place + cPosition(-smallGenData.cellSize, 0));
-				bool placeMine = map->possiblePlace(mineData, place + cPosition(0, -mineData.cellSize));
-
-				if ( placeSmallGen && placeMine )
-				{
-					position = place;
-					return true;
-				}
-			}
-		}
-		radius += 1;
-
-		if (radius > maxRadius)
-		{
-			return false;
-		}
-	}
-}
-*/
-
-bool cActionInitNewGame::findPositionForLayout(cPosition& position, const std::list<cLayoutItem>& layout, const cStaticMap& map, int maxRadius)
+bool cActionInitNewGame::findPositionForLayout(cPosition& position,
+                                               const std::vector<cBaseLayoutItem>& layout,
+                                               const cStaticMap& map, int maxRadius)
 {
 	int radius = 0;
 

@@ -66,10 +66,8 @@ void cLocalSingleplayerGameNew::start (cApplication& application)
 	server->start();
 
 	cActionInitNewGame action;
-    action.landingConfig.landingUnits = landingConfig->landingUnits;
-    action.landingConfig.landingPosition = landingConfig->landingPosition;
-    action.landingConfig.unitUpgrades = landingConfig->unitUpgrades;
-	client->sendNetMessage(action);
+    action.landingConfig = *landingConfig;
+    client->sendNetMessage(action);
 
 	gameGuiController = std::make_unique<cGameGuiController> (application, staticMap);
 

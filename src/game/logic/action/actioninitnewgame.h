@@ -54,7 +54,7 @@ private:
 	cVehicle* landVehicle(const cPosition& landingPosition, int radius, const sID& id, cPlayer& player, cModel& model) const;
 
 	//static bool findPositionForStartMine(cPosition& position, const cUnitsData& unitsData, const cStaticMap& map);
-	static bool findPositionForLayout(cPosition& position, const std::list<cLayoutItem>& layout, const cStaticMap& map, int maxRadius = 2);
+    static bool findPositionForLayout(cPosition& position, const std::vector<cBaseLayoutItem>& layout, const cStaticMap& map, int maxRadius = 2);
 };
 
 

@@ -65,6 +65,14 @@ cWindowSinglePlayer::cWindowSinglePlayer() :
 cWindowSinglePlayer::~cWindowSinglePlayer()
 {}
 
+void sLandingConfig::loadUnitsData(const cUnitsData &unitsData) const
+{
+    for(auto& item: this->baseLayout)
+    {
+        item.data = &unitsData.getStaticUnitData(item.ID);
+    }
+}
+
 // TODO: find nice place
 //------------------------------------------------------------------------------
 
@@ -87,8 +95,8 @@ void createInitial(sLandingConfig& config, int clan, const cGameSettings& gameSe
     const auto& smallGenData = unitsData.getSmallGeneratorData();
     const auto& mineData = unitsData.getMineData();
 
-    config.baseLayout.push_back(cLayoutItem{cPosition(-1, 0), &smallGenData});
-    config.baseLayout.push_back(cLayoutItem{cPosition(0, 0), &mineData});
+    config.baseLayout.push_back(cBaseLayoutItem{cPosition(-1, 0), smallGenData.ID});
+    config.baseLayout.push_back(cBaseLayoutItem{cPosition(0, 0), mineData.ID});
 
     if (clan == 7)
     {
@@ -270,6 +278,8 @@ void cWindowSinglePlayer::stateSelectLanding()
     bool fixedBridgeHead = gameSettings->getBridgeheadType() == eGameSettingsBridgeheadType::Definite;
     //auto landingUnits = windowLandingUnitSelection->getLandingUnits();
     auto unitsdata = game->getUnitsData();
+    // Make sure our base layout has proper pointers to static unit data
+    game->getLandingConfig()->loadUnitsData(*unitsdata);
 
     windowLandingPositionSelection.reset(new cWindowLandingPositionSelection(
                     game->getStaticMap(),

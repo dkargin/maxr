@@ -27,6 +27,7 @@ Broken stuff:
  - `bool cUnit::isInRange (const cPosition& position) const` does inproper range calculations
  - `bool cUnit::isNextTo (const cPosition& position) const` does inproper adjacency calculation
  - `void cActionInitNewGame::execute(cModel& model) const`
+ - `void cActionInitNewGame::makeLanding(cPlayer& player, const sLandingConfig& landingConfig, cModel& model) const` seems not getting proper landing position
 
 # Scaling rework #
 

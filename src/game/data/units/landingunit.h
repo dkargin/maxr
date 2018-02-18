@@ -53,16 +53,20 @@ struct sLandingUnit
 };
 
 
-struct cLayoutItem
+struct cBaseLayoutItem
 {
 	cPosition pos;
-	const cStaticUnitData* data;
+    sID ID;
+
+    // This mutable one is bad
+    mutable const cStaticUnitData* data = nullptr;
+
 
 	template<typename T>
 	void serialize(T& archive)
 	{
 		archive & pos;
-		archive & data->ID;
+        archive & ID;
 	}
 };
 
@@ -81,7 +85,9 @@ struct sLandingConfig
 	cPosition landingPosition;
 
 	// Initial layout of the base. Should be filled in XML
-    std::list<cLayoutItem> baseLayout;
+    std::vector<cBaseLayoutItem> baseLayout;
+
+    void loadUnitsData(const cUnitsData& unitsData) const;
 
 	template<typename T>
 	void serialize(T& archive)
@@ -89,7 +95,8 @@ struct sLandingConfig
 		archive & landingUnits;
 		archive & landingPosition;
 		archive & unitUpgrades;
-		//archive & baseLayout;
+        archive & clan;
+        archive & baseLayout;
 	}
 };
 
