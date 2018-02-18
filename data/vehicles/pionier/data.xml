@@ -25,6 +25,7 @@
   </Movement>
 
   <Abilities>
+    <Size Num="2"/>
     <Armor Num="4"/>
     <Hitpoints Num="14"/>
     <Scan_Range Num="3"/>

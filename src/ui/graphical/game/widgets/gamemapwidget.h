@@ -280,6 +280,7 @@ private:
 	void drawPathArrow(SDL_Rect dest, const SDL_Rect& lastDest, bool spezialColor) const;
 	void drawBuildPath (const cVehicle& vehicle);
 
+    // Draw a box around selected units
 	void drawSelectionBox();
 
 	void drawUnitCircles();
@@ -288,6 +289,7 @@ private:
 	void drawExitPoints();
 	void drawExitPoint (const cPosition& position);
 	void drawExitPointsIf (const cUnit& unit, const std::function<bool (const cPosition&)>& predicate);
+    // Draws an area for build mode
 	void drawBuildBand();
 
 	bool shouldDrawUnit (const cUnit& unit, const cPosition& visitingPosition, const std::pair<cPosition, cPosition>& tileDrawingRange);

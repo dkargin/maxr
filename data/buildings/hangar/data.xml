@@ -19,7 +19,7 @@
   </Movement>
 
   <Abilities>
-    <Is_Big YN="Yes"/>
+    <Size Num="6"/>
     <Connects_To_Base YN="Yes"/>
     <Armor Num="12"/>
     <Hitpoints Num="56"/>

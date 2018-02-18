@@ -29,6 +29,7 @@
   </Movement>
 
   <Abilities>
+    <Size Num="3"/>
     <Connects_To_Base YN="Yes"/>
     <Can_Be_Disabled YN="Yes"/>
     <Armor Num="8"/>

@@ -1647,8 +1647,11 @@ static void LoadUnitData (cStaticUnitData& staticData, cDynamicUnitData& dynamic
 	staticData.factorCoast = getXMLAttributeFloat(unitDataXml, "Unit", "Movement", "Factor_Coast", nullptr);
 
 	// Abilities
-	bool isBig = getXMLAttributeBool(unitDataXml, "Unit", "Abilities", "Is_Big", nullptr);
-	staticData.cellSize = isBig ? 3 : 1;// = getXMLAttributeBool(unitDataXml, "Unit", "Abilities", "Is_Big", nullptr);
+    //bool isBig = getXMLAttributeBool(unitDataXml, "Unit", "Abilities", "Is_Big", nullptr);
+    //staticData.cellSize = isBig ? 3 : 1;// = getXMLAttributeBool(unitDataXml, "Unit", "Abilities", "Is_Big", nullptr);
+    staticData.cellSize = getXMLAttributeInt(unitDataXml, "Unit", "Abilities", "Size", nullptr);
+    if(staticData.cellSize < 1)
+        staticData.cellSize = 1;
 	staticData.connectsToBase = getXMLAttributeBool(unitDataXml, "Unit", "Abilities", "Connects_To_Base", nullptr);
 	dynamicData.setArmor(getXMLAttributeInt(unitDataXml, "Unit", "Abilities", "Armor", nullptr));
 	dynamicData.setHitpointsMax(getXMLAttributeInt(unitDataXml, "Unit", "Abilities", "Hitpoints", nullptr));

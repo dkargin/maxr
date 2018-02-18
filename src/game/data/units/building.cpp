@@ -423,30 +423,40 @@ void cBuilding::render_rubble (SDL_Surface* surface, const SDL_Rect& dest, float
 void cBuilding::render_beton (SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor) const
 {
 	SDL_Rect tmp = dest;
-	// TODO: Properly fill in the whole area
+    /* TODO: Properly fill in the whole area
+     * This place is likely a good reason to implement proper tiling templates
+     */
 	int size = cellSize;
+    SDL_Surface* underlay_surface = nullptr;
+    int step = 0;
 	if (size & 1)	// if size is even - fill land by 1x1 floor tiles
 	{
 		CHECK_SCALING (*UnitsUiData.ptr_small_beton, *UnitsUiData.ptr_small_beton_org, zoomFactor);
-		if (alphaEffectValue && cSettings::getInstance().isAlphaEffects())
-			SDL_SetSurfaceAlphaMod(UnitsUiData.ptr_small_beton, alphaEffectValue);
-		else
-			SDL_SetSurfaceAlphaMod(UnitsUiData.ptr_small_beton, 254);
 
-		SDL_BlitSurface(UnitsUiData.ptr_small_beton, nullptr, surface, &tmp);
-		SDL_SetSurfaceAlphaMod(UnitsUiData.ptr_small_beton, 254);
+        step = 1;
+        underlay_surface = UnitsUiData.ptr_small_beton;
 	}
 	else // or use 2x2 tiles
 	{
 		CHECK_SCALING (*GraphicsData.gfx_big_beton, *GraphicsData.gfx_big_beton_org, zoomFactor);
-
-		if (alphaEffectValue && cSettings::getInstance().isAlphaEffects())
-			SDL_SetSurfaceAlphaMod (GraphicsData.gfx_big_beton.get(), alphaEffectValue);
-		else
-			SDL_SetSurfaceAlphaMod (GraphicsData.gfx_big_beton.get(), 254);
-
-		SDL_BlitSurface (GraphicsData.gfx_big_beton.get(), nullptr, surface, &tmp);
+        step = 2;
+        underlay_surface = UnitsUiData.ptr_small_beton;
 	}
+
+    for(int y = 0; y < size; y += step)
+        for(int x = 0; x < size;  x+= step)
+        {
+            SDL_Rect tmp = dest;
+            tmp.x += (x * 64 * zoomFactor);
+            tmp.y += (y * 64 * zoomFactor);
+
+            if (alphaEffectValue && cSettings::getInstance().isAlphaEffects())
+                SDL_SetSurfaceAlphaMod(underlay_surface, alphaEffectValue);
+            else
+                SDL_SetSurfaceAlphaMod(underlay_surface, 254);
+
+            SDL_BlitSurface(underlay_surface, nullptr, surface, &tmp);
+        }
 }
 
 //------------------------------------------------------------------------------
