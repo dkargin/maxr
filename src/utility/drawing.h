@@ -21,6 +21,8 @@
 #define utility_drawingH
 
 #include <SDL.h>
+#include "position.h"
+#include "box.h"
 
 class cRgbColor;
 class cPosition;
@@ -53,5 +55,41 @@ void replaceColor (SDL_Surface& surface, const cRgbColor& sourceColor, const cRg
  * @param clipRect The clipping area.
  */
 void blitClipped (SDL_Surface& source, const cBox<cPosition>& area, SDL_Surface& destination, const cBox<cPosition>& clipRect);
+
+// Wrapper for drawing sprites from world coordinates
+struct sSprite
+{
+    int id;                     //< Some helper ID.
+    SDL_Surface* surface;       //< Pointer to SDL surface
+    SDL_Rect srcRect;           //< Area of source surface
+    cBox<cVector2> rect;        //< Offset and desired size. In 'world' tile coordinates. That's static data from
+
+    enum FitMode
+    {
+        FitCenter,              //< Place source bitmap at the center of 'offset' rect
+        FitScale,               //< Scale source bitmap to fit 'rect'
+        FitTile,                //< Repeat source bitbap to fill in all the area
+    }mode;                      //< Rendering mode. That's static data from XML
+    cVector2 position;          //< World position of this sprite
+    float z;                    //< Z coordinate for additional z-ordering
+};
+
+// Sprite that was projected to screen coordinates
+struct sProjectedSprite
+{
+    SDL_Surface* surface;
+    SDL_Rect srcRect;
+    SDL_Rect dstRect;
+    float z;
+};
+
+/**
+ *
+ * @param source sprite
+ * @param destination - destination surface
+ * @param dstRect - rectangle from destination surface. All rendering should be clipped to this rectangle
+ * @param viewArea - area of world, that is projected to destination surface
+ */
+sProjectedSprite projectSprite(const sSprite& sprite, SDL_Surface* destination, SDL_Rect dstRect, cBox<cVector2> viewArea);
 
 #endif // utility_drawingH

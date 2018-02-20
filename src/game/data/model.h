@@ -49,6 +49,10 @@ class cGameTimer;
 class cTurnTimeClock;
 class cTurnTimeDeadline;
 
+/**
+ * @brief The cModel class
+ * Contains the whole game world, with map and units
+ */
 class cModel
 {
 	friend class cDebugOutputWidget;

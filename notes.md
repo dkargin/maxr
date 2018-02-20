@@ -14,6 +14,7 @@ My plan so far:
 	- Make constructor 2x2
 	- Fix pathfinder to deal with increased map size
 	- Update unit sizes according to this change
+	- Update loading process to support multiple 'data' folders. Yeah, that means proper modding support.
 1. Lua AI in screeps style
 	- make lua bindings for
 		- unit control
@@ -61,6 +62,8 @@ Building process should not need the unit to move to the center of building area
 
 # Rendering pipeline #
 
+@param destination - screen surface. We render everything to it
+@param clipRect - area, locked to widget. Is it handled by SDL?
 void cGameMapWidget::draw (SDL_Surface& destination, const cBox<cPosition>& clipRect)
 {
 ...
@@ -73,3 +76,59 @@ void cGameMapWidget::draw (SDL_Surface& destination, const cBox<cPosition>& clip
 	drawPlanes();
 ...
 }
+
+Iterates through all visible map tiles. IndexIterator is a wonderfull thingy
+
+```
+void cGameMapWidget::drawTopBuildings()
+{
+	if (!mapView) return;
+
+	const auto zoomedTileSize = getZoomedTileSize();
+	const auto tileDrawingRange = computeTileDrawingRange();
+	const auto zoomedStartTilePixelOffset = getZoomedStartTilePixelOffset();
+
+	for (auto i = makeIndexIterator (tileDrawingRange.first, tileDrawingRange.second); i.hasMore(); i.next())
+```
+
+struct cSprite
+{
+	cSurface* surface; 	//< Pointer to SDL surface
+	cRectF srcRect;		//< Area of source surface
+	cRectF rect;		//< Offset and desired size. In 'world' tile coordinates. That's static data from 
+	enum FitMode {
+		FitCenter,		//< Place source bitmap at the center of 'offset' rect
+		FitScale,		//< Scale source bitmap to fit 'rect'
+		FitTile,		//< Repeat source bitbap to fill in all the area
+	} mode;				//< Rendering mode. That's static data from XML
+	cPoint2f position;	//< World position
+};
+
+Rendering process:
+
+Building:
+	building.render - generate sprites
+		.render_rubble -> sprites
+		.render_beton -> sprites
+		.drawConnectors -> tricky sprites
+		.drawShadow -> sprites
+		.render_simple
+			player color
+			main building sprite
+			clan logo
+
+	building.uiData->eff - some sort of pulsing effect
+	finished status - rectangle
+
+	drawSelectionCorner - rectangle brackets
+	drawHealthBar
+	drawMunBar
+	drawStatus
+
+Vehicle:
+	shadow bitmap with altered height
+	drawSelectionRectangle
+	drawSelectionCorner
+	drawHealthBar
+	drawMunBar
+	drawStatus

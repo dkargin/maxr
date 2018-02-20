@@ -915,65 +915,45 @@ void cMap::addBuilding (cBuilding& building, const cPosition& position)
 			field.addBuilding (building, i);
 		}
 	}
-#ifdef FUCK_THIS
-	if (building.getIsBig())
-	{
-		// We are iterating all over every position inside the building
-		auto& field = getField (position);
-		i = 0;
-		while (i < field.getBuildings().size() && cMap::getMapLevel (*field.getBuildings()[i]) < mapLevel) i++;
-		field.addBuilding (building, i);
-
-		auto& fieldEast = getField (position + cPosition (1, 0));
-		i = 0;
-		while (i < fieldEast.getBuildings().size() && cMap::getMapLevel (*fieldEast.getBuildings()[i]) < mapLevel) i++;
-		fieldEast.addBuilding (building, i);
-
-		auto& fieldSouth = getField (position + cPosition (0, 1));
-		i = 0;
-		while (i < fieldSouth.getBuildings().size() && cMap::getMapLevel (*fieldSouth.getBuildings()[i]) < mapLevel) i++;
-		fieldSouth.addBuilding (building, i);
-
-		auto& fieldSouthEast = getField (position + cPosition (1, 1));
-		i = 0;
-		while (i < fieldSouthEast.getBuildings().size() && cMap::getMapLevel (*fieldSouthEast.getBuildings()[i]) < mapLevel) i++;
-		fieldSouthEast.addBuilding (building, i);
-	}
-	else
-	{
-		auto& field = getField (position);
-
-		while (i < field.getBuildings().size() && cMap::getMapLevel (*field.getBuildings()[i]) < mapLevel)
-			i++;
-		field.addBuilding (building, i);
-	}
-#endif
 
 	addedUnit (building);
 }
 
 void cMap::addVehicle (cVehicle& vehicle, const cPosition& position)
 {
-	auto& field = getField (position);
-	if (vehicle.getStaticUnitData().factorAir > 0)
-	{
-		field.addPlane (vehicle, 0);
-	}
-	else
-	{
-		field.addVehicle (vehicle, 0);
-	}
+    bool isAir = vehicle.getStaticUnitData().factorAir;
+
+    int size = vehicle.getCellSize();
+
+    // We are iterating all over every position inside the vehicle
+    for(int y = 0; y < size; y++)
+    {
+        for(int x = 0; x < size; x++)
+        {
+            auto& field = getField (position.relative(x,y));
+
+            if (isAir > 0)
+            {
+                field.addPlane (vehicle, 0);
+            }
+            else
+            {
+                field.addVehicle (vehicle, 0);
+            }
+        }
+    }
 
 	if (vehicle.getCellSize() > 1)
 	{
 		moveVehicleBig(vehicle, position);
 	}
+
 	addedUnit (vehicle);
 }
 
 void cMap::deleteBuilding (const cBuilding& object)
 {
-	// We are iterating all over every position inside the building
+    // We are iterating all over every occupied position inside the building
 	int size = object.getCellSize();
 	cPosition pos = object.getPosition();
 
@@ -981,40 +961,34 @@ void cMap::deleteBuilding (const cBuilding& object)
 	{
 		for(int x = 0; x < size; x++)
 		{
-			getField (pos.relative(x,y)).removeBuilding (object);
+            auto& field = getField (pos.relative(x,y));
+            field.removeBuilding (object);
 		}
 	}
-
-#ifdef FUCK_THIS
-	if (object.getIsBig())
-	{
-		getField (object.getPosition() + cPosition (1, 0)).removeBuilding (object);
-		getField (object.getPosition() + cPosition (1, 1)).removeBuilding (object);
-		getField (object.getPosition() + cPosition (0, 1)).removeBuilding (object);
-	}
-	removedUnit (object);
-#endif
 }
 
 void cMap::deleteVehicle (const cVehicle& object)
 {
-	if (object.getStaticUnitData().factorAir > 0)
-	{
-		getField (object.getPosition()).removePlane (object);
-	}
-	else
-	{
-		int size = object.getCellSize();
-		cPosition pos = object.getPosition();
+    bool isAir = object.getStaticUnitData().factorAir;
 
-		for(int y = 0; y < size; y++)
-		{
-			for(int x = 0; x < size; x++)
-			{
-				getField (pos.relative(x,y)).removeVehicle (object);
-			}
-		}
-	}
+    // We are iterating all over every occupied position inside the vehicle
+    int size = object.getCellSize();
+    cPosition pos = object.getPosition();
+
+    for(int y = 0; y < size; y++)
+    {
+        for(int x = 0; x < size; x++)
+        {
+            auto& field = getField (pos.relative(x,y));
+            field.removeVehicle (object);
+
+            if(isAir)
+            {
+                field.removePlane(object);
+            }
+        }
+    }
+
 	removedUnit (object);
 }
 
@@ -1071,6 +1045,7 @@ void cMap::moveVehicle (cVehicle& vehicle, const cPosition& position, int height
 		getField (position).addVehicle (vehicle, 0);
 
 	}
+
 	movedVehicle (vehicle, oldPosition);
 }
 
@@ -1084,10 +1059,11 @@ void cMap::moveVehicleBig (cVehicle& vehicle, const cPosition& position)
 		moveVehicle (vehicle, position);
 	}
 
+    // Removing vehicle from the old position
 	const auto oldPosition = vehicle.getPosition();
-
 	getField (oldPosition).removeVehicle (vehicle);
 
+    // Registering vehicle at the new position
 	vehicle.setPosition (position);
 
 	getField (position).addVehicle (vehicle, 0);
@@ -1097,6 +1073,7 @@ void cMap::moveVehicleBig (cVehicle& vehicle, const cPosition& position)
 
 	// WTF? TODO: Why we reset it here?
 	//vehicle.setIsBig(true);
+
 
 	movedVehicle (vehicle, oldPosition);
 }

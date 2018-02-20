@@ -443,17 +443,18 @@ void cBuilding::render_beton (SDL_Surface* surface, const SDL_Rect& dest, float 
         underlay_surface = UnitsUiData.ptr_small_beton;
 	}
 
+    if (alphaEffectValue && cSettings::getInstance().isAlphaEffects())
+        SDL_SetSurfaceAlphaMod(underlay_surface, alphaEffectValue);
+    else
+        SDL_SetSurfaceAlphaMod(underlay_surface, 254);
+
+
     for(int y = 0; y < size; y += step)
         for(int x = 0; x < size;  x+= step)
         {
             SDL_Rect tmp = dest;
             tmp.x += (x * 64 * zoomFactor);
             tmp.y += (y * 64 * zoomFactor);
-
-            if (alphaEffectValue && cSettings::getInstance().isAlphaEffects())
-                SDL_SetSurfaceAlphaMod(underlay_surface, alphaEffectValue);
-            else
-                SDL_SetSurfaceAlphaMod(underlay_surface, 254);
 
             SDL_BlitSurface(underlay_surface, nullptr, surface, &tmp);
         }
