@@ -614,8 +614,6 @@ void cGameMapWidget::draw (SDL_Surface& destination, const cBox<cPosition>& clip
 
 	unitDrawingEngine.drawingCache.resetStatistics();
 
-    //const auto zoomedStartTilePixelOffset = getZoomedStartTilePixelOffset();
-
     auto selectedVehicle = unitSelection.getSelectedVehicle();
     bool shouldDrawResourceGrid = shouldDrawSurvey ||
             (selectedVehicle && selectedVehicle->getOwner() == player.get() && selectedVehicle->getStaticUnitData().canSurvey);
@@ -682,27 +680,11 @@ void cGameMapWidget::draw (SDL_Surface& destination, const cBox<cPosition>& clip
                     rq.enqueue(RenderQueue::LayerVehicles, vehicle);
             }
 
-            // drawAboveSeaBaseUnits logic DONE
-            // drawVehicles(rc)             DONE
-            // drawConnectors(rc);          DONE
-
-            // drawPlanes(rc);              DONE
-
-            //auto drawDestination = computeTileDrawingArea (zoomedTileSize, zoomedStartTilePixelOffset, tileDrawingRange.first, *i);
             for (cVehicle* vehicle: field.getPlanes())
             {
-                //unitDrawingEngine.drawUnit (plane, drawDestination, getZoomFactor(), *mapView, &unitSelection, player.get());
                 rq.enqueue(RenderQueue::LayerPlanes, vehicle);
             }
         }
-
-        //drawBaseUnits(rc);
-        //drawTopBuildings(rc);
-        //drawShips(rc);
-        //drawAboveSeaBaseUnits(rc);
-        //drawVehicles(rc);
-        //drawConnectors(rc);
-        drawPlanes(rc);
 
         if(shouldDrawResourceGrid)
             drawResources(rc);
@@ -1298,141 +1280,6 @@ void cGameMapWidget::drawEffects (bool bottom)
 }
 
 //------------------------------------------------------------------------------
-void cGameMapWidget::drawBaseUnits(sRenderContext& rc)
-{
-#ifdef FUCK_THIS
-    RenderQueue rq;
-
-    for (auto i = rc.tileIterator(); i.hasMore(); i.next())
-	{
-
-		auto& mapField = mapView->getField (*i);
-        for (cBuilding* building : mapField.getBuildings())
-		{
-            if (building == nullptr)
-                continue; // should never happen
-
-            if (!building->isRubble() && (
-                building->getStaticUnitData().surfacePosition != cStaticUnitData::SURFACE_POS_BENEATH_SEA &&
-                building->getStaticUnitData().surfacePosition != cStaticUnitData::SURFACE_POS_BASE))
-                break;
-
-            rq.enqueue(RenderQueue::LayerBaseUnits, building);
-		}
-	}
-
-    // Draw everything stored in render queue
-    rq.for_each([this, &rc](RenderQueue::RenderLayer layer, cUnit* unit)
-    {
-        int size = unit->getCellSize();
-        SDL_Rect drawDestination = rc.computeTileDrawingArea(obj->getPosition(), width, height);
-
-        if(unit->isABuilding())
-        {
-            unitDrawingEngine.drawUnit(static_cast<cBuilding>(unit), drawDestination, rc.zoomFactor, &unitSelection, player.get());
-        }
-        else
-        {
-            unitDrawingEngine.drawUnit(static_cast<cVehicle>(unit), drawDestination, rc.zoomFactor, &unitSelection, player.get());
-        }
-    });
-#endif
-}
-
-//------------------------------------------------------------------------------
-void cGameMapWidget::drawTopBuildings(sRenderContext& rc)
-{
-#ifdef FUCK_THIS
-    for (auto i = rc.tileIterator(); i.hasMore(); i.next())
-	{
-		auto& mapField = mapView->getField (*i);
-		auto building = mapField.getTopBuilding();
-        if (building == nullptr)
-            continue;
-        if (building->getStaticUnitData().surfacePosition != cStaticUnitData::SURFACE_POS_GROUND)
-            continue;
-
-        if (!shouldDrawUnit (*building, *i, tileDrawingRange))
-            continue;
-
-        int size = building->getCellSize();
-        auto drawDestination = rc.computeTileDrawingArea(building->getPosition(), size, size);
-
-        unitDrawingEngine.drawUnit (*building, drawDestination, getZoomFactor(), &unitSelection, player.get());
-
-		//if (debugOutput.debugBaseClient && building->SubBase)
-		//	drawTopBuildings_DebugBaseClient (*building, drawDestination);
-		//if (debugOutput.debugBaseServer && building->SubBase)
-		//	drawTopBuildings_DebugBaseServer (*building, drawDestination, pos);
-	}
-#endif
-}
-
-//------------------------------------------------------------------------------
-void cGameMapWidget::drawShips(sRenderContext& rc)
-{
-    const auto tileDrawingRange = computeTileDrawingRange();
-    const auto zoomedStartTilePixelOffset = getZoomedStartTilePixelOffset();
-
-    for (auto i = rc.tileIterator(); i.hasMore(); i.next())
-	{
-		auto& mapField = mapView->getField (*i);
-		auto vehicle = mapField.getVehicle();
-        if (vehicle == nullptr)
-            continue;
-		if (vehicle->getStaticUnitData().factorSea > 0 && vehicle->getStaticUnitData().factorGround == 0)
-		{
-            auto drawDestination = computeTileDrawingArea (rc.tileSize, zoomedStartTilePixelOffset, tileDrawingRange.first, *i);
-			unitDrawingEngine.drawUnit (*vehicle, drawDestination, getZoomFactor(), *mapView, &unitSelection, player.get());
-		}
-	}
-}
-
-//------------------------------------------------------------------------------
-void cGameMapWidget::drawAboveSeaBaseUnits(sRenderContext& rc)
-{
-#ifdef FUCK_THIS
-    const auto tileDrawingRange = computeTileDrawingRange();
-    const auto zoomedStartTilePixelOffset = getZoomedStartTilePixelOffset();
-
-    for (auto i = rc.tileIterator(); i.hasMore(); i.next())
-	{
-		auto& mapField = mapView->getField (*i);
-
-		const auto& buildings = mapField.getBuildings();
-
-        for (const auto& building: buildings)
-		{
-            if (building->getStaticUnitData().surfacePosition == cStaticUnitData::SURFACE_POS_ABOVE_SEA)
-			{
-                const auto drawDestination = rc.computeTileDrawingArea (tileDrawingRange.first, building.getPosition());
-				unitDrawingEngine.drawUnit (building, drawDestination, getZoomFactor(), &unitSelection, player.get());
-			}
-		}
-
-        for (const auto& building: buildings)
-        {
-            if (building->getStaticUnitData().surfacePosition == cStaticUnitData::SURFACE_POS_ABOVE_BASE)
-			{
-                const auto drawDestination = rc.computeTileDrawingArea (building.getPosition());
-				unitDrawingEngine.drawUnit (building, drawDestination, getZoomFactor(), &unitSelection, player.get());
-			}
-		}
-
-		auto vehicle = mapField.getVehicle();
-		if (vehicle && (vehicle->isUnitClearing() || vehicle->isUnitBuildingABuilding()))
-		{
-			if (shouldDrawUnit (*vehicle, *i, tileDrawingRange))
-			{
-                const auto drawDestination = rc.computeTileDrawingArea (vehicle->getPosition());
-				unitDrawingEngine.drawUnit (*vehicle, drawDestination, getZoomFactor(), *mapView, &unitSelection, player.get());
-			}
-		}
-	}
-#endif
-}
-
-//------------------------------------------------------------------------------
 bool cGameMapWidget::shouldDrawUnit (const cUnit& unit, const cPosition& visitingPosition, const std::pair<cPosition, cPosition>& tileDrawingRange)
 {
 	assert (unit.isAbove (visitingPosition));
@@ -1453,65 +1300,6 @@ bool cGameMapWidget::shouldDrawUnit (const cUnit& unit, const cPosition& visitin
 		else
 		{
 			return visitingPosition == unit.getPosition();
-		}
-	}
-}
-
-//------------------------------------------------------------------------------
-void cGameMapWidget::drawVehicles(sRenderContext& rc)
-{
-    const auto tileDrawingRange = computeTileDrawingRange();
-    const auto zoomedStartTilePixelOffset = getZoomedStartTilePixelOffset();
-
-    for (auto i = rc.tileIterator(); i.hasMore(); i.next())
-	{
-		auto& mapField = mapView->getField (*i);
-		auto vehicle = mapField.getVehicle();
-		if (vehicle == nullptr) continue;
-		if (vehicle->getStaticUnitData().factorGround != 0 && !vehicle->isUnitBuildingABuilding() && !vehicle->isUnitClearing())
-		{
-            auto drawDestination = computeTileDrawingArea (rc.tileSize, zoomedStartTilePixelOffset, tileDrawingRange.first, *i);
-			unitDrawingEngine.drawUnit (*vehicle, drawDestination, getZoomFactor(), *mapView, &unitSelection, player.get());
-		}
-	}
-}
-
-//------------------------------------------------------------------------------
-void cGameMapWidget::drawConnectors(sRenderContext& rc)
-{
-    const auto tileDrawingRange = computeTileDrawingRange();
-    const auto zoomedStartTilePixelOffset = getZoomedStartTilePixelOffset();
-
-    for (auto i = rc.tileIterator(); i.hasMore(); i.next())
-	{
-		auto& mapField = mapView->getField (*i);
-		auto building = mapField.getTopBuilding();
-		if (building == nullptr) continue;
-		if (building->getStaticUnitData().surfacePosition == cStaticUnitData::SURFACE_POS_ABOVE)
-		{
-            auto drawDestination = computeTileDrawingArea (rc.tileSize, zoomedStartTilePixelOffset, tileDrawingRange.first, *i);
-			unitDrawingEngine.drawUnit (*building, drawDestination, getZoomFactor(), &unitSelection, player.get());
-		}
-	}
-}
-
-//------------------------------------------------------------------------------
-void cGameMapWidget::drawPlanes(sRenderContext& rc)
-{
-    const auto zoomedTileSize = getZoomedTileSize();
-    const auto tileDrawingRange = computeTileDrawingRange();
-    const auto zoomedStartTilePixelOffset = getZoomedStartTilePixelOffset();
-
-    for (auto i = rc.tileIterator(); i.hasMore(); i.next())
-	{
-		auto& mapField = mapView->getField (*i);
-		const auto& planes = mapField.getPlanes();
-
-		auto drawDestination = computeTileDrawingArea (zoomedTileSize, zoomedStartTilePixelOffset, tileDrawingRange.first, *i);
-		for (auto it = planes.rbegin(); it != planes.rend(); ++it)
-		{
-			auto& plane = **it;
-			unitDrawingEngine.drawUnit (plane, drawDestination, getZoomFactor(), *mapView, &unitSelection, player.get());
 		}
 	}
 }

@@ -291,16 +291,7 @@ private:
     void drawTerrain(sRenderContext& rc);
     void drawGrid(sRenderContext& rc);
 	void drawEffects (bool bottom);
-
-    void drawBaseUnits(sRenderContext& rc);
-    void drawTopBuildings(sRenderContext& rc);
-    void drawShips(sRenderContext& rc);
-    void drawAboveSeaBaseUnits(sRenderContext& rc);
-    void drawVehicles(sRenderContext& rc);
-    void drawConnectors(sRenderContext& rc);
-    void drawPlanes(sRenderContext& rc);
     void drawResources(sRenderContext& rc);
-
     void drawPath (const cVehicle& vehicle, sRenderContext& rc);
 	void drawPathArrow(SDL_Rect dest, const SDL_Rect& lastDest, bool spezialColor) const;
     void drawBuildPath (const cVehicle& vehicle, sRenderContext& rc);
