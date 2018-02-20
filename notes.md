@@ -74,6 +74,11 @@ void cGameMapWidget::draw (SDL_Surface& destination, const cBox<cPosition>& clip
 	drawVehicles();
 	drawConnectors();
 	drawPlanes();
+
+	drawResources(...)
+	drawPath()
+	drawSelectionBox()
+	
 ...
 }
 
@@ -91,18 +96,6 @@ void cGameMapWidget::drawTopBuildings()
 	for (auto i = makeIndexIterator (tileDrawingRange.first, tileDrawingRange.second); i.hasMore(); i.next())
 ```
 
-struct cSprite
-{
-	cSurface* surface; 	//< Pointer to SDL surface
-	cRectF srcRect;		//< Area of source surface
-	cRectF rect;		//< Offset and desired size. In 'world' tile coordinates. That's static data from 
-	enum FitMode {
-		FitCenter,		//< Place source bitmap at the center of 'offset' rect
-		FitScale,		//< Scale source bitmap to fit 'rect'
-		FitTile,		//< Repeat source bitbap to fill in all the area
-	} mode;				//< Rendering mode. That's static data from XML
-	cPoint2f position;	//< World position
-};
 
 Rendering process:
 
@@ -132,3 +125,29 @@ Vehicle:
 	drawHealthBar
 	drawMunBar
 	drawStatus
+
+std::pair<cPosition, cPosition> computeTileDrawingRange() const;
+
+
+-std::pair<cPosition, cPosition> cGameMapWidget::computeTileDrawingRange() const
++cBox<cVector2> cGameMapWidget::computeTileDrawingRange() const^M
+ {
+-       const auto zoomedTileSize = getZoomedTileSize();
+-
++    cPosition zoomedTileSize = getZoomedTileSize();^M
+        const cPosition drawingPixelRange = getSize() + getZoomedStartTilePixelOffset();
+ 
+        const cPosition tilesSize ((int)std::ceil (drawingPixelRange.x() / zoomedTileSize.x()), (int)std::ceil (drawingPixelRange.y() / zoomedTileSize.y()));
+ 
+-       cPosition startTile ((int)std::floor (pixelOffset.x() / cStaticMap::tilePixelWidth), (int)std::floor (pixelOffset.y() / cStaticMap::tilePixelHeight));
++    cPosition startTile((int)std::floor (pixelOffset.x() / cStaticMap::tilePixelWidth), (int)std::floor (pixelOffset.y() / cStaticMap::tilePixelHeight));^M
+        cPosition endTile (startTile + tilesSize + 1);
+ 
+        startTile.x() = std::max (0, startTile.x());
+@@ -978,21 +1003,22 @@ std::pair<cPosition, cPosition> cGameMapWidget::computeTileDrawingRange() const
+        endTile.x() = std::min (staticMap->getSize().x(), endTile.x());
+        endTile.y() = std::min (staticMap->getSize().y(), endTile.y());
+ 
+-       return std::make_pair (startTile, endTile);
++    return cBox<(startTile, endTile);^M
+ }

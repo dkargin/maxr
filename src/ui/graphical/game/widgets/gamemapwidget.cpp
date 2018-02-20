@@ -66,6 +66,84 @@
 #include "game/logic/pathcalculator.h"
 #include "game/data/map/mapfieldview.h"
 
+// We gather all visible objects to this render queue
+struct RenderQueue
+{
+    // Layers to be rendered
+    // Render queue has a separate queue for each layer
+    enum RenderLayer
+    {
+        LayerBaseUnits,
+        LayerTopBuildings,
+        LayerShips,
+        LayerAboveSeaBase,
+        LayerVehicles,
+        LayerConnectors,
+        LayerPlanes,
+        LayerResource,
+        LayerMax,
+    };
+
+    typedef cUnit* RenderObjectPtr;
+    typedef std::set<RenderObjectPtr> cRenderList;
+    cRenderList layers[LayerMax];
+
+    void enqueue(RenderLayer layer, RenderObjectPtr object)
+    {
+        assert(layer < LayerMax);
+        layers[(int)layer].insert(object);
+    }
+
+
+    typedef void RenderCallbackSig(RenderLayer, RenderObjectPtr);
+    typedef std::function<RenderCallbackSig> RenderCallback;
+
+    // Iterates through all stored objects and invokes @callback
+    // @param callback - callback to be invoked for every picked object
+    void for_each(const RenderCallback& callback)
+    {
+        for(int i = 0; i < LayerMax; i++)
+        {
+            for(RenderObjectPtr obj: layers[i])
+                callback((RenderLayer)i, obj);
+        }
+    }
+};
+
+cIndexIterator<cPosition> cGameMapWidget::sRenderContext::tileIterator() const
+{
+    return makeIndexIterator<cPosition>(visibleMapArea.getMinCorner(), visibleMapArea.getMaxCorner());
+}
+
+SDL_Rect cGameMapWidget::sRenderContext::computeTileDrawingArea (const cPosition& tileIndex, int width, int height) const
+{
+    const cPosition corner = visibleMapArea.getMinCorner();
+    //const cPosition startDrawPosition = getPosition() + (tileIndex - corner) * tileSize - pixelOffset;
+    const cPosition startDrawPosition = this->viewPort.getMinCorner() + (tileIndex - corner) * tileSize - pixelOffset;
+    return SDL_Rect{startDrawPosition.x(), startDrawPosition.y(), tileSize.x(), tileSize.y()};
+}
+
+/*
+
+std::pair<cPosition, cPosition> cGameMapWidget::computeTileDrawingRange() const
+{
+    const auto zoomedTileSize = getZoomedTileSize();
+    const cPosition drawingPixelRange = getSize() + getZoomedStartTilePixelOffset();
+
+    const cPosition tilesSize ((int)std::ceil (drawingPixelRange.x() / zoomedTileSize.x()), (int)std::ceil (drawingPixelRange.y() / zoomedTileSize.y()));
+
+    cPosition startTile((int)std::floor (pixelOffset.x() / cStaticMap::tilePixelWidth), (int)std::floor (pixelOffset.y() / cStaticMap::tilePixelHeight));
+    cPosition endTile (startTile + tilesSize + 1);
+
+    startTile.x() = std::max (0, startTile.x());
+    endTile.x() = std::min (staticMap->getSize().x(), endTile.x());
+    endTile.y() = std::min (staticMap->getSize().y(), endTile.y());
+
+    return std::make_pair (startTile, endTile);
+}
+
+ */
+
 //------------------------------------------------------------------------------
 cGameMapWidget::cGameMapWidget (const cBox<cPosition>& area, std::shared_ptr<const cStaticMap> staticMap_, std::shared_ptr<cAnimationTimer> animationTimer_, std::shared_ptr<cSoundManager> soundManager_, std::shared_ptr<const cFrameCounter> frameCounter) :
 	cClickableWidget (area),
@@ -105,6 +183,7 @@ cGameMapWidget::cGameMapWidget (const cBox<cPosition>& area, std::shared_ptr<con
 	setMouseInputMode (std::make_unique<cMouseModeDefault> (mapView.get(), unitSelection, player.get()));
 
 	// TODO: should this really be done here?
+    // Nope, it should not be anywhere except render cycle
 	signalConnectionManager.connect (animationTimer->triggered400ms, [&]()
 	{
 		const_cast<cStaticMap&> (*staticMap).generateNextAnimationFrame();
@@ -144,7 +223,8 @@ cGameMapWidget::cGameMapWidget (const cBox<cPosition>& area, std::shared_ptr<con
 	zoomFactorChanged.connect ([this]()
 	{
 		const auto tileDrawingRange = computeTileDrawingRange();
-		const cPosition difference = tileDrawingRange.first - tileDrawingRange.second;
+        // Why first-second and not reverse?
+        const cPosition difference = tileDrawingRange.first - tileDrawingRange.second;
 		const auto diameter = difference.l2Norm();
 		soundManager->setMaxListeningDistance ((int) (diameter * 2));
 	});
@@ -453,12 +533,13 @@ void cGameMapWidget::setMapView(std::shared_ptr<const cMapView> mapView_)
 				unitSelection.deselectUnit (unit);
 			}
 		});
+
 		mapViewSignalConnectionManager.connect (mapView->unitAppeared, [&](const cUnit & unit)
 		{
 			if (!cSettings::getInstance().isAnimations()) return;
 
 			const auto tileDrawingRange = computeTileDrawingRange();
-			const auto tileDrawingArea = cBox<cPosition> (tileDrawingRange.first, tileDrawingRange.second - cPosition (1, 1));
+            const auto tileDrawingArea = cBox<cPosition> (tileDrawingRange.first, tileDrawingRange.second - cPosition (1, 1));
 
 			if (tileDrawingArea.intersects (unit.getArea()))
 			{
@@ -466,12 +547,13 @@ void cGameMapWidget::setMapView(std::shared_ptr<const cMapView> mapView_)
 				animations.push_back (std::make_unique<cAnimationStartUp> (*animationTimer, unit));
 			}
 		});
-		mapViewSignalConnectionManager.connect (mapView->unitMoved, [&](const cUnit & unit, const cPosition & oldPosition)
+
+        mapViewSignalConnectionManager.connect (mapView->unitMoved, [&](const cUnit & unit, const cPosition & oldPosition)
 		{
 			if (!cSettings::getInstance().isAnimations()) return;
 
 			const auto tileDrawingRange = computeTileDrawingRange();
-			const auto tileDrawingArea = cBox<cPosition>(tileDrawingRange.first, tileDrawingRange.second - cPosition(1, 1));
+            const auto tileDrawingArea = cBox<cPosition>(tileDrawingRange.first, tileDrawingRange.second - cPosition(1, 1));
 
 			if (tileDrawingArea.intersects(unit.getArea()) && !tileDrawingArea.intersects(cBox<cPosition>(oldPosition, oldPosition + unit.getArea().getSize() - cPosition(1, 1))))
 			{
@@ -514,44 +596,160 @@ void cGameMapWidget::setUnitsData(std::shared_ptr<const cUnitsData> unitsData_)
 //------------------------------------------------------------------------------
 void cGameMapWidget::draw (SDL_Surface& destination, const cBox<cPosition>& clipRect)
 {
-	drawTerrain();
+    sRenderContext rc;
+    rc.tileSize = getZoomedTileSize();
+    auto tileRange = computeTileDrawingRange();
+    rc.visibleMapArea.set(tileRange.first, tileRange.second);
+    rc.pixelOffset = getZoomedStartTilePixelOffset();
+    rc.zoomFactor = getZoomFactor();
+    // Initialize viewport to fit our widget
+    rc.viewPort.set(getPosition(), getEndPosition());
 
-	if (shouldDrawGrid) drawGrid();
+    drawTerrain(rc);
+
+    if (shouldDrawGrid)
+        drawGrid(rc);
 
 	drawEffects (true);
 
 	unitDrawingEngine.drawingCache.resetStatistics();
 
-	drawBaseUnits();
-	drawTopBuildings();
-	drawShips();
-	drawAboveSeaBaseUnits();
-	drawVehicles();
-	drawConnectors();
-	drawPlanes();
+    //const auto zoomedStartTilePixelOffset = getZoomedStartTilePixelOffset();
 
-	auto selectedVehicle = unitSelection.getSelectedVehicle();
-	if (shouldDrawSurvey || (selectedVehicle && selectedVehicle->getOwner() == player.get() && selectedVehicle->getStaticUnitData().canSurvey))
-	{
-		drawResources();
-	}
+    auto selectedVehicle = unitSelection.getSelectedVehicle();
+    bool shouldDrawResourceGrid = shouldDrawSurvey ||
+            (selectedVehicle && selectedVehicle->getOwner() == player.get() && selectedVehicle->getStaticUnitData().canSurvey);
+
+    if(mapView)
+    {
+        RenderQueue rq;
+
+        for (auto i = rc.tileIterator(); i.hasMore(); i.next())
+        {
+            const cMapFieldView& field = mapView->getField (*i);
+
+            const auto& buildings = field.getBuildings();
+
+            // drawBaseUnits logic
+            for (cBuilding* building : buildings)
+            {
+                if (building == nullptr)
+                    continue; // should never happen
+
+                auto surfacePos = building->getStaticUnitData().surfacePosition;
+
+                if (!building->isRubble() && (
+                    surfacePos != cStaticUnitData::SURFACE_POS_BENEATH_SEA &&
+                    surfacePos != cStaticUnitData::SURFACE_POS_BASE))
+                    break;
+
+                rq.enqueue(RenderQueue::LayerBaseUnits, building);
+
+                if (surfacePos == cStaticUnitData::SURFACE_POS_ABOVE_SEA ||
+                    surfacePos == cStaticUnitData::SURFACE_POS_ABOVE_BASE)
+                {
+                    rq.enqueue(RenderQueue::LayerAboveSeaBase, building);
+                }
+            }
+
+            // drawTopBuildings and drawConnectors logic
+            cBuilding* building = field.getTopBuilding();
+            if (building != nullptr)
+            {
+                bool isGround = building->getStaticUnitData().surfacePosition == cStaticUnitData::SURFACE_POS_GROUND;
+                const auto& unitData = building->getStaticUnitData();
+
+                if(isGround)
+                    rq.enqueue(RenderQueue::LayerTopBuildings, building);
+
+                if (unitData.surfacePosition == cStaticUnitData::SURFACE_POS_ABOVE)
+                    rq.enqueue(RenderQueue::LayerConnectors, building);
+            }
+
+            // drawShips logic DONE
+            cVehicle* vehicle = field.getVehicle();
+            if(vehicle != nullptr)
+            {
+                const auto& unitData = vehicle->getStaticUnitData();
+                if (unitData.factorSea > 0 && unitData.factorGround == 0)
+                    rq.enqueue(RenderQueue::LayerShips, vehicle);
+
+                bool busyBuild = vehicle->isUnitClearing() || vehicle->isUnitBuildingABuilding();
+                if (busyBuild)
+                    rq.enqueue(RenderQueue::LayerAboveSeaBase, vehicle);
+
+                if (unitData.factorGround != 0 && !busyBuild)
+                    rq.enqueue(RenderQueue::LayerVehicles, vehicle);
+            }
+
+            // drawAboveSeaBaseUnits logic DONE
+            // drawVehicles(rc)             DONE
+            // drawConnectors(rc);          DONE
+
+            // drawPlanes(rc);              DONE
+
+            //auto drawDestination = computeTileDrawingArea (zoomedTileSize, zoomedStartTilePixelOffset, tileDrawingRange.first, *i);
+            for (cVehicle* vehicle: field.getPlanes())
+            {
+                //unitDrawingEngine.drawUnit (plane, drawDestination, getZoomFactor(), *mapView, &unitSelection, player.get());
+                rq.enqueue(RenderQueue::LayerPlanes, vehicle);
+            }
+        }
+
+        //drawBaseUnits(rc);
+        //drawTopBuildings(rc);
+        //drawShips(rc);
+        //drawAboveSeaBaseUnits(rc);
+        //drawVehicles(rc);
+        //drawConnectors(rc);
+        drawPlanes(rc);
+
+        if(shouldDrawResourceGrid)
+            drawResources(rc);
+
+        // Draw everything stored in render queue
+        rq.for_each([this, &rc](RenderQueue::RenderLayer layer, cUnit* unit)
+        {
+            if(unit == nullptr)
+                return;   // In fact we should not be here
+
+            int size = unit->getCellSize();
+            cPosition pos = unit->getPosition();
+
+            SDL_Rect dstRect = rc.computeTileDrawingArea(pos, size, size);
+
+            if(unit->isABuilding())
+            {
+                const auto& building = *static_cast<cBuilding*>(unit);
+                unitDrawingEngine.drawUnit(building, dstRect, rc.zoomFactor,
+                                           &unitSelection, player.get());
+            }
+            else
+            {
+                const auto& vehicle = *static_cast<cVehicle*>(unit);
+                unitDrawingEngine.drawUnit(vehicle, dstRect, rc.zoomFactor,
+                                           *mapView, &unitSelection, player.get());
+            }
+        });
+    }
 
 	if (selectedVehicle && ((selectedVehicle->getMoveJob() && !selectedVehicle->isUnitMoving()) || selectedVehicle->BuildPath))
 	{
-		drawPath (*selectedVehicle);
+        drawPath (*selectedVehicle, rc);
 	}
 
 	//debugOutput.draw ();
 
-	drawSelectionBox();
+    drawSelectionBox(rc);
 
 	SDL_SetClipRect (cVideo::buffer, nullptr);
 
-	drawUnitCircles();
+    drawUnitCircles(rc);
 	drawExitPoints();
 	drawBuildBand();
 
-	if (lockActive) drawLockList ();
+    if (lockActive)
+        drawLockList ();
 
 	drawEffects (false);
 
@@ -668,7 +866,13 @@ cBox<cPosition> cGameMapWidget::getDisplayedMapArea() const
 {
 	auto tileDrawingRange = computeTileDrawingRange();
 
-	return cBox<cPosition> (tileDrawingRange.first, tileDrawingRange.second - 1);
+    return cBox<cPosition> (tileDrawingRange.first, tileDrawingRange.second - 1);
+    /*
+    auto minf = tileDrawingRange.getMinCorner();
+    auto maxf = tileDrawingRange.getMinCorner();
+    cPosition min(floor(minf.x()), floor(minf.y()));
+    cPosition max(ceil(maxf.x()), ceil(maxf.y()));
+    return cBox<cPosition> (min, max);*/
 }
 
 //------------------------------------------------------------------------------
@@ -957,19 +1161,40 @@ cPosition cGameMapWidget::getZoomedTileSize() const
 //------------------------------------------------------------------------------
 cPosition cGameMapWidget::getZoomedStartTilePixelOffset() const
 {
-	return zoomSize (cPosition (pixelOffset.x() % cStaticMap::tilePixelWidth, pixelOffset.y() % cStaticMap::tilePixelHeight), getZoomFactor());
+    cPosition pos(
+                pixelOffset.x() % cStaticMap::tilePixelWidth,
+                pixelOffset.y() % cStaticMap::tilePixelHeight);
+    return zoomSize(pos, getZoomFactor());
 }
 
 //------------------------------------------------------------------------------
+
 std::pair<cPosition, cPosition> cGameMapWidget::computeTileDrawingRange() const
 {
-	const auto zoomedTileSize = getZoomedTileSize();
+    const auto zoomedTileSize = getZoomedTileSize();
+    const cPosition drawingPixelRange = getSize() + getZoomedStartTilePixelOffset();
 
+    const cPosition tilesSize ((int)std::ceil (drawingPixelRange.x() / zoomedTileSize.x()), (int)std::ceil (drawingPixelRange.y() / zoomedTileSize.y()));
+
+    cPosition startTile((int)std::floor (pixelOffset.x() / cStaticMap::tilePixelWidth), (int)std::floor (pixelOffset.y() / cStaticMap::tilePixelHeight));
+    cPosition endTile (startTile + tilesSize + 1);
+
+    startTile.x() = std::max (0, startTile.x());
+    endTile.x() = std::min (staticMap->getSize().x(), endTile.x());
+    endTile.y() = std::min (staticMap->getSize().y(), endTile.y());
+
+    return std::make_pair (startTile, endTile);
+}
+
+/*
+cBox<cVector2> cGameMapWidget::computeTileDrawingRange() const
+{
+    cPosition zoomedTileSize = getZoomedTileSize();
 	const cPosition drawingPixelRange = getSize() + getZoomedStartTilePixelOffset();
 
 	const cPosition tilesSize ((int)std::ceil (drawingPixelRange.x() / zoomedTileSize.x()), (int)std::ceil (drawingPixelRange.y() / zoomedTileSize.y()));
 
-	cPosition startTile ((int)std::floor (pixelOffset.x() / cStaticMap::tilePixelWidth), (int)std::floor (pixelOffset.y() / cStaticMap::tilePixelHeight));
+    cPosition startTile((int)std::floor (pixelOffset.x() / cStaticMap::tilePixelWidth), (int)std::floor (pixelOffset.y() / cStaticMap::tilePixelHeight));
 	cPosition endTile (startTile + tilesSize + 1);
 
 	startTile.x() = std::max (0, startTile.x());
@@ -978,21 +1203,22 @@ std::pair<cPosition, cPosition> cGameMapWidget::computeTileDrawingRange() const
 	endTile.x() = std::min (staticMap->getSize().x(), endTile.x());
 	endTile.y() = std::min (staticMap->getSize().y(), endTile.y());
 
-	return std::make_pair (startTile, endTile);
-}
+    return cBox<(startTile, endTile);
+}*/
 
 //------------------------------------------------------------------------------
-void cGameMapWidget::drawTerrain()
+void cGameMapWidget::drawTerrain(sRenderContext& rc)
 {
-	const auto zoomedTileSize = getZoomedTileSize();
+    const auto zoomedTileSize = rc.tileSize;
 	const auto tileDrawingRange = computeTileDrawingRange();
 	const auto zoomedStartTilePixelOffset = getZoomedStartTilePixelOffset();
 
-	for (auto i = makeIndexIterator (tileDrawingRange.first, tileDrawingRange.second); i.hasMore(); i.next())
+    for (auto i = rc.tileIterator(); i.hasMore(); i.next())
 	{
 		const auto& terrain = staticMap->getTerrain (*i);
 
 		auto drawDestination = computeTileDrawingArea (zoomedTileSize, zoomedStartTilePixelOffset, tileDrawingRange.first, *i);
+
 		if (shouldDrawFog && (!player || !player->canSeeAt (*i)))
 		{
 			if (!cSettings::getInstance().shouldDoPrescale() && (terrain.shw->w != zoomedTileSize.x() || terrain.shw->h != zoomedTileSize.y()))
@@ -1013,12 +1239,19 @@ void cGameMapWidget::drawTerrain()
 }
 
 //------------------------------------------------------------------------------
-void cGameMapWidget::drawGrid()
+void cGameMapWidget::drawGrid(sRenderContext& rc)
 {
-	const auto zoomedTileSize = getZoomedTileSize();
+    const auto zoomedTileSize = rc.tileSize;
 	const auto zoomedStartTilePixelOffset = getZoomedStartTilePixelOffset();
 
-	SDL_Rect destY = {getPosition().x(), getPosition().y() + zoomedTileSize.y() - zoomedStartTilePixelOffset.y(), getSize().x(), 1};
+    SDL_Rect destY =
+    {
+        getPosition().x(),
+        getPosition().y() + zoomedTileSize.y() - zoomedStartTilePixelOffset.y(),
+        getSize().x(),
+        1
+    };
+
 	for (; destY.y < getEndPosition().y(); destY.y += zoomedTileSize.y())
 	{
 		SDL_FillRect (cVideo::buffer, &destY, GRID_COLOR);
@@ -1065,116 +1298,123 @@ void cGameMapWidget::drawEffects (bool bottom)
 }
 
 //------------------------------------------------------------------------------
-void cGameMapWidget::drawBaseUnits()
+void cGameMapWidget::drawBaseUnits(sRenderContext& rc)
 {
-	if (!mapView) return;
+#ifdef FUCK_THIS
+    RenderQueue rq;
 
-	const auto zoomedTileSize = getZoomedTileSize();
-	const auto tileDrawingRange = computeTileDrawingRange();
-	const auto zoomedStartTilePixelOffset = getZoomedStartTilePixelOffset();
-
-	for (auto i = makeIndexIterator (tileDrawingRange.first, tileDrawingRange.second); i.hasMore(); i.next())
+    for (auto i = rc.tileIterator(); i.hasMore(); i.next())
 	{
+
 		auto& mapField = mapView->getField (*i);
-		const auto& buildings = mapField.getBuildings();
-		for (auto it = buildings.rbegin(); it != buildings.rend(); ++it)
+        for (cBuilding* building : mapField.getBuildings())
 		{
-			if (*it == nullptr) continue; // should never happen
+            if (building == nullptr)
+                continue; // should never happen
 
-			const auto& building = * (*it);
+            if (!building->isRubble() && (
+                building->getStaticUnitData().surfacePosition != cStaticUnitData::SURFACE_POS_BENEATH_SEA &&
+                building->getStaticUnitData().surfacePosition != cStaticUnitData::SURFACE_POS_BASE))
+                break;
 
-			if (!building.isRubble() && (
-				building.getStaticUnitData().surfacePosition != cStaticUnitData::SURFACE_POS_BENEATH_SEA &&
-				building.getStaticUnitData().surfacePosition != cStaticUnitData::SURFACE_POS_BASE))
-				break;
-
-			if (shouldDrawUnit (building, *i, tileDrawingRange))
-			{
-				const auto drawDestination = computeTileDrawingArea (zoomedTileSize, zoomedStartTilePixelOffset, tileDrawingRange.first, building.getPosition());
-				unitDrawingEngine.drawUnit (building, drawDestination, getZoomFactor(), &unitSelection, player.get());
-			}
+            rq.enqueue(RenderQueue::LayerBaseUnits, building);
 		}
 	}
+
+    // Draw everything stored in render queue
+    rq.for_each([this, &rc](RenderQueue::RenderLayer layer, cUnit* unit)
+    {
+        int size = unit->getCellSize();
+        SDL_Rect drawDestination = rc.computeTileDrawingArea(obj->getPosition(), width, height);
+
+        if(unit->isABuilding())
+        {
+            unitDrawingEngine.drawUnit(static_cast<cBuilding>(unit), drawDestination, rc.zoomFactor, &unitSelection, player.get());
+        }
+        else
+        {
+            unitDrawingEngine.drawUnit(static_cast<cVehicle>(unit), drawDestination, rc.zoomFactor, &unitSelection, player.get());
+        }
+    });
+#endif
 }
 
 //------------------------------------------------------------------------------
-void cGameMapWidget::drawTopBuildings()
+void cGameMapWidget::drawTopBuildings(sRenderContext& rc)
 {
-	if (!mapView) return;
-
-	const auto zoomedTileSize = getZoomedTileSize();
-	const auto tileDrawingRange = computeTileDrawingRange();
-	const auto zoomedStartTilePixelOffset = getZoomedStartTilePixelOffset();
-
-	for (auto i = makeIndexIterator (tileDrawingRange.first, tileDrawingRange.second); i.hasMore(); i.next())
+#ifdef FUCK_THIS
+    for (auto i = rc.tileIterator(); i.hasMore(); i.next())
 	{
 		auto& mapField = mapView->getField (*i);
 		auto building = mapField.getTopBuilding();
-		if (building == nullptr) continue;
-		if (building->getStaticUnitData().surfacePosition != cStaticUnitData::SURFACE_POS_GROUND) continue;
-		if (!shouldDrawUnit (*building, *i, tileDrawingRange)) continue;
+        if (building == nullptr)
+            continue;
+        if (building->getStaticUnitData().surfacePosition != cStaticUnitData::SURFACE_POS_GROUND)
+            continue;
 
-		auto drawDestination = computeTileDrawingArea (zoomedTileSize, zoomedStartTilePixelOffset, tileDrawingRange.first, building->getPosition());
-		unitDrawingEngine.drawUnit (*building, drawDestination, getZoomFactor(), &unitSelection, player.get());
+        if (!shouldDrawUnit (*building, *i, tileDrawingRange))
+            continue;
+
+        int size = building->getCellSize();
+        auto drawDestination = rc.computeTileDrawingArea(building->getPosition(), size, size);
+
+        unitDrawingEngine.drawUnit (*building, drawDestination, getZoomFactor(), &unitSelection, player.get());
 
 		//if (debugOutput.debugBaseClient && building->SubBase)
 		//	drawTopBuildings_DebugBaseClient (*building, drawDestination);
 		//if (debugOutput.debugBaseServer && building->SubBase)
 		//	drawTopBuildings_DebugBaseServer (*building, drawDestination, pos);
 	}
+#endif
 }
 
 //------------------------------------------------------------------------------
-void cGameMapWidget::drawShips()
+void cGameMapWidget::drawShips(sRenderContext& rc)
 {
-	if (!mapView) return;
+    const auto tileDrawingRange = computeTileDrawingRange();
+    const auto zoomedStartTilePixelOffset = getZoomedStartTilePixelOffset();
 
-	const auto zoomedTileSize = getZoomedTileSize();
-	const auto tileDrawingRange = computeTileDrawingRange();
-	const auto zoomedStartTilePixelOffset = getZoomedStartTilePixelOffset();
-
-	for (auto i = makeIndexIterator (tileDrawingRange.first, tileDrawingRange.second); i.hasMore(); i.next())
+    for (auto i = rc.tileIterator(); i.hasMore(); i.next())
 	{
 		auto& mapField = mapView->getField (*i);
 		auto vehicle = mapField.getVehicle();
-		if (vehicle == nullptr) continue;
+        if (vehicle == nullptr)
+            continue;
 		if (vehicle->getStaticUnitData().factorSea > 0 && vehicle->getStaticUnitData().factorGround == 0)
 		{
-			auto drawDestination = computeTileDrawingArea (zoomedTileSize, zoomedStartTilePixelOffset, tileDrawingRange.first, *i);
+            auto drawDestination = computeTileDrawingArea (rc.tileSize, zoomedStartTilePixelOffset, tileDrawingRange.first, *i);
 			unitDrawingEngine.drawUnit (*vehicle, drawDestination, getZoomFactor(), *mapView, &unitSelection, player.get());
 		}
 	}
 }
 
 //------------------------------------------------------------------------------
-void cGameMapWidget::drawAboveSeaBaseUnits()
+void cGameMapWidget::drawAboveSeaBaseUnits(sRenderContext& rc)
 {
-	if (!mapView) return;
+#ifdef FUCK_THIS
+    const auto tileDrawingRange = computeTileDrawingRange();
+    const auto zoomedStartTilePixelOffset = getZoomedStartTilePixelOffset();
 
-	const auto zoomedTileSize = getZoomedTileSize();
-	const auto tileDrawingRange = computeTileDrawingRange();
-	const auto zoomedStartTilePixelOffset = getZoomedStartTilePixelOffset();
-
-	for (auto i = makeIndexIterator (tileDrawingRange.first, tileDrawingRange.second); i.hasMore(); i.next())
+    for (auto i = rc.tileIterator(); i.hasMore(); i.next())
 	{
 		auto& mapField = mapView->getField (*i);
 
 		const auto& buildings = mapField.getBuildings();
-		for (auto it = buildings.begin(); it != buildings.end(); ++it)
+
+        for (const auto& building: buildings)
 		{
-			const auto& building = * (*it);
-			if (building.getStaticUnitData().surfacePosition == cStaticUnitData::SURFACE_POS_ABOVE_SEA)
+            if (building->getStaticUnitData().surfacePosition == cStaticUnitData::SURFACE_POS_ABOVE_SEA)
 			{
-				const auto drawDestination = computeTileDrawingArea (zoomedTileSize, zoomedStartTilePixelOffset, tileDrawingRange.first, building.getPosition());
+                const auto drawDestination = rc.computeTileDrawingArea (tileDrawingRange.first, building.getPosition());
 				unitDrawingEngine.drawUnit (building, drawDestination, getZoomFactor(), &unitSelection, player.get());
 			}
 		}
-		for (auto it = buildings.begin(); it != buildings.end(); ++it)
-		{
-			const auto& building = * (*it);
-			if ((*it)->getStaticUnitData().surfacePosition == cStaticUnitData::SURFACE_POS_ABOVE_BASE)
+
+        for (const auto& building: buildings)
+        {
+            if (building->getStaticUnitData().surfacePosition == cStaticUnitData::SURFACE_POS_ABOVE_BASE)
 			{
-				const auto drawDestination = computeTileDrawingArea (zoomedTileSize, zoomedStartTilePixelOffset, tileDrawingRange.first, building.getPosition());
+                const auto drawDestination = rc.computeTileDrawingArea (building.getPosition());
 				unitDrawingEngine.drawUnit (building, drawDestination, getZoomFactor(), &unitSelection, player.get());
 			}
 		}
@@ -1184,11 +1424,12 @@ void cGameMapWidget::drawAboveSeaBaseUnits()
 		{
 			if (shouldDrawUnit (*vehicle, *i, tileDrawingRange))
 			{
-				const auto drawDestination = computeTileDrawingArea (zoomedTileSize, zoomedStartTilePixelOffset, tileDrawingRange.first, vehicle->getPosition());
+                const auto drawDestination = rc.computeTileDrawingArea (vehicle->getPosition());
 				unitDrawingEngine.drawUnit (*vehicle, drawDestination, getZoomFactor(), *mapView, &unitSelection, player.get());
 			}
 		}
 	}
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -1217,59 +1458,51 @@ bool cGameMapWidget::shouldDrawUnit (const cUnit& unit, const cPosition& visitin
 }
 
 //------------------------------------------------------------------------------
-void cGameMapWidget::drawVehicles()
+void cGameMapWidget::drawVehicles(sRenderContext& rc)
 {
-	if (!mapView) return;
+    const auto tileDrawingRange = computeTileDrawingRange();
+    const auto zoomedStartTilePixelOffset = getZoomedStartTilePixelOffset();
 
-	const auto zoomedTileSize = getZoomedTileSize();
-	const auto tileDrawingRange = computeTileDrawingRange();
-	const auto zoomedStartTilePixelOffset = getZoomedStartTilePixelOffset();
-
-	for (auto i = makeIndexIterator (tileDrawingRange.first, tileDrawingRange.second); i.hasMore(); i.next())
+    for (auto i = rc.tileIterator(); i.hasMore(); i.next())
 	{
 		auto& mapField = mapView->getField (*i);
 		auto vehicle = mapField.getVehicle();
 		if (vehicle == nullptr) continue;
 		if (vehicle->getStaticUnitData().factorGround != 0 && !vehicle->isUnitBuildingABuilding() && !vehicle->isUnitClearing())
 		{
-			auto drawDestination = computeTileDrawingArea (zoomedTileSize, zoomedStartTilePixelOffset, tileDrawingRange.first, *i);
+            auto drawDestination = computeTileDrawingArea (rc.tileSize, zoomedStartTilePixelOffset, tileDrawingRange.first, *i);
 			unitDrawingEngine.drawUnit (*vehicle, drawDestination, getZoomFactor(), *mapView, &unitSelection, player.get());
 		}
 	}
 }
 
 //------------------------------------------------------------------------------
-void cGameMapWidget::drawConnectors()
+void cGameMapWidget::drawConnectors(sRenderContext& rc)
 {
-	if (!mapView) return;
+    const auto tileDrawingRange = computeTileDrawingRange();
+    const auto zoomedStartTilePixelOffset = getZoomedStartTilePixelOffset();
 
-	const auto zoomedTileSize = getZoomedTileSize();
-	const auto tileDrawingRange = computeTileDrawingRange();
-	const auto zoomedStartTilePixelOffset = getZoomedStartTilePixelOffset();
-
-	for (auto i = makeIndexIterator (tileDrawingRange.first, tileDrawingRange.second); i.hasMore(); i.next())
+    for (auto i = rc.tileIterator(); i.hasMore(); i.next())
 	{
 		auto& mapField = mapView->getField (*i);
 		auto building = mapField.getTopBuilding();
 		if (building == nullptr) continue;
 		if (building->getStaticUnitData().surfacePosition == cStaticUnitData::SURFACE_POS_ABOVE)
 		{
-			auto drawDestination = computeTileDrawingArea (zoomedTileSize, zoomedStartTilePixelOffset, tileDrawingRange.first, *i);
+            auto drawDestination = computeTileDrawingArea (rc.tileSize, zoomedStartTilePixelOffset, tileDrawingRange.first, *i);
 			unitDrawingEngine.drawUnit (*building, drawDestination, getZoomFactor(), &unitSelection, player.get());
 		}
 	}
 }
 
 //------------------------------------------------------------------------------
-void cGameMapWidget::drawPlanes()
+void cGameMapWidget::drawPlanes(sRenderContext& rc)
 {
-	if (!mapView) return;
+    const auto zoomedTileSize = getZoomedTileSize();
+    const auto tileDrawingRange = computeTileDrawingRange();
+    const auto zoomedStartTilePixelOffset = getZoomedStartTilePixelOffset();
 
-	const auto zoomedTileSize = getZoomedTileSize();
-	const auto tileDrawingRange = computeTileDrawingRange();
-	const auto zoomedStartTilePixelOffset = getZoomedStartTilePixelOffset();
-
-	for (auto i = makeIndexIterator (tileDrawingRange.first, tileDrawingRange.second); i.hasMore(); i.next())
+    for (auto i = rc.tileIterator(); i.hasMore(); i.next())
 	{
 		auto& mapField = mapView->getField (*i);
 		const auto& planes = mapField.getPlanes();
@@ -1284,16 +1517,14 @@ void cGameMapWidget::drawPlanes()
 }
 
 //------------------------------------------------------------------------------
-void cGameMapWidget::drawResources()
+void cGameMapWidget::drawResources(sRenderContext& rc)
 {
-	if (!mapView) return;
-
 	const auto zoomedTileSize = getZoomedTileSize();
 	const auto tileDrawingRange = computeTileDrawingRange();
 	const auto zoomedStartTilePixelOffset = getZoomedStartTilePixelOffset();
 
 	SDL_Rect tmp, src = {0, 0, Uint16 (zoomedTileSize.x()), Uint16 (zoomedTileSize.y())};
-	for (auto i = makeIndexIterator (tileDrawingRange.first, tileDrawingRange.second); i.hasMore(); i.next())
+    for (auto i = rc.tileIterator(); i.hasMore(); i.next())
 	{
 		if (player && !player->hasResourceExplored (*i)) continue;
 		if (mapView->isBlocked (*i)) continue;
@@ -1332,12 +1563,11 @@ void cGameMapWidget::drawResources()
 }
 
 //------------------------------------------------------------------------------
-void cGameMapWidget::drawSelectionBox()
+void cGameMapWidget::drawSelectionBox(sRenderContext& rc)
 {
 	if (!unitSelectionBox.isValid()) return;
 
-	const auto zoomedTileSize = getZoomedTileSize();
-
+    const auto zoomedTileSize = rc.tileSize;
 	const auto zoomOffX = (int) (pixelOffset.x() * getZoomFactor());
 	const auto zoomOffY = (int) (pixelOffset.y() * getZoomFactor());
 
@@ -1374,7 +1604,7 @@ void cGameMapWidget::drawSelectionBox()
 }
 
 //------------------------------------------------------------------------------
-void cGameMapWidget::drawUnitCircles()
+void cGameMapWidget::drawUnitCircles(sRenderContext& rc)
 {
 	// Why should we have two separate branches for vehicle and building?
 	auto clipRect = getArea().toSdlRect();
@@ -1383,7 +1613,7 @@ void cGameMapWidget::drawUnitCircles()
 	auto selectedVehicle = unitSelection.getSelectedVehicle();
 	auto selectedBuilding = unitSelection.getSelectedBuilding();
 
-	const auto zoomedTileSize = getZoomedTileSize();
+    const auto zoomedTileSize = rc.tileSize;
 
 	if (selectedVehicle && selectedVehicle->isDisabled() == false)
 	{
@@ -1605,11 +1835,12 @@ void cGameMapWidget::drawLockList ()
 }
 
 //------------------------------------------------------------------------------
-void cGameMapWidget::drawBuildPath (const cVehicle& vehicle)
+void cGameMapWidget::drawBuildPath (const cVehicle& vehicle, sRenderContext& rc)
 {
-	if (!vehicle.BuildPath || (vehicle.bandPosition == vehicle.getPosition()) || mouseMode->getType() == eMouseModeType::SelectBuildPathDestintaion) return;
-
-	const auto zoomedTileSize = getZoomedTileSize();
+    if (!vehicle.BuildPath ||
+        (vehicle.bandPosition == vehicle.getPosition()) ||
+        mouseMode->getType() == eMouseModeType::SelectBuildPathDestintaion)
+        return;
 
 	int mx = vehicle.getPosition().x();
 	int my = vehicle.getPosition().y();
@@ -1626,10 +1857,10 @@ void cGameMapWidget::drawBuildPath (const cVehicle& vehicle)
 	while (mx != vehicle.bandPosition.x() || my != vehicle.bandPosition.y())
 	{
 		SDL_Rect dest;
-		dest.x = getPosition().x() - (int) (pixelOffset.x() * getZoomFactor()) + zoomedTileSize.x() * mx;
-		dest.y = getPosition().y() - (int) (pixelOffset.y() * getZoomFactor()) + zoomedTileSize.y() * my;
+        dest.x = getPosition().x() - (int) (pixelOffset.x() * getZoomFactor()) + rc.tileSize.x() * mx;
+        dest.y = getPosition().y() - (int) (pixelOffset.y() * getZoomFactor()) + rc.tileSize.y() * my;
 
-		SDL_BlitSurface (OtherData.WayPointPfeileSpecial[sp][64 - zoomedTileSize.x()].get(), nullptr, cVideo::buffer, &dest);
+        SDL_BlitSurface (OtherData.WayPointPfeileSpecial[sp][64 - rc.tileSize.x()].get(), nullptr, cVideo::buffer, &dest);
 
 		if (mx < vehicle.bandPosition.x())
 			mx++;
@@ -1642,24 +1873,24 @@ void cGameMapWidget::drawBuildPath (const cVehicle& vehicle)
 			my--;
 	}
 	SDL_Rect dest;
-	dest.x = getPosition().x() - (int) (pixelOffset.x() * getZoomFactor()) + zoomedTileSize.x() * mx;
-	dest.y = getPosition().y() - (int) (pixelOffset.y() * getZoomFactor()) + zoomedTileSize.y() * my;
+    dest.x = getPosition().x() - (int) (pixelOffset.x() * getZoomFactor()) + rc.tileSize.x() * mx;
+    dest.y = getPosition().y() - (int) (pixelOffset.y() * getZoomFactor()) + rc.tileSize.y() * my;
 
-	SDL_BlitSurface (OtherData.WayPointPfeileSpecial[sp][64 - zoomedTileSize.x()].get(), nullptr, cVideo::buffer, &dest);
+    SDL_BlitSurface (OtherData.WayPointPfeileSpecial[sp][64 - rc.tileSize.x()].get(), nullptr, cVideo::buffer, &dest);
 }
 
 //------------------------------------------------------------------------------
-void cGameMapWidget::drawPath (const cVehicle& vehicle)
+void cGameMapWidget::drawPath (const cVehicle& vehicle, sRenderContext& rc)
 {
 	const auto moveJob = vehicle.getMoveJob();
 
 	if (!moveJob || vehicle.getOwner() != player.get())
 	{
-		drawBuildPath (vehicle);
+        drawBuildPath (vehicle, rc);
 		return;
 	}
 
-	const auto zoomedTileSize = getZoomedTileSize();
+    const auto zoomedTileSize = rc.tileSize;
 
 	int sp = vehicle.data.getSpeed() + moveJob->getSavedSpeed();
 
@@ -2296,12 +2527,12 @@ void cGameMapWidget::runOwnedEffects()
 //------------------------------------------------------------------------------
 void cGameMapWidget::renewDamageEffects()
 {
-	if (!cSettings::getInstance().isDamageEffects()) return;
-	if (!mapView) return;
-
-	const auto tileDrawingRange = computeTileDrawingRange();
-
-	for (auto i = makeIndexIterator (tileDrawingRange.first, tileDrawingRange.second); i.hasMore(); i.next())
+    if (!cSettings::getInstance().isDamageEffects())
+        return;
+    if (!mapView)
+        return;
+#ifdef NOT_SO_FUCKED_BUT_BROKEN
+    for (auto i = rc.tileIterator(); i.hasMore(); i.next())
 	{
 		auto& mapField = mapView->getField (*i);
 
@@ -2322,6 +2553,7 @@ void cGameMapWidget::renewDamageEffects()
 			renewDamageEffect (*mapField.getVehicle());
 		}
 	}
+#endif
 }
 
 //------------------------------------------------------------------------------

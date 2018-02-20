@@ -37,6 +37,8 @@ public:
 	cBox();
 	cBox (const PointType& minCorner, const PointType& maxCorner);
 
+    void set(const PointType& minCorner, const PointType& maxCorner);
+
 	PointType& getMinCorner();
 	PointType& getMaxCorner();
 
@@ -98,6 +100,14 @@ cBox<PointType>::cBox (const PointType& minCorner_, const PointType& maxCorner_)
 	minCorner (minCorner_),
 	maxCorner (maxCorner_)
 {}
+
+//------------------------------------------------------------------------------
+template<typename PointType>
+void cBox<PointType>::set(const PointType& minCorner_, const PointType& maxCorner_)
+{
+    minCorner = minCorner_;
+    maxCorner = maxCorner_;
+}
 
 //------------------------------------------------------------------------------
 template<typename PointType>

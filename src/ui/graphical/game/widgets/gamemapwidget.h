@@ -31,6 +31,7 @@
 #include "ui/graphical/menu/widgets/clickablewidget.h"
 #include "maxrconfig.h"
 #include "utility/signal/signal.h"
+#include "utility/indexiterator.h"
 #include "game/logic/fxeffects.h"
 
 struct SDL_Surface;
@@ -117,6 +118,31 @@ public:
 	void updateActiveUnitCommandShortcuts();
 	void deactivateUnitCommandShortcuts();
 
+    struct sRenderContext
+    {
+        // Pixel offset of the camera
+        cPosition pixelOffset;
+
+        float zoomFactor;
+        // Screen size of zoomed tile
+        cPosition tileSize;
+        // Visible area of the map
+        cBox<cVector2> visibleMapArea;
+
+        cBox<cVector2> viewPort;
+
+        cIndexIterator<cPosition> tileIterator() const;
+
+        // Calculate renderable area
+        // @param tile - tile position of the object
+        // @param width - object width, in cells
+        // @param height - object height, in cells
+        SDL_Rect computeTileDrawingArea (const cPosition& tile, int width, int height) const;
+
+        cPosition getZoomedStartTilePixelOffset() const;
+    };
+
+public:
 	cSignal<void ()> scrolled;
 	cSignal<void ()> zoomFactorChanged;
 
@@ -262,28 +288,27 @@ private:
 	//
 	// draw methods
 	//
-	void drawTerrain();
-	void drawGrid();
+    void drawTerrain(sRenderContext& rc);
+    void drawGrid(sRenderContext& rc);
 	void drawEffects (bool bottom);
 
-	void drawBaseUnits();
-	void drawTopBuildings();
-	void drawShips();
-	void drawAboveSeaBaseUnits();
-	void drawVehicles();
-	void drawConnectors();
-	void drawPlanes();
+    void drawBaseUnits(sRenderContext& rc);
+    void drawTopBuildings(sRenderContext& rc);
+    void drawShips(sRenderContext& rc);
+    void drawAboveSeaBaseUnits(sRenderContext& rc);
+    void drawVehicles(sRenderContext& rc);
+    void drawConnectors(sRenderContext& rc);
+    void drawPlanes(sRenderContext& rc);
+    void drawResources(sRenderContext& rc);
 
-	void drawResources();
-
-	void drawPath (const cVehicle& vehicle);
+    void drawPath (const cVehicle& vehicle, sRenderContext& rc);
 	void drawPathArrow(SDL_Rect dest, const SDL_Rect& lastDest, bool spezialColor) const;
-	void drawBuildPath (const cVehicle& vehicle);
+    void drawBuildPath (const cVehicle& vehicle, sRenderContext& rc);
 
     // Draw a box around selected units
-	void drawSelectionBox();
+    void drawSelectionBox(sRenderContext& rc);
 
-	void drawUnitCircles();
+    void drawUnitCircles(sRenderContext& rc);
 	void drawLockList ();
 
 	void drawExitPoints();
@@ -306,9 +331,11 @@ private:
 	cPosition zoomSize (const cPosition& size, float zoomFactor) const;
 	cPosition getZoomedTileSize() const;
 	cPosition getZoomedStartTilePixelOffset() const;
-	std::pair<cPosition, cPosition> computeTileDrawingRange() const;
+    //cBox<cVector2> computeTileDrawingRange() const;
+    std::pair<cPosition, cPosition> computeTileDrawingRange() const;
 
-	SDL_Rect computeTileDrawingArea (const cPosition& zoomedTileSize, const cPosition& zoomedStartTilePixelOffset, const cPosition& tileStartIndex, const cPosition& tileIndex);
+    // Bad method
+    SDL_Rect computeTileDrawingArea (const cPosition& zoomedTileSize, const cPosition& zoomedStartTilePixelOffset, const cPosition& tileStartIndex, const cPosition& tileIndex);
 
 	cPosition getMapTilePosition (const cPosition& pixelPosition) const;
 	cPosition getScreenPosition (const cUnit& unit, bool movementOffset = true) const;
@@ -326,7 +353,9 @@ private:
 
 	void runOwnedEffects();
 
-	void renewDamageEffects();
+    // Called from event handler
+    // Maybe we should call it from render cycle and never ever again?
+    void renewDamageEffects();
 	void renewDamageEffect (const cBuilding& building);
 	void renewDamageEffect (const cVehicle& vehicle);
 
