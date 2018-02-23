@@ -61,15 +61,20 @@ void cActionFinishBuild::finishABuilding(cModel &model, cVehicle& vehicle) const
 {
 	auto map = model.getMap();
 
-	if (!vehicle.isUnitBuildingABuilding() || vehicle.getBuildTurns() > 0) return;
-	if (!map->isValidPosition(escapePosition)) return;
-	if (!vehicle.isNextTo(escapePosition)) return;
+    int size = 1;
+    if (!vehicle.isUnitBuildingABuilding() || vehicle.getBuildTurns() > 0)
+        return;
+    if (!map->isValidPosition(escapePosition))
+        return;
+    if (!vehicle.isNextTo(escapePosition, 1, 1))
+        return;
 
 	if (!map->possiblePlace(vehicle, escapePosition, false))
 	{
 		//model.sideStepStealthUnit(escapePosition, *vehicle);
 	}
-	if (!map->possiblePlace(vehicle, escapePosition, false)) return;
+    if (!map->possiblePlace(vehicle, escapePosition, false))
+        return;
 
 	model.addBuilding(vehicle.getPosition(), vehicle.getBuildingType(), vehicle.getOwner());
 
@@ -96,12 +101,19 @@ void cActionFinishBuild::finishAVehicle(cModel &model, cBuilding& building) cons
 {
 	auto map = model.getMap();
 
-	if (!map->isValidPosition(escapePosition)) return;
-	if (!building.isNextTo(escapePosition)) return;
+    // TODO: Fix it better
+    int size = 1;
+    if (!map->isValidPosition(escapePosition))
+        return;
 
-	if (building.isBuildListEmpty()) return;
+    if (!building.isNextTo(escapePosition, size, size))
+        return;
+
+    if (building.isBuildListEmpty())
+        return;
 	cBuildListItem& buildingListItem = building.getBuildListItem(0);
-	if (buildingListItem.getRemainingMetal() > 0) return;
+    if (buildingListItem.getRemainingMetal() > 0)
+        return;
 
 
 	const cStaticUnitData& unitData = model.getUnitsData()->getStaticUnitData(buildingListItem.getType());

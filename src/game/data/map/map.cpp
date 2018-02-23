@@ -736,11 +736,11 @@ void cMap::placeRessources(cModel& model)
 	Resources.fill(sResources());
 
 	std::vector<eResourceType> resSpotTypes(playerList.size(), eResourceType::Metal);
-	std::vector<T_2<int>> resSpots;
+    std::vector<cPosition> resSpots;
 	for (const auto& player : playerList)
 	{
 		const auto& position = player->getLandingPos();
-		resSpots.push_back(T_2<int> ((position.x() & ~1) + 1, position.y() & ~1));
+        resSpots.push_back(cPosition((position.x() & ~1) + 1, position.y() & ~1));
 	}
 
 	const eGameSettingsResourceDensity density = gameSettings.getResourceDensity();
@@ -755,10 +755,10 @@ void cMap::placeRessources(cModel& model)
 	// create remaining resource positions
 	while (resSpots.size() < resSpotCount)
 	{
-		T_2<int> pos;
-
-		pos.x = 2 + model.randomGenerator.get (getSize().x() - 4);
-		pos.y = 2 + model.randomGenerator.get (getSize().y() - 4);
+        cPosition pos(
+            2 + model.randomGenerator.get (getSize().x() - 4),
+            2 + model.randomGenerator.get (getSize().y() - 4)
+        );
 		resSpots.push_back(pos);
 	}
 	resSpotTypes.resize (resSpotCount);
@@ -767,35 +767,41 @@ void cMap::placeRessources(cModel& model)
 	{
 		for (std::size_t i = playerCount; i < resSpotCount; i++)
 		{
-			T_2<float> d;
+            cVector2 d(0, 0);
 			for (std::size_t j = 0; j < resSpotCount; j++)
 			{
 				if (i == j) continue;
 
-				int diffx1 = resSpots[i].x - resSpots[j].x;
+                int diffx1 = resSpots[i].x() - resSpots[j].x();
 				int diffx2 = diffx1 + (getSize().x() - 4);
 				int diffx3 = diffx1 - (getSize().x() - 4);
-				int diffy1 = resSpots[i].y - resSpots[j].y;
+                int diffy1 = resSpots[i].y() - resSpots[j].y();
 				int diffy2 = diffy1 + (getSize().y() - 4);
 				int diffy3 = diffy1 - (getSize().y() - 4);
 				if (abs (diffx2) < abs (diffx1)) diffx1 = diffx2;
 				if (abs (diffx3) < abs (diffx1)) diffx1 = diffx3;
 				if (abs (diffy2) < abs (diffy1)) diffy1 = diffy2;
 				if (abs (diffy3) < abs (diffy1)) diffy1 = diffy3;
-				T_2<float> diff (diffx1, diffy1);
-				if (diff == T_2<float>::Zero)
-				{
-					diff.x += 1;
-				}
-				const float dist = diff.dist();
-				d += diff * (10.f / (dist * dist));
 
+                cVector2 diff (diffx1, diffy1);
+                if (diff.l2Norm() == 0.0f)
+				{
+                    diff.x() += 1;
+				}
+
+                d += diff * (10.f / diff.l2NormSquared());
 			}
-			resSpots[i] += T_2<int> (Round (d.x), Round (d.y));
-			if (resSpots[i].x < 2) resSpots[i].x += getSize().x() - 4;
-			if (resSpots[i].y < 2) resSpots[i].y += getSize().y() - 4;
-			if (resSpots[i].x > getSize().x() - 3) resSpots[i].x -= getSize().x() - 4;
-			if (resSpots[i].y > getSize().y() - 3) resSpots[i].y -= getSize().y() - 4;
+
+            resSpots[i] += cVector2(Round (d.x()), Round (d.y()));
+
+            if (resSpots[i].x() < 2)
+                resSpots[i].x() += getSize().x() - 4;
+            if (resSpots[i].y() < 2)
+                resSpots[i].y() += getSize().y() - 4;
+            if (resSpots[i].x() > getSize().x() - 3)
+                resSpots[i].x() -= getSize().x() - 4;
+            if (resSpots[i].y() > getSize().y() - 3)
+                resSpots[i].y() -= getSize().y() - 4;
 
 		}
 	}
@@ -806,8 +812,11 @@ void cMap::placeRessources(cModel& model)
 		for (std::size_t j = 0; j < i; j++)
 		{
 			const float maxDist = 40.f;
-			float dist = sqrtf (resSpots[i].distSqr (resSpots[j]));
-			if (dist < maxDist) amount[resSpotTypes[j]] += 1 - sqrtf (dist / maxDist);
+            cVector2 spotA = resSpots[i];
+            cVector2 spotB = resSpots[j];
+            float dist = (spotA - spotB).l2Norm();
+            if (dist < maxDist)
+                amount[resSpotTypes[j]] += 1 - sqrtf (dist / maxDist);
 		}
 
 		amount[eResourceType::Metal] /= 1.0f;
@@ -815,37 +824,40 @@ void cMap::placeRessources(cModel& model)
 		amount[eResourceType::Gold] /= 0.4f;
 
 		eResourceType type = eResourceType::Metal;
-		if (amount[eResourceType::Oil] < amount[type]) type = eResourceType::Oil;
-		if (amount[eResourceType::Gold] < amount[type]) type = eResourceType::Gold;
+        if (amount[eResourceType::Oil] < amount[type])
+            type = eResourceType::Oil;
+        if (amount[eResourceType::Gold] < amount[type])
+            type = eResourceType::Gold;
 
-		resSpots[i].x &= ~1;
-		resSpots[i].y &= ~1;
-		resSpots[i].x += static_cast<int>(type) % 2;
-		resSpots[i].y += (static_cast<int>(type) / 2) % 2;
+        resSpots[i].x() &= ~1;
+        resSpots[i].y() &= ~1;
+        resSpots[i].x() += static_cast<int>(type) % 2;
+        resSpots[i].y() += (static_cast<int>(type) / 2) % 2;
 
-		resSpotTypes[i] = static_cast<eResourceType>(((resSpots[i].y % 2) * 2) + (resSpots[i].x % 2));
+        resSpotTypes[i] = static_cast<eResourceType>(((resSpots[i].y() % 2) * 2) + (resSpots[i].x() % 2));
 	}
 	// Resourcen platzieren
 	for (std::size_t i = 0; i < resSpotCount; i++)
 	{
-		T_2<int> pos = resSpots[i];
-		T_2<int> p;
+        cPosition pos = resSpots[i];
+        cPosition p;
 		bool hasGold = model.randomGenerator.get (100) < 40;
-		const int minx = std::max (pos.x - 1, 0);
-		const int maxx = std::min (pos.x + 1, getSize().x() - 1);
-		const int miny = std::max (pos.y - 1, 0);
-		const int maxy = std::min (pos.y + 1, getSize().y() - 1);
-		for (p.y = miny; p.y <= maxy; ++p.y)
-		{
-			for (p.x = minx; p.x <= maxx; ++p.x)
-			{
-				T_2<int> absPos = p;
-				eResourceType type = static_cast<eResourceType>((absPos.y % 2) * 2 + (absPos.x % 2));
+        const int minx = std::max (pos.x() - 1, 0);
+        const int maxx = std::min (pos.x() + 1, getSize().x() - 1);
+        const int miny = std::max (pos.y() - 1, 0);
+        const int maxy = std::min (pos.y() + 1, getSize().y() - 1);
 
-				int index = getOffset (cPosition (absPos.x, absPos.y));
+        for (int y = miny; y <= maxy; ++y)
+		{
+            for (int x = minx; x <= maxx; ++x)
+			{
+                cPosition absPos(x,y);
+                eResourceType type = static_cast<eResourceType>((y % 2) * 2 + (x % 2));
+
+                int index = getOffset (absPos);
 				if (type != eResourceType::None &&
 					((hasGold && i >= playerCount) || resSpotTypes[i] == eResourceType::Gold || type != eResourceType::Gold) &&
-					!isBlocked (cPosition (absPos.x, absPos.y)))
+                    !isBlocked (absPos))
 				{
 					sResources res;
 					res.typ = type;

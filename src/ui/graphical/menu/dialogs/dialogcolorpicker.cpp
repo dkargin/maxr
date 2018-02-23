@@ -26,7 +26,7 @@
 #include "ui/graphical/menu/widgets/image.h"
 #include "ui/graphical/menu/widgets/lineedit.h"
 #include "ui/graphical/menu/widgets/tools/validatorint.h"
-#include "pcx.h"
+#include "utility/pcx.h"
 #include "main.h"
 
 //------------------------------------------------------------------------------

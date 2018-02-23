@@ -20,9 +20,14 @@
 #ifndef utility_drawingH
 #define utility_drawingH
 
+#include <list>
+#include <string>
+
 #include <SDL.h>
 #include "position.h"
 #include "box.h"
+#include "autosurface.h"
+
 
 class cRgbColor;
 class cPosition;
@@ -56,40 +61,164 @@ void replaceColor (SDL_Surface& surface, const cRgbColor& sourceColor, const cRg
  */
 void blitClipped (SDL_Surface& source, const cBox<cPosition>& area, SDL_Surface& destination, const cBox<cPosition>& clipRect);
 
-// Wrapper for drawing sprites from world coordinates
-struct sSprite
+/**
+ * Base class for renderable object
+ */
+class cRenderable : public std::enable_shared_from_this<cRenderable>
 {
-    int id;                     //< Some helper ID.
-    SDL_Surface* surface;       //< Pointer to SDL surface
-    SDL_Rect srcRect;           //< Area of source surface
-    cBox<cVector2> rect;        //< Offset and desired size. In 'world' tile coordinates. That's static data from
-
-    enum FitMode
+public:
+    // A set of values, that necessary to pick proper graphics from all the objects
+    struct sContext
     {
-        FitCenter,              //< Place source bitmap at the center of 'offset' rect
-        FitScale,               //< Scale source bitmap to fit 'rect'
-        FitTile,                //< Repeat source bitbap to fill in all the area
-    }mode;                      //< Rendering mode. That's static data from XML
-    cVector2 position;          //< World position of this sprite
-    float z;                    //< Z coordinate for additional z-ordering
+        SDL_Surface* surface;
+        SDL_Rect dstRect;
+        // Channel values. Here are clan variations or animated frames
+        std::vector<int> channels;
+        // Selected layer
+        int layer;
+        bool cache = true;
+    };
+
+    virtual ~cRenderable() {}
+    virtual cBox<cVector2> getRect() const; 	// Get bounding rectangle
+
+    // Runs actual rendering process
+    virtual void render(sContext& context) = 0;
+
+    // Simplified rendering function
+    // TODO: Remove it later
+    virtual void render_simple(SDL_Surface* surf, SDL_Rect rect);
+
+    void setSize(const cVector2& newSize);
+protected:
+    // Some helper ID. IDs are always usefull
+    int id;
+    // Z coordinate for additional z-ordering
+    float z = 0.0;
+    // Offset and desired size. In 'world' tile coordinates. That's static data from XML
+    cVector2 pos;
+    // Desired size. In 'world' tile coordinates. That's static data from XML
+    cVector2 size;
+
+    int layer = -1;
 };
 
-// Sprite that was projected to screen coordinates
-struct sProjectedSprite
+class cSprite;
+class cSpriteList;
+class cSpriteTool;
+
+typedef std::shared_ptr<cRenderable> cRenderablePtr;
+typedef std::shared_ptr<cSprite> cSpritePtr;
+typedef std::shared_ptr<cSpriteList> cSpriteListPtr;
+
+enum class FitMode
 {
-    SDL_Surface* surface;
+    Center,              //< Place source bitmap at the center of 'offset' rect
+    Scale,               //< Scale source bitmap to fit 'rect'
+    Tile,                //< Repeat source bitbap to fill in all the area
+};
+
+// Wrapper for drawing sprites from world coordinates
+class cSprite: public cRenderable
+{
+    friend class cSpriteTool;
+public:
+    cSprite(SurfacePtr surf, SDL_Rect srcRect);
+
+    operator SDL_Surface*();
+
+    void setColorKey(int key);
+    void setAlphaKey(int alpha = -1);
+    // Blit this sprite to output surface
+    // Will do rescaling, if necessary
+    //void blit_and_cache(SDL_Surface* surface, SDL_Rect rect) override;
+    virtual void render(sContext& context) override;
+
+    // Applies blending settings to specified surface
+    void applyBlending(SDL_Surface* surface) const;
+protected:
+    // Cached surface. We update this cache every time
+    SurfaceUPtr cache;
+    // Last used scale
+    cPosition lastSize;
+
+    int colorkey = -1;
+    int alpha = -1;
+    // Shared pointer to SDL surface
+    SurfacePtr surface;
+    // Area of source surface. We copy data from that area
     SDL_Rect srcRect;
-    SDL_Rect dstRect;
-    float z;
+    // Rendering mode. That's static data from XML
+    FitMode mode;
 };
 
 /**
- *
- * @param source sprite
- * @param destination - destination surface
- * @param dstRect - rectangle from destination surface. All rendering should be clipped to this rectangle
- * @param viewArea - area of world, that is projected to destination surface
+ * Similar to cSprite, but has a a sort of 'variation'
  */
-sProjectedSprite projectSprite(const sSprite& sprite, SDL_Surface* destination, SDL_Rect dstRect, cBox<cVector2> viewArea);
+class cSpriteList : public cSprite
+{
+    friend class cSpriteTool;
+public:
+    cSpriteList(SurfacePtr surf, SDL_Rect srcRect);
+
+    // Blit this sprite to output surface
+    // Will do rescaling, if necessary
+    //void blit_and_cache(SDL_Surface* surface, SDL_Rect rect) override;
+    virtual void render(sContext& context) override;
+
+    SDL_Rect getSrcRect(int frame);
+protected:
+    // Number of frames stored
+    int frames;
+};
+
+// A tool to load and wrap sprites
+class cSpriteTool
+{
+public:
+    cSpriteTool();
+
+    // Set reference size
+    // It is 'intended' unit size in pixels
+    void setRefSize(const cPosition& size);
+    void resetRefSize();
+
+    // Set cell size
+    void setCellSize(int size);
+
+    // Set default layer for creates sprites
+    void setLayer(int layer);
+
+    // @path - path to an image
+    // @size - size of the sprite in world coordinates
+    cSpritePtr makeSprite(const std::string& path, const cVector2& size = cVector2(1,1), FitMode mode = FitMode::Scale);
+
+    // Creates a sprite object, that has several variants
+    // @paths - a list of paths to an images
+    // @size - size of the sprite in world coordinates
+    cSpriteListPtr makeVariantSprite(const std::list<std::string>& paths, const cVector2& size = cVector2(1,1), FitMode mode = FitMode::Scale);
+
+    // Creates a sprite object, that has several variants
+    // @path - path to an image
+    // @size - size of the sprite in world coordinates
+    cSpriteListPtr makeVariantSprite(const std::string& path, int variants, const cVector2& size = cVector2(1,1), FitMode mode = FitMode::Scale);
+
+    // Reset current flags
+    void reset();
+protected:
+    bool hasRefSize = false;
+    cPosition refSize;
+    bool hasLayer;
+    int layer = -1;
+    int cellSize;
+};
+
+// Renderable group
+class cRenderableGroup
+{
+public:
+
+    std::list<cRenderablePtr> children;
+};
 
 #endif // utility_drawingH

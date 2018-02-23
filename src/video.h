@@ -44,14 +44,14 @@ public:
 	cVideo();
 	~cVideo();
 
-	void clearMemory();
+    void clearMemory();
 
 	void init();
 
 	/**
 	 * Shows the splash screen
 	 */
-	void showSplashScreen();
+    void showSplashScreen(AutoSurface surf);
 
 	/**
 	 * Prepares the window, buffer and renderer to display the game screen.

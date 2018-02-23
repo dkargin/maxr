@@ -243,6 +243,6 @@ private:
 							eUnicodeFontType fonttype);
 };
 
-EX cUnicodeFont* font;
+EX std::unique_ptr<cUnicodeFont> font;
 
 #endif

@@ -23,7 +23,7 @@
 
 #include "settings.h"
 #include "video.h"
-#include "unifonts.h"
+#include "utility/unifonts.h"
 #include "main.h"
 #include "input/mouse/mouse.h"
 #include "output/sound/sounddevice.h"

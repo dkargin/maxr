@@ -19,7 +19,7 @@
 
 #include "ui/graphical/menu/windows/windowmapselection/windowmapselection.h"
 #include "main.h"
-#include "pcx.h"
+#include "utility/pcx.h"
 #include "utility/files.h"
 #include "game/data/map/map.h"
 #include "utility/autosurface.h"

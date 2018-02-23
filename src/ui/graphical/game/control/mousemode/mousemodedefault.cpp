@@ -250,9 +250,11 @@ cMouseModeDefault::eActionType cMouseModeDefault::selectAction (const cPosition&
 		}
 		else if (selectedVehicle->isUnitBuildingABuilding() || selectedVehicle->isUnitClearing())
 		{
-			if (((selectedVehicle->isUnitBuildingABuilding() && selectedVehicle->getBuildTurns() == 0) ||
-				 (selectedVehicle->isUnitClearing() && selectedVehicle->getClearingTurns() == 0)) &&
-				map->possiblePlace (*selectedVehicle, mapPosition) && selectedVehicle->isNextTo (mapPosition))
+            bool isBuildJob =
+                    (selectedVehicle->isUnitBuildingABuilding() && selectedVehicle->getBuildTurns() == 0) ||
+                    (selectedVehicle->isUnitClearing() && selectedVehicle->getClearingTurns() == 0);
+            if (isBuildJob &&
+                map->possiblePlace (*selectedVehicle, mapPosition) && selectedVehicle->isNextTo (mapPosition, 1, 1))
 			{
 				//exit from construction site
 				return eActionType::Move;

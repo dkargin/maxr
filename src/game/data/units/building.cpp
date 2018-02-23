@@ -26,7 +26,7 @@
 #include "game/logic/fxeffects.h"
 #include "main.h"
 #include "netmessage.h"
-#include "pcx.h"
+#include "utility/pcx.h"
 #include "game/data/player/player.h"
 #include "game/logic/server.h"
 #include "game/logic/serverevents.h"
@@ -34,7 +34,7 @@
 #include "game/logic/upgradecalculator.h"
 #include "game/data/units/vehicle.h"
 #include "video.h"
-#include "unifonts.h"
+#include "utility/unifonts.h"
 #include "game/data/report/savedreportsimple.h"
 #include "game/data/report/special/savedreportresourcechanged.h"
 #include "utility/random.h"
@@ -431,6 +431,8 @@ void cBuilding::render_beton (SDL_Surface* surface, const SDL_Rect& dest, float 
     int step = 0;
 	if (size & 1)	// if size is even - fill land by 1x1 floor tiles
 	{
+        if(!UnitsUiData.ptr_small_beton)
+            return;
 		CHECK_SCALING (*UnitsUiData.ptr_small_beton, *UnitsUiData.ptr_small_beton_org, zoomFactor);
 
         step = 1;
@@ -438,9 +440,12 @@ void cBuilding::render_beton (SDL_Surface* surface, const SDL_Rect& dest, float 
 	}
 	else // or use 2x2 tiles
 	{
+        if(!GraphicsData.gfx_big_beton)
+            return;
+
 		CHECK_SCALING (*GraphicsData.gfx_big_beton, *GraphicsData.gfx_big_beton_org, zoomFactor);
         step = 2;
-        underlay_surface = UnitsUiData.ptr_small_beton;
+        underlay_surface = GraphicsData.gfx_big_beton.get();
 	}
 
     if (alphaEffectValue && cSettings::getInstance().isAlphaEffects())
@@ -487,6 +492,23 @@ void cBuilding::render_simple (SDL_Surface* surface, const SDL_Rect& dest, float
 /*static*/ void cBuilding::render_simple (SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, const sBuildingUIData& uiData, const cPlayer* owner, int frameNr, int alpha)
 {
 	// read the size:
+    SDL_Surface* sprite_dest = GraphicsData.gfx_tmp.get();
+    // draw player color
+    if (owner)
+    {
+        SDL_BlitSurface (owner->getColor().getTexture(), nullptr, sprite_dest, nullptr);
+    }
+
+    cSpritePtr sprite = uiData.directed_image[0];
+    if(!sprite)
+        sprite = uiData.image;
+
+    if(!sprite)
+        return;
+
+    sprite->render_simple(surface, dest);
+
+    /*
 	SDL_Rect src;
 	src.x = 0;
 	src.y = 0;
@@ -542,6 +564,7 @@ void cBuilding::render_simple (SDL_Surface* surface, const SDL_Rect& dest, float
 
 	SDL_SetSurfaceAlphaMod (GraphicsData.gfx_tmp.get(), alpha);
 	SDL_BlitSurface (GraphicsData.gfx_tmp.get(), &src, surface, &tmp);
+    */
 }
 
 
@@ -568,20 +591,20 @@ void cBuilding::render (unsigned long long animationTime, SDL_Surface* surface, 
 		drawConnectors (surface, dest, zoomFactor, drawShadow);
 		if (uiData->isConnectorGraphic) return;
 	}
-
+#ifdef FIX_SHADOW
 	// draw the shadows
 	if (drawShadow)
 	{
 		SDL_Rect tmp = dest;
 		if (alphaEffectValue && cSettings::getInstance().isAlphaEffects())
-			SDL_SetSurfaceAlphaMod (uiData->shw.get(), alphaEffectValue / 5);
+            SDL_SetSurfaceAlphaMod (uiData->img_shadow.get(), alphaEffectValue / 5);
 		else
-			SDL_SetSurfaceAlphaMod (uiData->shw.get(), 50);
+            SDL_SetSurfaceAlphaMod (uiData->img_shadow.get(), 50);
 
-		CHECK_SCALING (*uiData->shw, *uiData->shw_org, zoomFactor);
-		blittAlphaSurface (uiData->shw.get(), nullptr, surface, &tmp);
+        CHECK_SCALING (*uiData->img_shadow, *uiData->img_shadow_original, zoomFactor);
+        blittAlphaSurface (uiData->img_shadow.get(), nullptr, surface, &tmp);
 	}
-
+#endif
 	render_simple (surface, dest, zoomFactor, animationTime, alphaEffectValue && cSettings::getInstance().isAlphaEffects() ? alphaEffectValue : 254);
 }
 
@@ -879,7 +902,7 @@ bool cBuilding::canTransferTo (const cUnit& unit) const
 
 		for (const auto b : subBase->getBuildings())
 		{
-			if (b->isNextTo (v->getPosition())) return true;
+            if (b->isNextTo (*v)) return true;
 		}
 
 		return false;
@@ -903,7 +926,8 @@ bool cBuilding::canTransferTo (const cUnit& unit) const
 bool cBuilding::canExitTo(const cPosition& position, const cMap& map, const cStaticUnitData& vehicleData) const
 {
 	if (!map.possiblePlaceVehicle(vehicleData, position, getOwner())) return false;
-	if (!isNextTo(position)) return false;
+    if (!isNextTo(position, vehicleData))
+        return false;
 
 	return true;
 }
@@ -912,7 +936,8 @@ bool cBuilding::canExitTo(const cPosition& position, const cMap& map, const cSta
 bool cBuilding::canExitTo(const cPosition& position, const cMapView& map, const cStaticUnitData& vehicleData) const
 {
 	if (!map.possiblePlaceVehicle(vehicleData, position)) return false;
-	if (!isNextTo(position)) return false;
+    if (!isNextTo(position, vehicleData))
+        return false;
 
 	return true;
 }
@@ -937,7 +962,7 @@ bool cBuilding::canLoad (const cVehicle* Vehicle, bool checkPosition) const
 
 	if (storedUnits.size() == staticData->storageUnitsMax) return false;
 
-	if (checkPosition && !isNextTo (Vehicle->getPosition())) return false;
+    if (checkPosition && !isNextTo(*Vehicle)) return false;
 
 	if (!Contains(staticData->storeUnitsTypes, Vehicle->getStaticUnitData().isStorageType)) return false;
 
@@ -1313,17 +1338,11 @@ sBuildingUIData::sBuildingUIData():
 
 //--------------------------------------------------------------------------
 sBuildingUIData::sBuildingUIData (sBuildingUIData&& other) :
-	img (std::move (other.img)), img_org (std::move (other.img_org)),
-	shw (std::move (other.shw)), shw_org (std::move (other.shw_org)),
-	eff (std::move (other.eff)), eff_org (std::move (other.eff_org)),
+    sUnitUIData(std::move(other)),
+    img_effect (std::move (other.img_effect)),
+    img_effect_original (std::move (other.img_effect_original)),
 	video (std::move (other.video)),
-	info (std::move (other.info)),
-	Start (std::move (other.Start)),
-	Running (std::move (other.Running)),
-	Stop (std::move (other.Stop)),
-	Attack (std::move (other.Attack)),
-	Wait (std::move (other.Wait)),
-	hasClanLogos(other.hasClanLogos),
+    hasClanLogos(other.hasClanLogos),
 	hasDamageEffect(other.hasDamageEffect),
 	hasBetonUnderground(other.hasBetonUnderground),
 	hasPlayerColor(other.hasPlayerColor),
@@ -1338,20 +1357,9 @@ sBuildingUIData::sBuildingUIData (sBuildingUIData&& other) :
 //--------------------------------------------------------------------------
 sBuildingUIData& sBuildingUIData::operator= (sBuildingUIData && other)
 {
-	img = std::move (other.img);
-	img_org = std::move (other.img_org);
-	shw = std::move (other.shw);
-	shw_org = std::move (other.shw_org);
-	eff = std::move (other.eff);
-	eff_org = std::move (other.eff_org);
+    img_effect = std::move (other.img_effect);
+    img_effect_original = std::move (other.img_effect_original);
 	video = std::move (other.video);
-	info = std::move (other.info);
-
-	Start = std::move (other.Start);
-	Running = std::move (other.Running);
-	Stop = std::move (other.Stop);
-	Attack = std::move (other.Attack);
-	Wait = std::move (other.Wait);
 
 	hasClanLogos = other.hasClanLogos;
 	hasDamageEffect = other.hasDamageEffect;
@@ -1368,12 +1376,13 @@ sBuildingUIData& sBuildingUIData::operator= (sBuildingUIData && other)
 }
 
 //--------------------------------------------------------------------------
+/*
 void sBuildingUIData::scaleSurfaces (float factor)
 {
 	scaleSurface (img_org.get(), img.get(), (int) (img_org->w * factor), (int) (img_org->h * factor));
-	scaleSurface (shw_org.get(), shw.get(), (int) (shw_org->w * factor), (int) (shw_org->h * factor));
-	if (eff_org) scaleSurface (eff_org.get(), eff.get(), (int) (eff_org->w * factor), (int) (eff_org->h * factor));
-}
+    scaleSurface (img_shadow_original.get(), img_shadow.get(), (int) (img_shadow_original->w * factor), (int) (img_shadow_original->h * factor));
+    if (img_effect_original) scaleSurface (img_effect_original.get(), img_effect.get(), (int) (img_effect_original->w * factor), (int) (img_effect_original->h * factor));
+}*/
 
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------

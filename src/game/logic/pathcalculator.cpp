@@ -47,7 +47,7 @@ bool cPathDestHandler::hasReachedDestination (const cPosition& position) const
 		case PATH_DEST_TYPE_POS:
 			return (destination == position);
 		case PATH_DEST_TYPE_LOAD:
-			return (destUnit && destUnit->isNextTo (position));
+            return (destUnit && destUnit->isNextTo (*srcVehicle));
 		case PATH_DEST_TYPE_ATTACK:
 			return (position - destination).l2NormSquared() <= Square (srcVehicle->data.getRange());
 		default:

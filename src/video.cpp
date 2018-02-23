@@ -30,8 +30,8 @@
 #include "maxrversion.h"
 #include "defines.h"
 #include "utility/log.h"
-#include "pcx.h"
-#include "unifonts.h"
+//#include "unitily/pcx.h"
+#include "utility/unifonts.h"
 #include "utility/files.h"
 #include "input/keyboard/keyboard.h"
 
@@ -106,10 +106,8 @@ void cVideo::init()
 	detectResolutions();
 }
 
-void cVideo::showSplashScreen()
+void cVideo::showSplashScreen(AutoSurface splash)
 {
-	AutoSurface splash (LoadPCX (SPLASH_BACKGROUND));
-
 	SDL_SetWindowBordered (sdlWindow, SDL_FALSE);
 	SDL_SetWindowSize (sdlWindow, splash->w, splash->h);
 	SDL_SetWindowPosition (sdlWindow, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED);
@@ -139,7 +137,8 @@ void cVideo::initializeBuffer (int width, int height)
 	if (buffer) SDL_FreeSurface (buffer);
 	buffer = SDL_CreateRGBSurface (0, width, height, getColDepth(), 0, 0, 0, 0);
 
-	if (font != nullptr) font->setTargetSurface (buffer);
+    if (font != nullptr)
+        font->setTargetSurface (buffer);
 
 	if (sdlTexture) SDL_DestroyTexture (sdlTexture);
 	sdlTexture = SDL_CreateTexture (sdlRenderer,

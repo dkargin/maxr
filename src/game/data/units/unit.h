@@ -24,6 +24,8 @@
 #include "game/data/units/unitdata.h"
 #include "utility/signal/signal.h"
 #include "utility/position.h"
+#include "utility/drawing.h"
+#include "sound.h"
 
 class cClient;
 class cJob;
@@ -36,6 +38,49 @@ class cVehicle;
 template<typename> class cBox;
 class cSoundManager;
 struct sTerrain;
+
+// Graphical data of a unit
+struct sUnitUIData
+{
+    // Sprite to be used
+    AutoSurface info;
+    // Additional overlay, like radar dish
+    cSpritePtr overlay;
+    // Directed sprites
+    std::array<cSpritePtr, 8> directed_image;
+    // Directed shadow sprites
+    std::array<cSpritePtr, 8> directed_shadow;
+
+    // Non-directed sprite
+    cSpritePtr image;
+    cSpritePtr shadow;
+
+    // Sprite that will be rendered below the unit, on the ground
+    cSpritePtr undelay;
+
+    //std::array<AutoSurface, 8> img, img_org; // 8 Surfaces of the vehicle
+    //std::array<AutoSurface, 8> shw, shw_org; // 8 Surfaces of shadows
+    //AutoSurface overlay, overlay_org;        // Overlays
+
+    // Die Sounds:
+    cSoundChunk Wait;
+    cSoundChunk WaitWater;
+    cSoundChunk Start;
+    cSoundChunk StartWater;
+    cSoundChunk Stop;
+    cSoundChunk StopWater;
+    cSoundChunk Drive;
+    cSoundChunk DriveWater;
+    cSoundChunk Attack;
+    cSoundChunk Running;
+
+    sUnitUIData();
+    sUnitUIData (sUnitUIData&& other);
+    sUnitUIData& operator= (sUnitUIData && other);
+private:
+    sUnitUIData (const sUnitUIData& other) MAXR_DELETE_FUNCTION;
+    sUnitUIData& operator= (const sUnitUIData& other) MAXR_DELETE_FUNCTION;
+};
 
 //-----------------------------------------------------------------------------
 class cUnit
@@ -72,10 +117,16 @@ public:
 
 	std::vector<cPosition> getAdjacentPositions() const;
 
+    // Get geometric center of the unit
+    cVector2 getCenter() const;
+
 	int calcHealth (int damage) const;
-	bool isInRange (const cPosition& position) const;
+    bool isInWeaponRange (const cPosition& position) const;
 	/// checks whether the coordinates are next to the unit
-	bool isNextTo (const cPosition& position) const;
+    bool isNextTo (const cPosition& position, const cStaticUnitData& data) const;
+    bool isNextTo (const cPosition& position, int w, int h) const;
+    bool isNextTo (const cUnit& other) const;
+
 	bool isDisabled() const { return turnsDisabled > 0; }
 	bool isAbove (const cPosition& position) const;
 

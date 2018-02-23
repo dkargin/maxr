@@ -43,11 +43,9 @@
 #include "game/data/map/map.h"
 #include "mveplayer.h"
 #include "network.h"
-#include "pcx.h"
 #include "game/data/player/player.h"
 #include "settings.h"
 #include "sound.h"
-#include "unifonts.h"
 #include "game/data/units/vehicle.h"
 #include "video.h"
 #include "maxrversion.h"
@@ -60,6 +58,7 @@
 #include "ui/graphical/menu/windows/windowstart.h"
 #include "debug.h"
 #include "utility/string/toString.h"
+#include "utility/pcx.h"
 
 using namespace std;
 
@@ -91,7 +90,7 @@ int main (int argc, char* argv[])
 	if (!DEDICATED_SERVER)
 	{
 		Video.init();
-		Video.showSplashScreen(); // show splashscreen
+        Video.showSplashScreen(LoadPCX (SPLASH_BACKGROUND)); // show splashscreen
 		initSound(); // now config is loaded and we can init sound and net
 	}
 	initNet();
@@ -150,10 +149,10 @@ int main (int argc, char* argv[])
 		Video.prepareGameScreen();
 		Video.clearBuffer();
 
+        cApplication application;
+
 		cMouse mouse;
 		cKeyboard keyboard;
-
-		cApplication application;
 
 		application.registerMouse (mouse);
 		application.registerKeyboard (keyboard);
@@ -317,14 +316,14 @@ bool is_main_thread()
  */
 void Quit()
 {
-	delete font;
-
 	//unload files here
 	cSoundDevice::getInstance().close();
 	SDLNet_Quit();
 	Video.clearMemory();
 	SDL_Quit();
 	Log.write ("EOF");
+
+    // TODO: exit(0) is EVIL!
 	exit (0);
 }
 

@@ -132,25 +132,42 @@ int cUnit::calcHealth (int damage) const
 //------------------------------------------------------------------------------
 /** Checks if the target is in range */
 //------------------------------------------------------------------------------
-bool cUnit::isInRange (const cPosition& position) const
+bool cUnit::isInWeaponRange (const cPosition& position) const
 {
 	const auto distanceSquared = (position - this->position).l2NormSquared();
 
 	return distanceSquared <= Square (data.getRange());
 }
 
-//------------------------------------------------------------------------------
-bool cUnit::isNextTo (const cPosition& position) const
+cVector2 cUnit::getCenter() const
 {
-	if (position.x() + 1 < this->position.x() || position.y() + 1 < this->position.y())
-		return false;
+    float x = (float)position.x() + 0.5*cellSize;
+    float y = (float)position.y() + 0.5*cellSize;
+    return cVector2(x,y);
+}
+//------------------------------------------------------------------------------
+bool cUnit::isNextTo (const cPosition& position, const cStaticUnitData& data) const
+{
+    return isNextTo(position, data.cellSize, data.cellSize);
+}
 
-	//const int size = isBig ? 2 : 1;
-	int size = cellSize;
+//------------------------------------------------------------------------------
+bool cUnit::isNextTo (const cPosition& position, int w, int h) const
+{
+    cBox<cPosition> merged(position, position + cPosition(w,h));
+    merged.add(getArea());
 
-	if (position.x() - size > this->position.x() || position.y() - size > this->position.y())
-		return false;
-	return true;
+    // Boxes A and B are touching each other
+    // if (and only if) the size of a union of A+B
+    // is equal to the sum of each sizes
+    return merged.getSize() == cPosition(w+cellSize, h+cellSize);
+}
+
+bool cUnit::isNextTo (const cUnit& other) const
+{
+    cBox<cPosition> merged(other.getArea());
+    merged.add(getArea());
+    return merged.getSize() == cPosition(cellSize+other.cellSize, cellSize+other.cellSize);
 }
 
 //------------------------------------------------------------------------------
@@ -321,7 +338,7 @@ bool cUnit::canAttackObjectAt (const cPosition& position, const cMapView& map, b
 	if (isBeeingAttacked()) return false;
 	if (isAVehicle() && static_cast<const cVehicle*> (this)->isUnitLoaded()) return false;
 	if (map.isValidPosition (position) == false) return false;
-	if (checkRange && isInRange (position) == false) return false;
+    if (checkRange && isInWeaponRange (position) == false) return false;
 
 	if (staticData->muzzleType == cStaticUnitData::MUZZLE_TYPE_TORPEDO && map.isWaterOrCoast(position) == false)
 		return false;

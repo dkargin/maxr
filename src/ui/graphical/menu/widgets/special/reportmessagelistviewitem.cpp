@@ -56,8 +56,8 @@ cReportMessageListViewItem::cReportMessageListViewItem (const cSavedReport& repo
 		{
 
 			const auto& uiData = *UnitsUiData.getVehicleUI (unitId);
-			cVehicle::render_simple (unitSurface.get(), dest, zoomFactor, uiData, nullptr);
-			cVehicle::drawOverlayAnimation (unitSurface.get(), dest, zoomFactor, uiData);
+            cVehicle::render_simple (unitSurface.get(), dest, zoomFactor, data, uiData, nullptr);
+            cVehicle::drawOverlayAnimation (unitSurface.get(), dest, zoomFactor, data, uiData);
 		}
 		else if (unitId.isABuilding())
 		{

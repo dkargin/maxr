@@ -108,7 +108,6 @@ public:
 	std::string buildAs;
 
 	int maxBuildFactor;
-
 	bool canBuildPath;
 	bool canBuildRepeat;
 
@@ -118,8 +117,9 @@ public:
 	float factorCoast;
 
 	// Abilities
+    float modifiesSpeed;
+    int convertsGold;
 	bool connectsToBase;
-	float modifiesSpeed;
 	bool canClearArea;
 	bool canBeCaptured;
 	bool canBeDisabled;
@@ -131,9 +131,11 @@ public:
 	bool canPlaceMines;
 	bool canSurvey;
 	bool doesSelfRepair;
-	int convertsGold;
 	bool canSelfDestroy;
 	bool canScore;
+    // Whether we use custom sprite containers or legacy system
+    // TODO: To be removed when all the XML files are ported to the new system
+    bool customGraphics = false;
 
 	int canMineMaxRes;
 
@@ -247,6 +249,7 @@ public:
 		archive & NVP(name);
 	}
 
+    // Graphics part
 private:
 	std::string description; //untranslated data from unit xml. Will be used, when translation for the unit is not available
 	std::string name;        //untranslated data from unit xml. Will be used, when translation for the unit is not available
@@ -375,6 +378,7 @@ private:
 	mutable bool crcValid;
 };
 
+// Database for all the units
 class cUnitsData
 {
 public:

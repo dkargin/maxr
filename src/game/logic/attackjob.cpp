@@ -247,6 +247,7 @@ void cAttackJob::fire(cModel& model)
 	}
 
 	//make explosive mines explode
+    // TODO: Mine could decide itself whether it should explode on death
 	if (aggressor->getStaticUnitData().explodesOnContact && aggressor->getPosition() == targetPosition)
 	{
 		const cMap& map = *model.getMap();
@@ -372,6 +373,7 @@ void cAttackJob::impactCluster(cModel& model)
 {
 	std::vector<cUnit*> targets;
 
+    // TODO: Add impact range and update damage distribution
 	//full damage
 	int clusterDamage = aggressor->data.getDamage();
 	impactSingle (targetPosition, clusterDamage, model, &targets);

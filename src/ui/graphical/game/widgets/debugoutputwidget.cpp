@@ -25,7 +25,7 @@
 #include "game/logic/client.h"
 #include "game/logic/server2.h"
 #include "video.h"
-#include "unifonts.h"
+#include "utility/unifonts.h"
 #include "game/data/units/building.h"
 #include "game/data/units/vehicle.h"
 

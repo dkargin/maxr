@@ -91,7 +91,7 @@ enum eSymbolsBig
 //-----------------------------------------------------------------------------
 // Struct for the pictures and sounds
 //-----------------------------------------------------------------------------
-struct sVehicleUIData
+struct sVehicleUIData : public sUnitUIData
 {
 	sID id;
 
@@ -108,33 +108,22 @@ struct sVehicleUIData
 
 	int hasFrames;
 
-
-	std::array<AutoSurface, 8> img, img_org; // 8 Surfaces of the vehicle
-	std::array<AutoSurface, 8> shw, shw_org; // 8 Surfaces of shadows
+    // TODO: Remove this shit. Building should have it, not a vehicle
 	AutoSurface build, build_org;        // Surfaces when building
 	AutoSurface build_shw, build_shw_org; // Surfaces of shadows when building
+
 	AutoSurface clear_small, clear_small_org;        // Surfaces when clearing
 	AutoSurface clear_small_shw, clear_small_shw_org; // Surfaces when clearing
-	AutoSurface overlay, overlay_org;    // Overlays
-	AutoSurface storage; // image of the vehicle in storage
-	std::string FLCFile;       // FLC-Video
-	AutoSurface info;   // info image
 
-	// Sounds:
-	cSoundChunk Wait;
-	cSoundChunk WaitWater;
-	cSoundChunk Start;
-	cSoundChunk StartWater;
-	cSoundChunk Stop;
-	cSoundChunk StopWater;
-	cSoundChunk Drive;
-	cSoundChunk DriveWater;
-	cSoundChunk Attack;
+    AutoSurface storage;        // image of the vehicle in storage
+    std::string FLCFile;        // FLC-Video
 
 	sVehicleUIData();
 	sVehicleUIData (sVehicleUIData&& other);
 	sVehicleUIData& operator= (sVehicleUIData && other);
-	void scaleSurfaces (float faktor);
+
+    // Not needed
+    //void scaleSurfaces (float faktor);
 
 private:
 	sVehicleUIData (const sVehicleUIData& other) MAXR_DELETE_FUNCTION;
@@ -267,14 +256,21 @@ public:
 	*/
 	void render (const cMapView* map, unsigned long long animationTime, const cPlayer* activePlayer, SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, bool drawShadow) const;
 	void render_simple (SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, int alpha = 254) const;
-	static void render_simple (SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, const sVehicleUIData& uiData, const cPlayer* owner, int dir = 0, int walkFrame = 0, int alpha = 254);
+    static void render_simple (SDL_Surface* surface, const SDL_Rect& dest,
+                               float zoomFactor,
+                               const cStaticUnitData& unitData, const sVehicleUIData& uiData,
+                               const cPlayer* owner, int dir = 0, int walkFrame = 0, int alpha = 254);
 	/**
-	* draws the overlay animation of the vehicle on the given surface
-	*@author: eiko
-	*/
+     * draws the overlay animation of the vehicle on the given surface
+     * Needed by radar units
+     *@author: eiko
+     */
 	void drawOverlayAnimation (unsigned long long animationTime, SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor) const;
 	void drawOverlayAnimation (SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, int frameNr, int alpha = 254) const;
-	static void drawOverlayAnimation (SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, const sVehicleUIData& uiData, int frameNr = 0, int alpha = 254);
+    static void drawOverlayAnimation (SDL_Surface* surface, const SDL_Rect& dest,
+                                      float zoomFactor,
+                                      const cStaticUnitData& unitData, const sVehicleUIData& uiData,
+                                      int frameNr = 0, int alpha = 254);
 
 	bool isUnitLoaded() const { return loaded; }
 

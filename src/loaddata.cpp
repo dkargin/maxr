@@ -36,20 +36,26 @@
 
 #include "loaddata.h"
 #include "maxrversion.h"
+
 #include "utility/autosurface.h"
-#include "game/data/units/building.h"
-#include "game/data/player/clans.h"
-#include "extendedtinyxml.h"
 #include "utility/files.h"
-#include "keys.h"
+// TODO: remove direct PCX references
+#include "utility/pcx.h"
+#include "utility/unifonts.h"
 #include "utility/log.h"
+
+#include "game/data/units/building.h"
+#include "game/data/units/vehicle.h"
+#include "game/data/player/clans.h"
+
+#include "tinyxml2.h"
+#include "extendedtinyxml.h"
+#include "keys.h"
+
 #include "main.h"
-#include "pcx.h"
+
 #include "settings.h"
 #include "sound.h"
-#include "tinyxml2.h"
-#include "unifonts.h"
-#include "game/data/units/vehicle.h"
 #include "video.h"
 #include "debug.h"
 
@@ -75,41 +81,58 @@ static void MakeLog (const std::string& sTxt, int ok, int pos);
  * Loads the selected languagepack
  * @return 1 on success
  */
-static int LoadLanguage();
+int LoadLanguage();
 
 /**
  * Loads all Graphics
  * @param path Directory of the graphics
  * @return 1 on success
  */
-static int LoadGraphics (const char* path);
+int LoadGraphics (const char* path);
 
 /**
  * Loads the Effects
  * @param path Directory of the Effects
  * @return 1 on success
  */
-static int LoadEffects (const char* path);
+int LoadEffects (const char* path);
 
-/**
- * Loads all Buildings
- * @param path Directory of the Buildings
- * @return 1 on success
- */
-static int LoadBuildings();
+// Wraps up mod contents from specific folder
+class ModData
+{
+public:
+    ModData(const char * path) : path(path) {}
+    /**
+     * Loads all Buildings
+     * @param path Directory of the Buildings
+     * @return 1 on success
+     */
+    int LoadBuildings();
 
-/**
- * Loads all Vehicles
- * @param path Directory of the Vehicles
- * @return 1 on success
- */
-static int LoadVehicles();
+    /**
+     * Loads all Vehicles
+     * @param path Directory of the Vehicles
+     * @return 1 on success
+     */
+    int LoadVehicles();
 
-/**
- * Loads the clan values and stores them in the cUnitData class
- * @return 1 on success
- */
-static int LoadClans();
+    /**
+     * Loads the clan values and stores them in the cUnitData class
+     * @return 1 on success
+     */
+    int LoadClans();
+protected:
+    /**
+     * Loads the unitdata from the data.xml in the unitfolder
+     * @param directory Unitdirectory, relative to the main game directory
+     */
+    void LoadUnitData(cStaticUnitData& staticData, cDynamicUnitData& dynamicData, char const* const directory, int const iID);
+
+    void LoadUnitGraphicProperties (sVehicleUIData& data, char const* directory);
+    void LoadUnitGraphicProperties (sBuildingUIData& data, char const* directory);
+protected:
+    std::string path;
+};
 
 /**
  * Loads all Musicfiles
@@ -117,15 +140,6 @@ static int LoadClans();
  * @return 1 on success
  */
 static int LoadMusic (const char* path);
-
-/**
- * Loads the unitdata from the data.xml in the unitfolder
- * @param directory Unitdirectory, relative to the main game directory
- */
-static void LoadUnitData(cStaticUnitData& staticData, cDynamicUnitData& dynamicData, char const* const directory, int const iID);
-
-static void LoadUnitGraphicProperties (sVehicleUIData& data, char const* directory);
-static void LoadUnitGraphicProperties (sBuildingUIData& data, char const* directory);
 
 // LoadData ///////////////////////////////////////////////////////////////////
 // Loads all relevant files and data:
@@ -149,7 +163,7 @@ int LoadData (void* data)
 			return 0;
 		}
 
-		font = new cUnicodeFont; // init ascii fonts
+        font.reset(new cUnicodeFont()); // init ascii fonts
 		font->setTargetSurface (cVideo::buffer);
 		Log.mark();
 	}
@@ -255,7 +269,8 @@ int LoadData (void* data)
 	// Load Vehicles
 	MakeLog (lngPack.i18n ("Text~Init~Vehicles"), 0, 7);
 
-	if (LoadVehicles() != 1)
+    ModData mod("core");
+    if (mod.LoadVehicles() != 1)
 	{
 		MakeLog ("", -1, 7);
 		SDL_Delay (5000);
@@ -271,7 +286,7 @@ int LoadData (void* data)
 	// Load Buildings
 	MakeLog (lngPack.i18n ("Text~Init~Buildings"), 0, 8);
 
-	if (LoadBuildings() != 1)
+    if (mod.LoadBuildings() != 1)
 	{
 		MakeLog ("", -1, 8);
 		SDL_Delay (5000);
@@ -287,7 +302,7 @@ int LoadData (void* data)
 	MakeLog (lngPack.i18n ("Text~Init~Clans"), 0, 9);
 
 	// Load Clan Settings
-	if (LoadClans() != 1)
+    if (mod.LoadClans() != 1)
 	{
 		SDL_Delay (5000);
 		loadingState = LOAD_ERROR;
@@ -538,7 +553,7 @@ static void LoadUnitSoundfile (cSoundChunk& dest, const char* directory, const c
 	dest.load (filepath);
 }
 
-static int LoadLanguage()
+int LoadLanguage()
 {
 	// Set the language code
 	if (lngPack.SetCurrentLanguage (cSettings::getInstance().getLanguage()) != 0)
@@ -556,7 +571,7 @@ static int LoadLanguage()
 	return 1;
 }
 
-static int LoadEffects (const char* path)
+int LoadEffects (const char* path)
 {
 	Log.write ("Loading Effects", cLog::eLOG_TYPE_INFO);
 
@@ -754,7 +769,7 @@ void cVoiceData::load (const char* path)
 	LoadSoundfile (VOIUnitStolenByEnemy, path, "unit_stolen_by_enemy.ogg", true);
 }
 
-static int LoadGraphics (const char* path)
+int LoadGraphics (const char* path)
 {
 	Log.write ("Loading Graphics", cLog::eLOG_TYPE_INFO);
 	if (DEDICATED_SERVER) return 1;
@@ -831,7 +846,9 @@ static int LoadGraphics (const char* path)
 		createShadowGfx();
 	});
 
-	GraphicsData.gfx_tmp = AutoSurface (SDL_CreateRGBSurface (0, 128, 128, Video.getColDepth(), 0, 0, 0, 0));
+    int maxUnitSize = 8;
+    int cellSize = 64;
+    GraphicsData.gfx_tmp = AutoSurface (SDL_CreateRGBSurface (0, maxUnitSize*cellSize, maxUnitSize*cellSize, Video.getColDepth(), 0, 0, 0, 0));
 	SDL_SetColorKey (GraphicsData.gfx_tmp.get(), SDL_TRUE, 0xFF00FF);
 
 	// Glas:
@@ -897,14 +914,164 @@ void cResourceData::load (const char* path)
 	}
 }
 
-static int LoadVehicles()
+// Loads unit data from the path
+void loadUnitData(std::string srcPath,
+                  cSpriteTool& tool,
+                  cStaticUnitData& staticData,
+                  sUnitUIData& ui)
+{
+    std::string sTmpString;
+
+    int size = staticData.cellSize;
+    cVector2 unitSize(size, size);
+
+    // Load an old 'static' data
+    // New graphics is described inside XMLs
+    if(!staticData.customGraphics)
+    {
+        // load img
+        ui.image = tool.makeSprite(srcPath + "img.pcx", unitSize);
+
+        if(!ui.image)
+        {
+            Log.write ("Missing GFX - your MAXR install seems to be incomplete!", cLog::eLOG_TYPE_ERROR);
+        }
+
+        // load shadow
+        ui.shadow = tool.makeSprite(srcPath + "shw.pcx", unitSize);
+        // load overlay graphics, if necessary
+        ui.overlay = tool.makeSprite(srcPath + "overlay.pcx", unitSize);
+
+        // load infantery graphics
+        //if (ui.animationMovement)
+        {
+    #ifdef FIX_ANIMATIONS_LATER
+            SDL_Rect rcDest;
+            for (int dir = 0; dir < 8; dir++)
+            {
+                ui.directed_image[dir] = spriteTool.makeSprite();
+                ui.img[dir] = AutoSurface (SDL_CreateRGBSurface (0, 64 * 13, 64, Video.getColDepth(), 0, 0, 0, 0));
+                SDL_SetColorKey (ui.img[dir].get(), SDL_TRUE, 0x00FFFFFF);
+                SDL_FillRect (ui.img[dir].get(), nullptr, 0x00FF00FF);
+
+                for (int frame = 0; frame < 13; frame++)
+                {
+                    sTmpString = sVehiclePath;
+                    char sztmp[16];
+                    TIXML_SNPRINTF (sztmp, sizeof (sztmp), "img%d_%.2d.pcx", dir, frame);
+                    sTmpString += sztmp;
+
+                    if (FileExists (sTmpString.c_str()))
+                    {
+                        AutoSurface sfTempSurface (LoadPCX (sTmpString));
+                        if (!sfTempSurface)
+                        {
+                            Log.write (SDL_GetError(), cLog::eLOG_TYPE_WARNING);
+                        }
+                        else
+                        {
+                            rcDest.x = 64 * frame + 32 - sfTempSurface->w / 2;
+                            rcDest.y = 32 - sfTempSurface->h / 2;
+                            SDL_BlitSurface (sfTempSurface.get(), nullptr, ui.img[dir].get(), &rcDest);
+                        }
+                    }
+                }
+                ui.img_org[dir] = AutoSurface (SDL_CreateRGBSurface (0, 64 * 13, 64, Video.getColDepth(), 0, 0, 0, 0));
+                SDL_SetColorKey (ui.img[dir].get(), SDL_TRUE, 0x00FFFFFF);
+                SDL_FillRect (ui.img_org[dir].get(), nullptr, 0x00FFFFFF);
+                SDL_BlitSurface (ui.img[dir].get(), nullptr, ui.img_org[dir].get(), nullptr);
+
+                int size = staticData.cellSize;
+                ui.img[dir] = AutoSurface (SDL_CreateRGBSurface (0, size*64 * 13, size*64, Video.getColDepth(), 0, 0, 0, 0));
+
+                ui.shw[dir] = AutoSurface (SDL_CreateRGBSurface (0, 64 * 13, 64, Video.getColDepth(), 0, 0, 0, 0));
+                SDL_SetColorKey (ui.shw[dir].get(), SDL_TRUE, 0x00FF00FF);
+                SDL_FillRect (ui.shw[dir].get(), nullptr, 0x00FF00FF);
+                ui.shw_org[dir] = AutoSurface (SDL_CreateRGBSurface (0, 64 * 13, 64, Video.getColDepth(), 0, 0, 0, 0));
+                SDL_SetColorKey (ui.shw_org[dir].get(), SDL_TRUE, 0x00FF00FF);
+                SDL_FillRect (ui.shw_org[dir].get(), nullptr, 0x00FF00FF);
+
+                rcDest.x = 3;
+                rcDest.y = 3;
+                SDL_BlitSurface (ui.img_org[dir].get(), nullptr, ui.shw_org[dir].get(), &rcDest);
+                SDL_LockSurface (ui.shw_org[dir].get());
+                Uint32* ptr = static_cast<Uint32*> (ui.shw_org[dir]->pixels);
+                for (int j = 0; j < 64 * 13 * 64; j++)
+                {
+                    if (*ptr != 0x00FF00FF)
+                        *ptr = 0;
+                    ptr++;
+                }
+                SDL_UnlockSurface (ui.shw_org[dir].get());
+                SDL_BlitSurface (ui.shw_org[dir].get(), nullptr, ui.shw[dir].get(), nullptr);
+                SDL_SetSurfaceAlphaMod (ui.shw_org[dir].get(), 50);
+                SDL_SetSurfaceAlphaMod (ui.shw[dir].get(), 50);
+            }
+    #endif
+        }
+        // load other vehicle graphics
+        //else
+        {
+            for (int n = 0; n < 8; n++)
+            {
+                // load image
+                sTmpString = srcPath;
+                char sztmp[16];
+                TIXML_SNPRINTF (sztmp, sizeof (sztmp), "img%d.pcx", n);
+                sTmpString += sztmp;
+                Log.write (sTmpString, cLog::eLOG_TYPE_DEBUG);
+
+                //SDL_SetColorKey (ui.img[n].get(), SDL_TRUE, 0xFFFFFF);
+                ui.directed_image[n] = tool.makeSprite(sTmpString.c_str(), unitSize);
+                if(ui.directed_image[n])
+                {
+                    ui.directed_image[n]->setColorKey(0xFFFFFF);
+                }
+                else
+                {
+                    // TODO: Set default image
+                    Log.write ("Missing GFX - your MAXR install seems to be incomplete!", cLog::eLOG_TYPE_ERROR);
+                }
+
+                // load shadow
+                ui.directed_shadow[n] = tool.makeSprite(srcPath + "shw.pcx", unitSize);
+                if (ui.directed_shadow[n])
+                {
+                    ui.directed_shadow[n]->setAlphaKey(50);
+                }
+            }
+        }
+    }
+
+    // load sounds
+    Log.write ("Loading sounds", cLog::eLOG_TYPE_DEBUG);
+    LoadUnitSoundfile (ui.Wait,       srcPath.c_str(), "wait.ogg");
+    LoadUnitSoundfile (ui.WaitWater,  srcPath.c_str(), "wait_water.ogg");
+    LoadUnitSoundfile (ui.Start,      srcPath.c_str(), "start.ogg");
+    LoadUnitSoundfile (ui.StartWater, srcPath.c_str(), "start_water.ogg");
+    LoadUnitSoundfile (ui.Stop,       srcPath.c_str(), "stop.ogg");
+    LoadUnitSoundfile (ui.StopWater,  srcPath.c_str(), "stop_water.ogg");
+    LoadUnitSoundfile (ui.Drive,      srcPath.c_str(), "drive.ogg");
+    LoadUnitSoundfile (ui.DriveWater, srcPath.c_str(), "drive_water.ogg");
+    LoadUnitSoundfile (ui.Attack,     srcPath.c_str(), "attack.ogg");
+
+    // load sounds
+    LoadUnitSoundfile (ui.Running, srcPath.c_str(), "running.ogg");
+}
+
+int ModData::LoadVehicles()
 {
 	Log.write ("Loading Vehicles", cLog::eLOG_TYPE_INFO);
+
+    const int tileSize = 64;
+    cSpriteTool spriteTool;
+    spriteTool.setCellSize(tileSize);
 
 	tinyxml2::XMLDocument VehiclesXml;
 
 	string sTmpString = cSettings::getInstance().getVehiclesPath();
 	sTmpString += PATH_DELIMITER "vehicles.xml";
+
 	if (!FileExists (sTmpString.c_str()))
 	{
 		return 0;
@@ -914,43 +1081,25 @@ static int LoadVehicles()
 		Log.write ("Can't load vehicles.xml!", cLog::eLOG_TYPE_ERROR);
 		return 0;
 	}
-	XMLElement* xmlElement = XmlGetFirstElement (VehiclesXml, "VehicleData", "Vehicles", nullptr);
+
+    XMLElement* xmlElement = XmlGetFirstElement (VehiclesXml, "VehicleData", "Vehicles", nullptr);
 	if (xmlElement == nullptr)
 	{
 		Log.write ("Can't read \"VehicleData->Vehicles\" node!", cLog::eLOG_TYPE_ERROR);
 		return 0;
 	}
+
 	// read vehicles.xml
 	std::vector<std::string> VehicleList;
 	std::vector<int> IDList;
-	xmlElement = xmlElement->FirstChildElement();
-	if (xmlElement)
-	{
-		const char* directory = xmlElement->Attribute ("directory");
-		if (directory != nullptr)
-			VehicleList.push_back (directory);
-		else
-		{
-			string msg = string ("Can't read directory-attribute from \"") + xmlElement->Value() + "\" - node";
-			Log.write (msg, cLog::eLOG_TYPE_WARNING);
-		}
 
-		if (xmlElement->Attribute ("num"))
-			IDList.push_back (xmlElement->IntAttribute ("num"));
-		else
-		{
-			string msg = string ("Can't read num-attribute from \"") + xmlElement->Value() + "\" - node";
-			Log.write (msg, cLog::eLOG_TYPE_WARNING);
-		}
-	}
-	else
+	xmlElement = xmlElement->FirstChildElement();
+
+    if(!xmlElement)
 		Log.write ("No vehicles defined in vehicles.xml!", cLog::eLOG_TYPE_WARNING);
+
 	while (xmlElement != nullptr)
 	{
-		xmlElement = xmlElement->NextSiblingElement();
-		if (xmlElement == nullptr)
-			break;
-
 		const char* directory = xmlElement->Attribute ("directory");
 		if (directory != nullptr)
 			VehicleList.push_back (directory);
@@ -967,10 +1116,14 @@ static int LoadVehicles()
 			string msg = string ("Can't read num-attribute from \"") + xmlElement->Value() + "\" - node";
 			Log.write (msg, cLog::eLOG_TYPE_WARNING);
 		}
-	}
+
+        xmlElement = xmlElement->NextSiblingElement();
+    }
+
 	// load found units
 	string sVehiclePath;
 	UnitsUiData.vehicleUIs.resize(VehicleList.size());
+
 	for (size_t i = 0; i != VehicleList.size(); ++i)
 	{
 		sVehiclePath = cSettings::getInstance().getVehiclesPath();
@@ -993,106 +1146,9 @@ static int LoadVehicles()
 		if (DEDICATED_SERVER) continue;
 
 		Log.write ("Loading graphics", cLog::eLOG_TYPE_DEBUG);
-		// load infantery graphics
-		if (ui.animationMovement)
-		{
-			SDL_Rect rcDest;
-			for (int n = 0; n < 8; n++)
-			{
-				ui.img[n] = AutoSurface (SDL_CreateRGBSurface (0, 64 * 13, 64, Video.getColDepth(), 0, 0, 0, 0));
-				SDL_SetColorKey (ui.img[n].get(), SDL_TRUE, 0x00FFFFFF);
-				SDL_FillRect (ui.img[n].get(), nullptr, 0x00FF00FF);
 
-				for (int j = 0; j < 13; j++)
-				{
-					sTmpString = sVehiclePath;
-					char sztmp[16];
-					TIXML_SNPRINTF (sztmp, sizeof (sztmp), "img%d_%.2d.pcx", n, j);
-					sTmpString += sztmp;
+        loadUnitData(sVehiclePath, spriteTool, staticData, dynamicData, ui);
 
-					if (FileExists (sTmpString.c_str()))
-					{
-						AutoSurface sfTempSurface (LoadPCX (sTmpString));
-						if (!sfTempSurface)
-						{
-							Log.write (SDL_GetError(), cLog::eLOG_TYPE_WARNING);
-						}
-						else
-						{
-							rcDest.x = 64 * j + 32 - sfTempSurface->w / 2;
-							rcDest.y = 32 - sfTempSurface->h / 2;
-							SDL_BlitSurface (sfTempSurface.get(), nullptr, ui.img[n].get(), &rcDest);
-						}
-					}
-				}
-				ui.img_org[n] = AutoSurface (SDL_CreateRGBSurface (0, 64 * 13, 64, Video.getColDepth(), 0, 0, 0, 0));
-				SDL_SetColorKey (ui.img[n].get(), SDL_TRUE, 0x00FFFFFF);
-				SDL_FillRect (ui.img_org[n].get(), nullptr, 0x00FFFFFF);
-				SDL_BlitSurface (ui.img[n].get(), nullptr, ui.img_org[n].get(), nullptr);
-
-				ui.shw[n] = AutoSurface (SDL_CreateRGBSurface (0, 64 * 13, 64, Video.getColDepth(), 0, 0, 0, 0));
-				SDL_SetColorKey (ui.shw[n].get(), SDL_TRUE, 0x00FF00FF);
-				SDL_FillRect (ui.shw[n].get(), nullptr, 0x00FF00FF);
-				ui.shw_org[n] = AutoSurface (SDL_CreateRGBSurface (0, 64 * 13, 64, Video.getColDepth(), 0, 0, 0, 0));
-				SDL_SetColorKey (ui.shw_org[n].get(), SDL_TRUE, 0x00FF00FF);
-				SDL_FillRect (ui.shw_org[n].get(), nullptr, 0x00FF00FF);
-
-				rcDest.x = 3;
-				rcDest.y = 3;
-				SDL_BlitSurface (ui.img_org[n].get(), nullptr, ui.shw_org[n].get(), &rcDest);
-				SDL_LockSurface (ui.shw_org[n].get());
-				Uint32* ptr = static_cast<Uint32*> (ui.shw_org[n]->pixels);
-				for (int j = 0; j < 64 * 13 * 64; j++)
-				{
-					if (*ptr != 0x00FF00FF)
-						*ptr = 0;
-					ptr++;
-				}
-				SDL_UnlockSurface (ui.shw_org[n].get());
-				SDL_BlitSurface (ui.shw_org[n].get(), nullptr, ui.shw[n].get(), nullptr);
-				SDL_SetSurfaceAlphaMod (ui.shw_org[n].get(), 50);
-				SDL_SetSurfaceAlphaMod (ui.shw[n].get(), 50);
-			}
-		}
-		// load other vehicle graphics
-		else
-		{
-			for (int n = 0; n < 8; n++)
-			{
-				// load image
-				sTmpString = sVehiclePath;
-				char sztmp[16];
-				TIXML_SNPRINTF (sztmp, sizeof (sztmp), "img%d.pcx", n);
-				sTmpString += sztmp;
-				Log.write (sTmpString, cLog::eLOG_TYPE_DEBUG);
-				if (FileExists (sTmpString.c_str()))
-				{
-					ui.img_org[n] = LoadPCX (sTmpString);
-					ui.img[n] = CloneSDLSurface (*ui.img_org[n]);
-					SDL_SetColorKey (ui.img_org[n].get(), SDL_TRUE, 0xFFFFFF);
-					SDL_SetColorKey (ui.img[n].get(), SDL_TRUE, 0xFFFFFF);
-				}
-				else
-				{
-					Log.write ("Missing GFX - your MAXR install seems to be incomplete!", cLog::eLOG_TYPE_ERROR);
-					return -1;
-				}
-
-				// load shadow
-				sTmpString.replace (sTmpString.length() - 8, 3, "shw");
-				if (FileExists (sTmpString.c_str()))
-				{
-					ui.shw_org[n] = LoadPCX (sTmpString);
-					ui.shw[n] = CloneSDLSurface (*ui.shw_org[n]);
-					SDL_SetSurfaceAlphaMod (ui.shw[n].get(), 50);
-				}
-				else
-				{
-					ui.shw_org[n] = nullptr;
-					ui.shw[n]     = nullptr;
-				}
-			}
-		}
 		// load video
 		ui.FLCFile = sVehiclePath;
 		ui.FLCFile += "video.flc";
@@ -1128,31 +1184,6 @@ static int LoadVehicles()
 		{
 			Log.write ("Missing GFX - your MAXR install seems to be incomplete!", cLog::eLOG_TYPE_ERROR);
 			return -1;
-		}
-
-		// load overlaygraphics if necessary
-		Log.write ("Loading overlay", cLog::eLOG_TYPE_DEBUG);
-		if (ui.hasOverlay)
-		{
-			sTmpString = sVehiclePath;
-			sTmpString += "overlay.pcx";
-			if (FileExists (sTmpString.c_str()))
-			{
-				ui.overlay_org = LoadPCX (sTmpString);
-				ui.overlay = CloneSDLSurface (*ui.overlay_org);
-			}
-			else
-			{
-				Log.write ("Missing GFX - your MAXR install seems to be incomplete!", cLog::eLOG_TYPE_WARNING);
-				ui.overlay_org       = nullptr;
-				ui.overlay           = nullptr;
-				ui.hasOverlay = false;
-			}
-		}
-		else
-		{
-			ui.overlay_org = nullptr;
-			ui.overlay     = nullptr;
 		}
 
 		// load buildgraphics if necessary
@@ -1192,14 +1223,8 @@ static int LoadVehicles()
 				ui.build_shw             = nullptr;
 				ui.buildUpGraphic = false;
 			}
-		}
-		else
-		{
-			ui.build_org     = nullptr;
-			ui.build         = nullptr;
-			ui.build_shw_org = nullptr;
-			ui.build_shw     = nullptr;
-		}
+        }
+
 		// load cleargraphics if necessary
 		Log.write ("Loading cleargraphics", cLog::eLOG_TYPE_DEBUG);
 		if (staticData.canClearArea)
@@ -1279,18 +1304,6 @@ static int LoadVehicles()
 			ui.clear_small_shw     = nullptr;
 		}
 
-		// load sounds
-		Log.write ("Loading sounds", cLog::eLOG_TYPE_DEBUG);
-		LoadUnitSoundfile (ui.Wait,       sVehiclePath.c_str(), "wait.ogg");
-		LoadUnitSoundfile (ui.WaitWater,  sVehiclePath.c_str(), "wait_water.ogg");
-		LoadUnitSoundfile (ui.Start,      sVehiclePath.c_str(), "start.ogg");
-		LoadUnitSoundfile (ui.StartWater, sVehiclePath.c_str(), "start_water.ogg");
-		LoadUnitSoundfile (ui.Stop,       sVehiclePath.c_str(), "stop.ogg");
-		LoadUnitSoundfile (ui.StopWater,  sVehiclePath.c_str(), "stop_water.ogg");
-		LoadUnitSoundfile (ui.Drive,      sVehiclePath.c_str(), "drive.ogg");
-		LoadUnitSoundfile (ui.DriveWater, sVehiclePath.c_str(), "drive_water.ogg");
-		LoadUnitSoundfile (ui.Attack,     sVehiclePath.c_str(), "attack.ogg");
-
 		UnitsDataGlobal.addData(staticData);
 		UnitsDataGlobal.addData(dynamicData);
 	}
@@ -1301,9 +1314,13 @@ static int LoadVehicles()
 	return 1;
 }
 
-static int LoadBuildings()
+int ModData::LoadBuildings()
 {
 	Log.write ("Loading Buildings", cLog::eLOG_TYPE_INFO);
+
+    const int tileSize = 64;
+    cSpriteTool spriteTool;
+    spriteTool.setCellSize(64);
 
 	// read buildings.xml
 	string sTmpString = cSettings::getInstance().getBuildingsPath();
@@ -1327,6 +1344,7 @@ static int LoadBuildings()
 	}
 	std::vector<std::string> BuildingList;
 	std::vector<int> IDList;
+
 	xmlElement = xmlElement->FirstChildElement();
 	if (xmlElement == nullptr)
 	{
@@ -1334,79 +1352,62 @@ static int LoadBuildings()
 		return 1;
 	}
 
-	const char* directory = xmlElement->Attribute ("directory");
-	if (directory != nullptr)
-		BuildingList.push_back (directory);
-	else
-	{
-		string msg = string ("Can't read directory-attribute from \"") + xmlElement->Value() + "\" - node";
-		Log.write (msg, cLog::eLOG_TYPE_WARNING);
-	}
-
-	if (xmlElement->Attribute ("num"))
-		IDList.push_back (xmlElement->IntAttribute ("num"));
-	else
-	{
-		string msg = string ("Can't read num-attribute from \"") + xmlElement->Value() + "\" - node";
-		Log.write (msg, cLog::eLOG_TYPE_WARNING);
-	}
-
-	const char* spezial = xmlElement->Attribute ("special");
-	if (spezial != nullptr)
-	{
-		string specialString = spezial;
-		if (specialString == "mine")            UnitsDataGlobal.setSpecialIDMine(sID(1, IDList.back()));
-		else if (specialString == "energy")     UnitsDataGlobal.setSpecialIDSmallGen(sID(1, IDList.back()));
-		else if (specialString == "connector")  UnitsDataGlobal.setSpecialIDConnector(sID(1, IDList.back()));
-		else if (specialString == "landmine")   UnitsDataGlobal.setSpecialIDLandMine(sID(1, IDList.back()));
-		else if (specialString == "seamine")    UnitsDataGlobal.setSpecialIDSeaMine(sID(1, IDList.back()));
-		else if (specialString == "smallBeton") UnitsDataGlobal.setSpecialIDSmallBeton(sID(1, IDList.back()));
-		else Log.write ("Unknown spacial in buildings.xml \"" + specialString + "\"", cLog::eLOG_TYPE_WARNING);
-	}
-
 	while (xmlElement != nullptr)
 	{
-		xmlElement = xmlElement->NextSiblingElement();
-		if (xmlElement == nullptr)
-			break;
+        const char* directory = xmlElement->Attribute ("directory");
+        if (directory != nullptr)
+            BuildingList.push_back (directory);
+        else
+        {
+            string msg = string ("Can't read directory-attribute from \"") + xmlElement->Value() + "\" - node";
+            Log.write (msg, cLog::eLOG_TYPE_WARNING);
+        }
 
-		const char* directory = xmlElement->Attribute ("directory");
-		if (directory != nullptr)
-			BuildingList.push_back (directory);
-		else
-		{
-			string msg = string ("Can't read directory-attribute from \"") + xmlElement->Value() + "\" - node";
-			Log.write (msg, cLog::eLOG_TYPE_WARNING);
-		}
+        if (xmlElement->Attribute ("num"))
+            IDList.push_back (xmlElement->IntAttribute ("num"));
+        else
+        {
+            string msg = string ("Can't read num-attribute from \"") + xmlElement->Value() + "\" - node";
+            Log.write (msg, cLog::eLOG_TYPE_WARNING);
+        }
 
-		if (xmlElement->Attribute ("num"))
-			IDList.push_back (xmlElement->IntAttribute ("num"));
-		else
-		{
-			string msg = string ("Can't read directory-attribute from \"") + xmlElement->Value() + "\" - node";
-			Log.write (msg, cLog::eLOG_TYPE_WARNING);
-		}
+        const char* spezial = xmlElement->Attribute ("special");
+        if (spezial != nullptr)
+        {
+            string specialString = spezial;
+            // TODO: Get rid of this shit. Leave all data references to XML or scripts
+            // C++ should not keep so specific data. Really.
+            if (specialString == "mine")
+                UnitsDataGlobal.setSpecialIDMine(sID(1, IDList.back()));
+            else if (specialString == "energy")
+                UnitsDataGlobal.setSpecialIDSmallGen(sID(1, IDList.back()));
+            else if (specialString == "connector")
+                UnitsDataGlobal.setSpecialIDConnector(sID(1, IDList.back()));
+            else if (specialString == "landmine")
+                UnitsDataGlobal.setSpecialIDLandMine(sID(1, IDList.back()));
+            else if (specialString == "seamine")
+                UnitsDataGlobal.setSpecialIDSeaMine(sID(1, IDList.back()));
+            else if (specialString == "smallBeton") // Especially this one
+                UnitsDataGlobal.setSpecialIDSmallBeton(sID(1, IDList.back()));
+            else
+                Log.write ("Unknown spacial in buildings.xml \"" + specialString + "\"", cLog::eLOG_TYPE_WARNING);
+        }
 
-		const char* spezial = xmlElement->Attribute ("special");
-		if (spezial != nullptr)
-		{
-			string specialString = spezial;
-			if      (specialString == "mine")       UnitsDataGlobal.setSpecialIDMine(sID(1, IDList.back()));
-			else if (specialString == "energy")     UnitsDataGlobal.setSpecialIDSmallGen(sID(1, IDList.back()));
-			else if (specialString == "connector")  UnitsDataGlobal.setSpecialIDConnector(sID(1, IDList.back()));
-			else if (specialString == "landmine")   UnitsDataGlobal.setSpecialIDLandMine(sID(1, IDList.back()));
-			else if (specialString == "seamine")    UnitsDataGlobal.setSpecialIDSeaMine(sID(1, IDList.back()));
-			else if (specialString == "smallBeton") UnitsDataGlobal.setSpecialIDSmallBeton(sID(1, IDList.back()));
-			else Log.write ("Unknown spacial in buildings.xml \"" + specialString + "\"", cLog::eLOG_TYPE_WARNING);
-		}
+        xmlElement = xmlElement->NextSiblingElement();
 	}
 
-	if (UnitsDataGlobal.getSpecialIDMine().secondPart       == 0) Log.write ("special \"mine\" missing in buildings.xml", cLog::eLOG_TYPE_WARNING);
-	if (UnitsDataGlobal.getSpecialIDSmallGen().secondPart   == 0) Log.write("special \"energy\" missing in buildings.xml", cLog::eLOG_TYPE_WARNING);
-	if (UnitsDataGlobal.getSpecialIDConnector().secondPart  == 0) Log.write("special \"connector\" missing in buildings.xml", cLog::eLOG_TYPE_WARNING);
-	if (UnitsDataGlobal.getSpecialIDLandMine().secondPart   == 0) Log.write("special \"landmine\" missing in buildings.xml", cLog::eLOG_TYPE_WARNING);
-	if (UnitsDataGlobal.getSpecialIDSeaMine().secondPart    == 0) Log.write("special \"seamine\" missing in buildings.xml", cLog::eLOG_TYPE_WARNING);
-	if (UnitsDataGlobal.getSpecialIDSmallBeton().secondPart == 0) Log.write("special \"smallBeton\" missing in buildings.xml", cLog::eLOG_TYPE_WARNING);
+    if (UnitsDataGlobal.getSpecialIDMine().secondPart       == 0)
+        Log.write ("special \"mine\" missing in buildings.xml", cLog::eLOG_TYPE_WARNING);
+    if (UnitsDataGlobal.getSpecialIDSmallGen().secondPart   == 0)
+        Log.write("special \"energy\" missing in buildings.xml", cLog::eLOG_TYPE_WARNING);
+    if (UnitsDataGlobal.getSpecialIDConnector().secondPart  == 0)
+        Log.write("special \"connector\" missing in buildings.xml", cLog::eLOG_TYPE_WARNING);
+    if (UnitsDataGlobal.getSpecialIDLandMine().secondPart   == 0)
+        Log.write("special \"landmine\" missing in buildings.xml", cLog::eLOG_TYPE_WARNING);
+    if (UnitsDataGlobal.getSpecialIDSeaMine().secondPart    == 0)
+        Log.write("special \"seamine\" missing in buildings.xml", cLog::eLOG_TYPE_WARNING);
+    if (UnitsDataGlobal.getSpecialIDSmallBeton().secondPart == 0)
+        Log.write("special \"smallBeton\" missing in buildings.xml", cLog::eLOG_TYPE_WARNING);
 
 	// load found units
 	UnitsUiData.buildingUIs.resize(BuildingList.size());
@@ -1430,30 +1431,7 @@ static int LoadBuildings()
 
 		if (DEDICATED_SERVER) continue;
 
-		// load img
-		sTmpString = sBuildingPath;
-		sTmpString += "img.pcx";
-		if (FileExists (sTmpString.c_str()))
-		{
-			ui.img_org = LoadPCX (sTmpString);
-			ui.img = CloneSDLSurface (*ui.img_org);
-			SDL_SetColorKey (ui.img_org.get(), SDL_TRUE, 0xFFFFFF);
-			SDL_SetColorKey (ui.img.get(), SDL_TRUE, 0xFFFFFF);
-		}
-		else
-		{
-			Log.write ("Missing GFX - your MAXR install seems to be incomplete!", cLog::eLOG_TYPE_ERROR);
-			return -1;
-		}
-		// load shadow
-		sTmpString = sBuildingPath;
-		sTmpString += "shw.pcx";
-		if (FileExists (sTmpString.c_str()))
-		{
-			ui.shw_org = LoadPCX (sTmpString);
-			ui.shw     = CloneSDLSurface (*ui.shw_org);
-			SDL_SetSurfaceAlphaMod (ui.shw.get(), 50);
-		}
+        loadUnitData(sBuildingPath, spriteTool, staticData, dynamicData, ui);
 
 		// load video
 		sTmpString = sBuildingPath;
@@ -1474,15 +1452,15 @@ static int LoadBuildings()
 			sTmpString += "effect.pcx";
 			if (FileExists (sTmpString.c_str()))
 			{
-				ui.eff_org = LoadPCX (sTmpString);
-				ui.eff = CloneSDLSurface (*ui.eff_org);
-				SDL_SetSurfaceAlphaMod (ui.eff.get(), 10);
+                ui.img_effect_original = LoadPCX (sTmpString);
+                ui.img_effect = CloneSDLSurface (*ui.img_effect_original);
+                SDL_SetSurfaceAlphaMod (ui.img_effect.get(), 10);
 			}
 		}
 		else
 		{
-			ui.eff_org = nullptr;
-			ui.eff     = nullptr;
+            ui.img_effect_original = nullptr;
+            ui.img_effect     = nullptr;
 		}
 
 		// load sounds
@@ -1492,6 +1470,8 @@ static int LoadBuildings()
 		LoadUnitSoundfile (ui.Stop,    sBuildingPath.c_str(), "stop.ogg");
 		LoadUnitSoundfile (ui.Attack,  sBuildingPath.c_str(), "attack.ogg");
 
+        // I will send connectors to a separate special layer
+#ifdef DISABLE_THIS
 		// Get Ptr if necessary:
 		if (staticData.ID == UnitsDataGlobal.getSpecialIDConnector())
 		{
@@ -1499,8 +1479,8 @@ static int LoadBuildings()
 			UnitsUiData.ptr_connector = ui.img.get();
 			UnitsUiData.ptr_connector_org = ui.img_org.get();
 			SDL_SetColorKey (UnitsUiData.ptr_connector, SDL_TRUE, 0xFF00FF);
-			UnitsUiData.ptr_connector_shw = ui.shw.get();
-			UnitsUiData.ptr_connector_shw_org = ui.shw_org.get();
+            UnitsUiData.ptr_connector_shw = ui.img_shadow.get();
+            UnitsUiData.ptr_connector_shw_org = ui.img_shadow_original.get();
 			SDL_SetColorKey(UnitsUiData.ptr_connector_shw, SDL_TRUE, 0xFF00FF);
 		}
 		else if (staticData.ID == UnitsDataGlobal.getSpecialIDSmallBeton())
@@ -1510,11 +1490,14 @@ static int LoadBuildings()
 			SDL_SetColorKey(UnitsUiData.ptr_small_beton, SDL_TRUE, 0xFF00FF);
 		}
 
+
 		// Check if there is more than one frame
 		// use 129 here because some images from the res_installer are one pixel to large
-		if (ui.img_org->w > 129 && !ui.isConnectorGraphic && !ui.hasClanLogos) ui.hasFrames = ui.img_org->w / ui.img_org->h;
-		else ui.hasFrames = 0;
-
+        if (ui.img_org->w > 129 && !ui.isConnectorGraphic && !ui.hasClanLogos)
+            ui.hasFrames = ui.img_org->w / ui.img_org->h;
+        else
+            ui.hasFrames = 0;
+#endif
 		UnitsDataGlobal.addData(staticData);
 		UnitsDataGlobal.addData(dynamicData);
 	}
@@ -1522,24 +1505,28 @@ static int LoadBuildings()
 	// Dirtsurfaces
 	if (!DEDICATED_SERVER)
 	{
+#ifdef DISABLE_T
 		LoadGraphicToSurface (UnitsUiData.rubbleBig->img_org, cSettings::getInstance().getBuildingsPath().c_str(), "dirt_big.pcx");
 		UnitsUiData.rubbleBig->img = CloneSDLSurface (*UnitsUiData.rubbleBig->img_org);
-		LoadGraphicToSurface(UnitsUiData.rubbleBig->shw_org, cSettings::getInstance().getBuildingsPath().c_str(), "dirt_big_shw.pcx");
-		UnitsUiData.rubbleBig->shw = CloneSDLSurface(*UnitsUiData.rubbleBig->shw_org);
-		if (UnitsUiData.rubbleBig->shw != nullptr) SDL_SetSurfaceAlphaMod(UnitsUiData.rubbleBig->shw.get(), 50);
+        LoadGraphicToSurface(UnitsUiData.rubbleBig->img_shadow_original, cSettings::getInstance().getBuildingsPath().c_str(), "dirt_big_shw.pcx");
+        UnitsUiData.rubbleBig->img_shadow = CloneSDLSurface(*UnitsUiData.rubbleBig->img_shadow_original);
+        if (UnitsUiData.rubbleBig->img_shadow != nullptr)
+            SDL_SetSurfaceAlphaMod(UnitsUiData.rubbleBig->img_shadow.get(), 50);
 
 		LoadGraphicToSurface(UnitsUiData.rubbleSmall->img_org, cSettings::getInstance().getBuildingsPath().c_str(), "dirt_small.pcx");
 		UnitsUiData.rubbleSmall->img = CloneSDLSurface(*UnitsUiData.rubbleSmall->img_org);
-		LoadGraphicToSurface(UnitsUiData.rubbleSmall->shw_org, cSettings::getInstance().getBuildingsPath().c_str(), "dirt_small_shw.pcx");
-		UnitsUiData.rubbleSmall->shw = CloneSDLSurface(*UnitsUiData.rubbleSmall->shw_org);
-		if (UnitsUiData.rubbleSmall->shw != nullptr) SDL_SetSurfaceAlphaMod(UnitsUiData.rubbleSmall->shw.get(), 50);
+        LoadGraphicToSurface(UnitsUiData.rubbleSmall->img_shadow_original, cSettings::getInstance().getBuildingsPath().c_str(), "dirt_small_shw.pcx");
+        UnitsUiData.rubbleSmall->img_shadow = CloneSDLSurface(*UnitsUiData.rubbleSmall->img_shadow_original);
+        if (UnitsUiData.rubbleSmall->img_shadow != nullptr)
+            SDL_SetSurfaceAlphaMod(UnitsUiData.rubbleSmall->img_shadow.get(), 50);
+#endif
 	}
 	return 1;
 }
 
 
 //------------------------------------------------------------------------------
-static void LoadUnitData (cStaticUnitData& staticData, cDynamicUnitData& dynamicData, char const* const directory, int const iID)
+void ModData::LoadUnitData (cStaticUnitData& staticData, cDynamicUnitData& dynamicData, char const* const directory, int const iID)
 {
 	tinyxml2::XMLDocument unitDataXml;
 
@@ -1742,7 +1729,7 @@ static void LoadUnitData (cStaticUnitData& staticData, cDynamicUnitData& dynamic
 }
 
 //------------------------------------------------------------------------------
-static void LoadUnitGraphicProperties(sVehicleUIData& data, char const* directory)
+void ModData::LoadUnitGraphicProperties(sVehicleUIData& data, char const* directory)
 {
 	tinyxml2::XMLDocument unitGraphicsXml;
 
@@ -1769,13 +1756,14 @@ static void LoadUnitGraphicProperties(sVehicleUIData& data, char const* director
 }
 
 //------------------------------------------------------------------------------
-static void LoadUnitGraphicProperties(sBuildingUIData& data, char const* directory)
+void ModData::LoadUnitGraphicProperties(sBuildingUIData& data, char const* directory)
 {
 	tinyxml2::XMLDocument unitGraphicsXml;
 
 	string path = directory;
 	path += "graphics.xml";
-	if (!FileExists(path.c_str())) return;
+    if (!FileExists(path.c_str()))
+        return;
 
 	if (unitGraphicsXml.LoadFile(path.c_str()) != XML_NO_ERROR)
 	{
@@ -1795,7 +1783,7 @@ static void LoadUnitGraphicProperties(sBuildingUIData& data, char const* directo
 }
 
 //------------------------------------------------------------------------------
-static int LoadClans()
+int ModData::LoadClans()
 {
 	tinyxml2::XMLDocument clansXml;
 

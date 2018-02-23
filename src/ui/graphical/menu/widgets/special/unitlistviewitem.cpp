@@ -41,8 +41,8 @@ cUnitListViewItem::cUnitListViewItem (unsigned int width, const sID& unitId_, co
 	{
 		const float zoomFactor = unitImageSize / (data.cellSize * 64.0f);
 		const auto& uiData = *UnitsUiData.getVehicleUI (unitId);
-		cVehicle::render_simple (surface.get(), dest, zoomFactor, uiData, &owner);
-		cVehicle::drawOverlayAnimation (surface.get(), dest, zoomFactor, uiData);
+        cVehicle::render_simple (surface.get(), dest, zoomFactor, data, uiData, &owner);
+        cVehicle::drawOverlayAnimation (surface.get(), dest, zoomFactor,data,  uiData);
 	}
 	else if (unitId.isABuilding())
 	{

@@ -25,7 +25,7 @@
 #include "settings.h"
 #include "video.h"
 #include "main.h"
-#include "unifonts.h"
+#include "utility/unifonts.h"
 #include "netmessage.h"
 #include "game/startup/game.h"
 #include "utility/runnable.h"
@@ -71,13 +71,16 @@ cApplication::cApplication() :
 
 //------------------------------------------------------------------------------
 cApplication::~cApplication()
-{}
+{
+    font;
+}
 
 //------------------------------------------------------------------------------
 void cApplication::execute()
 {
 	cWindow* lastActiveWindow = nullptr;
 	bool lastClosed = false;
+
 	while (!modalWindows.empty())
 	{
 		cEventManager::getInstance().run();

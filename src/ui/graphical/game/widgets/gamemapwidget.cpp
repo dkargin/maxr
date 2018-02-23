@@ -55,6 +55,8 @@
 #include "sound.h"
 #include "utility/indexiterator.h"
 #include "utility/random.h"
+#include "utility/drawing.h"
+
 #include "input/mouse/mouse.h"
 #include "input/mouse/cursor/mousecursorsimple.h"
 #include "input/mouse/cursor/mousecursoramount.h"
@@ -120,7 +122,7 @@ SDL_Rect cGameMapWidget::sRenderContext::computeTileDrawingArea (const cPosition
     const cPosition corner = visibleMapArea.getMinCorner();
     //const cPosition startDrawPosition = getPosition() + (tileIndex - corner) * tileSize - pixelOffset;
     const cPosition startDrawPosition = this->viewPort.getMinCorner() + (tileIndex - corner) * tileSize - pixelOffset;
-    return SDL_Rect{startDrawPosition.x(), startDrawPosition.y(), tileSize.x(), tileSize.y()};
+    return SDL_Rect{startDrawPosition.x(), startDrawPosition.y(), tileSize.x()*width, tileSize.y()*height};
 }
 
 /*
@@ -154,7 +156,7 @@ cGameMapWidget::cGameMapWidget (const cBox<cPosition>& area, std::shared_ptr<con
 	unitDrawingEngine (animationTimer, frameCounter),
 	changeAllowed (true),
 	pixelOffset (0, 0),
-	internalZoomFactor (1.f),
+    internalZoomFactor (0.5f),
 	shouldDrawSurvey (false),
 	shouldDrawScan (false),
 	shouldDrawGrid (false),
@@ -695,22 +697,56 @@ void cGameMapWidget::draw (SDL_Surface& destination, const cBox<cPosition>& clip
             if(unit == nullptr)
                 return;   // In fact we should not be here
 
+            /// TODO: we will dissect this block later, when sSprite infrastructure is ready
             int size = unit->getCellSize();
             cPosition pos = unit->getPosition();
+            const auto& unitData = unit->getStaticUnitData();
 
             SDL_Rect dstRect = rc.computeTileDrawingArea(pos, size, size);
 
             if(unit->isABuilding())
             {
                 const auto& building = *static_cast<cBuilding*>(unit);
-                unitDrawingEngine.drawUnit(building, dstRect, rc.zoomFactor,
+                unitDrawingEngine.drawBuilding(building, dstRect, rc.zoomFactor,
                                            &unitSelection, player.get());
             }
             else
             {
                 const auto& vehicle = *static_cast<cVehicle*>(unit);
-                unitDrawingEngine.drawUnit(vehicle, dstRect, rc.zoomFactor,
+                unitDrawingEngine.drawVehicle(vehicle, dstRect, rc.zoomFactor,
                                            *mapView, &unitSelection, player.get());
+            }
+
+            // draw the seleted-unit-flash-frame for units
+            if (unit == unitSelection.getSelectedVehicle() || unit == unitSelection.getSelectedBuilding())
+            {
+                Uint16 maxX = dstRect.w - 3;
+                Uint16 maxY = dstRect.h - 3;
+                const int len = maxX / 4;
+                cBox<cPosition> d(
+                            cPosition (dstRect.x + 2, dstRect.y + 2),
+                            cPosition (dstRect.x + 2 + maxX, dstRect.y + 2 + maxY));
+                drawSelectionCorner (*cVideo::buffer, d, unitDrawingEngine.blinkColor, len);
+            }
+
+            // draw health bar
+            if (unitDrawingEngine.shouldDrawHits)
+            {
+                unitDrawingEngine.drawHealthBar (*unit, dstRect);
+            }
+
+            // draw ammo bar
+            if (unitDrawingEngine.shouldDrawAmmo &&
+                 (!player || unit->getOwner() == player.get()) &&
+                 unitData.canAttack)
+            {
+                unitDrawingEngine.drawMunBar(*unit, dstRect);
+            }
+
+            // draw status info
+            if (unitDrawingEngine.shouldDrawStatus)
+            {
+                unitDrawingEngine.drawStatus (*unit, dstRect);
             }
         });
     }

@@ -46,7 +46,7 @@ class cCrossPlattformRandom;
 //--------------------------------------------------------------------------
 /** struct for the images and sounds */
 //--------------------------------------------------------------------------
-struct sBuildingUIData
+struct sBuildingUIData : public sUnitUIData
 {
 	sID id;
 
@@ -63,19 +63,14 @@ struct sBuildingUIData
 	bool isConnectorGraphic;
 	int hasFrames;
 
+    // Surface of the building
+    //AutoSurface img, img_org;
+    // Surfaces of the shadow
+    //AutoSurface img_shadow, img_shadow_original;
+    // Surfaces of the effects
+    AutoSurface img_effect, img_effect_original;
 
-	AutoSurface img, img_org; // Surface of the building
-	AutoSurface shw, shw_org; // Surfaces of the shadow
-	AutoSurface eff, eff_org; // Surfaces of the effects
 	AutoSurface video;  // video
-	AutoSurface info;   // info image
-
-	// Die Sounds:
-	cSoundChunk Start;
-	cSoundChunk Running;
-	cSoundChunk Stop;
-	cSoundChunk Attack;
-	cSoundChunk Wait;
 
 	sBuildingUIData();
 	sBuildingUIData (sBuildingUIData&& other);

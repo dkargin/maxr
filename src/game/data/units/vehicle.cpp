@@ -30,13 +30,13 @@
 #include "game/logic/fxeffects.h"
 #include "utility/log.h"
 #include "game/data/map/map.h"
-#include "pcx.h"
+#include "utility/pcx.h"
 #include "game/data/player/player.h"
 #include "game/logic/server.h"
 #include "settings.h"
 #include "video.h"
 #include "sound.h"
-#include "unifonts.h"
+#include "utility/unifonts.h"
 #include "input/mouse/mouse.h"
 #include "output/sound/sounddevice.h"
 #include "output/sound/soundchannel.h"
@@ -106,12 +106,16 @@ cVehicle::~cVehicle()
 
 void cVehicle::drawOverlayAnimation (SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, int frameNr, int alpha) const
 {
-	drawOverlayAnimation (surface, dest, zoomFactor, *uiData, frameNr, alpha);
+    drawOverlayAnimation (surface, dest, zoomFactor, *staticData, *uiData, frameNr, alpha);
 }
 
-/*static*/ void cVehicle::drawOverlayAnimation (SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, const sVehicleUIData& uiData, int frameNr, int alpha)
+/*static*/ void cVehicle::drawOverlayAnimation (SDL_Surface* surface, const SDL_Rect& dest,
+                                                float zoomFactor,
+                                                const cStaticUnitData& unitData, const sVehicleUIData& uiData, int frameNr, int alpha)
 {
-	if (uiData.hasOverlay == false || cSettings::getInstance().isAnimations() == false) return;
+#ifdef OVERLAYS_TO_BE_FIXED
+    if (uiData.hasOverlay == false || cSettings::getInstance().isAnimations() == false)
+        return;
 
 	const Uint16 size = (Uint16) (uiData.overlay_org->h * zoomFactor);
 	const Uint16 srcX = Round((uiData.overlay_org->h * frameNr) * zoomFactor);
@@ -124,10 +128,12 @@ void cVehicle::drawOverlayAnimation (SDL_Surface* surface, const SDL_Rect& dest,
 
 	SDL_SetSurfaceAlphaMod (uiData.overlay.get(), alpha);
 	blitWithPreScale (uiData.overlay_org.get(), uiData.overlay.get(), &src, surface, &tmp, zoomFactor);
+#endif
 }
 
 void cVehicle::drawOverlayAnimation (unsigned long long animationTime, SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor) const
 {
+#ifdef OVERLAYS_TO_BE_FIXED
 	if (uiData->hasOverlay == false || cSettings::getInstance().isAnimations() == false) return;
 	int frameNr = 0;
 	if (isDisabled() == false)
@@ -136,6 +142,7 @@ void cVehicle::drawOverlayAnimation (unsigned long long animationTime, SDL_Surfa
 	}
 
 	drawOverlayAnimation(surface, dest, zoomFactor, frameNr, alphaEffectValue && cSettings::getInstance().isAlphaEffects() ? alphaEffectValue : 254);
+#endif
 }
 
 void cVehicle::render_BuildingOrBigClearing (const cMapView& map, unsigned long long animationTime, SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, bool drawShadow) const
@@ -201,67 +208,128 @@ void cVehicle::render_smallClearing (unsigned long long animationTime, SDL_Surfa
 
 void cVehicle::render_shadow (const cMapView& map, SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor) const
 {
-	if (map.isWater (getPosition()) && (staticData->isStealthOn & TERRAIN_SEA)) return;
+    if (map.isWater (getPosition()) && (staticData->isStealthOn & TERRAIN_SEA))
+        return;
 
-	if (alphaEffectValue && cSettings::getInstance().isAlphaEffects()) SDL_SetSurfaceAlphaMod (uiData->shw[dir].get(), alphaEffectValue / 5);
-	else SDL_SetSurfaceAlphaMod (uiData->shw[dir].get(), 50);
+    cSpritePtr sprite = uiData->directed_shadow[dir];
+    if(!sprite)
+        sprite = uiData->shadow;
+
+    if(!sprite)
+        return;
+#ifdef FIX_SHADOW
+    //if(!uiData->shadow && uiData)
+    SDL_Surface* sprite = uiData->shw[dir].get();
+    SDL_Surface* sprite_org = uiData->shw_org[dir].get();
+    if (!sprite_org)
+        return;
+
+    if (alphaEffectValue && cSettings::getInstance().isAlphaEffects())
+        SDL_SetSurfaceAlphaMod (sprite, alphaEffectValue / 5);
+    else
+        SDL_SetSurfaceAlphaMod (sprite, 50);
 	SDL_Rect tmp = dest;
+
+    int size = getCellSize();
+    int totalSize = 64 * size;
+    int spriteSize = std::max(sprite_org->w, sprite_org->h);
+
+    if (totalSize != spriteSize)
+    {
+        float upscale = double(totalSize) / double(sprite_org->w);
+        zoomFactor *= upscale;
+    }
 
 	// draw shadow
 	if (getFlightHeight() > 0)
 	{
-		int high = ((int) (Round (uiData->shw_org[dir]->w * zoomFactor) * (getFlightHeight() / 64.0f)));
+        int high = ((int) (Round (sprite_org->w * zoomFactor) * (getFlightHeight() / 64.0f)));
 		tmp.x += high;
 		tmp.y += high;
 
-		blitWithPreScale (uiData->shw_org[dir].get(), uiData->shw[dir].get(), nullptr, surface, &tmp, zoomFactor);
+        blitWithPreScale (sprite_org, sprite, nullptr, surface, &tmp, zoomFactor);
 	}
 	else if (uiData->animationMovement)
 	{
 		const Uint16 size = (int) (uiData->img_org[dir]->h * zoomFactor);
 		SDL_Rect r = {Sint16 (WalkFrame * size), 0, size, size};
-		blitWithPreScale (uiData->shw_org[dir].get(), uiData->shw[dir].get(), &r, surface, &tmp, zoomFactor);
+        blitWithPreScale (sprite_org, sprite, &r, surface, &tmp, zoomFactor);
 	}
 	else
-		blitWithPreScale (uiData->shw_org[dir].get(), uiData->shw[dir].get(), nullptr, surface, &tmp, zoomFactor);
+        blitWithPreScale (sprite_org, sprite, nullptr, surface, &tmp, zoomFactor);
+#endif
 }
 
 void cVehicle::render_simple (SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, int alpha) const
 {
-	render_simple (surface, dest, zoomFactor, *uiData, getOwner(), dir, WalkFrame, alpha);
+    render_simple (surface, dest, zoomFactor, *staticData, *uiData, getOwner(), dir, WalkFrame, alpha);
 }
 
-/*static*/ void cVehicle::render_simple (SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, const sVehicleUIData& uiData, const cPlayer* owner, int dir, int walkFrame, int alpha)
+/*static*/ void cVehicle::render_simple (SDL_Surface* surface, const SDL_Rect& dest_base, float zoomFactor,
+                                         const cStaticUnitData& unitData, const sVehicleUIData& uiData,
+                                         const cPlayer* owner, int dir, int walkFrame, int alpha)
 {
+    SDL_Surface* sprite_dest = GraphicsData.gfx_tmp.get();
 	// draw player color
 	if (owner)
 	{
-		SDL_BlitSurface (owner->getColor().getTexture(), nullptr, GraphicsData.gfx_tmp.get(), nullptr);
+        SDL_BlitSurface (owner->getColor().getTexture(), nullptr, sprite_dest, nullptr);
 	}
+
+    cSpritePtr sprite = uiData.directed_image[dir];
+    if(!sprite)
+        sprite = uiData.image;
+
+    if(!sprite)
+        return;
+
+    sprite->render_simple(surface, dest_base);
+
+    /*
+
+    SDL_Surface* sprite = uiData.img[dir].get();
+    SDL_Surface* sprite_org = uiData.img_org[dir].get();
+    if (!sprite_org)
+        return;
+
+    int size = unitData.cellSize;
+    int totalSize = 64 * size;
+    int spriteSize = std::max(sprite_org->w, sprite_org->h);
+    float upscale = 1.0;
+
+    if (totalSize != spriteSize)
+    {
+        upscale = double(totalSize) / double(sprite_org->w);
+    }
 
 	// read the size:
 	SDL_Rect src;
-	src.w = (int) (uiData.img_org[dir]->w * zoomFactor);
-	src.h = (int) (uiData.img_org[dir]->h * zoomFactor);
+    src.w = totalSize;
+    src.h = totalSize;
+    //src.w = (int) (sprite_org->w * zoomFactor);
+    //src.h = (int) (sprite_org->h * zoomFactor);
+
+    SDL_Rect prescaleRect = {0, 0, totalSize, totalSize};
 
 	if (uiData.animationMovement)
 	{
 		SDL_Rect tmp;
-		src.w = src.h = tmp.h = tmp.w = (int) (uiData.img_org[dir]->h * zoomFactor);
+        src.w = src.h = tmp.h = tmp.w = (int) (sprite_org->h * zoomFactor);
 		tmp.x = walkFrame * tmp.w;
 		tmp.y = 0;
-		blitWithPreScale (uiData.img_org[dir].get(), uiData.img[dir].get(), &tmp, GraphicsData.gfx_tmp.get(), nullptr, zoomFactor);
+        blitWithPreScale (sprite_org, sprite, &tmp, sprite_dest, &prescaleRect, zoomFactor*upscale);
 	}
 	else
-		blitWithPreScale (uiData.img_org[dir].get(), uiData.img[dir].get(), nullptr, GraphicsData.gfx_tmp.get(), nullptr, zoomFactor);
+        blitWithPreScale (sprite_org, sprite, nullptr, sprite_dest, &prescaleRect, zoomFactor*upscale);
 
 	// draw the vehicle
 	src.x = 0;
 	src.y = 0;
 	SDL_Rect tmp = dest;
 
-	SDL_SetSurfaceAlphaMod (GraphicsData.gfx_tmp.get(), alpha);
-	blittAlphaSurface (GraphicsData.gfx_tmp.get(), &src, surface, &tmp);
+    SDL_SetSurfaceAlphaMod (sprite_dest, alpha);
+    blittAlphaSurface (sprite_dest, &src, surface, &tmp);
+    */
 }
 
 void cVehicle::render (const cMapView* map, unsigned long long animationTime, const cPlayer* activePlayer, SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, bool drawShadow) const
@@ -306,9 +374,17 @@ void cVehicle::render (const cMapView* map, unsigned long long animationTime, co
 		// whether there is a brige, platform, etc.
 		// because the vehicle will drive on the bridge
 		cBuilding* building = map->getField (getPosition()).getBaseBuilding();
-		if (building && staticData->factorGround > 0 && (building->getStaticUnitData().surfacePosition == cStaticUnitData::SURFACE_POS_BASE || building->getStaticUnitData().surfacePosition == cStaticUnitData::SURFACE_POS_ABOVE_SEA || building->getStaticUnitData().surfacePosition == cStaticUnitData::SURFACE_POS_ABOVE_BASE)) water = false;
+        if(building && staticData->factorGround > 0)
+        {
+            const auto& surfacePosition = building->getStaticUnitData().surfacePosition;
+            if (surfacePosition == cStaticUnitData::SURFACE_POS_BASE ||
+                surfacePosition == cStaticUnitData::SURFACE_POS_ABOVE_SEA ||
+                surfacePosition == cStaticUnitData::SURFACE_POS_ABOVE_BASE)
+                water = false;
+        }
 
-		if (water && (staticData->isStealthOn & TERRAIN_SEA) && detectedByPlayerList.empty() && getOwner() == activePlayer) alpha = std::min (alpha, 100);
+        if (water && (staticData->isStealthOn & TERRAIN_SEA) && detectedByPlayerList.empty() && getOwner() == activePlayer)
+            alpha = std::min (alpha, 100);
 	}
 	render_simple (surface, dest, zoomFactor, alpha);
 }
@@ -777,7 +853,7 @@ bool cVehicle::canTransferTo(const cPosition& position, const cMapView& map) con
 //------------------------------------------------------------------------------
 bool cVehicle::canTransferTo (const cUnit& unit) const
 {
-	if (!unit.isNextTo(getPosition()))
+    if (!this->isNextTo(unit))
 		return false;
 
 	if (&unit == this)
@@ -891,7 +967,7 @@ bool cVehicle::isOtherUnitOffendedByThis(const cModel& model, const cUnit& other
 		return false;
 
 	cMapView mapView(model.getMap(), nullptr);
-	if (isInRange (otherUnit.getPosition()) && canAttackObjectAt (otherUnit.getPosition(), mapView, true, false))
+    if (isInWeaponRange (otherUnit.getPosition()) && canAttackObjectAt (otherUnit.getPosition(), mapView, true, false))
 	{
 		// test, if this vehicle can really attack the opponentVehicle
 		cUnit* target = cAttackJob::selectTarget (otherUnit.getPosition(), staticData->canAttack, mapView, getOwner());
@@ -1002,9 +1078,12 @@ bool cVehicle::provokeReactionFire (cModel& model)
 //-----------------------------------------------------------------------------
 bool cVehicle::canExitTo(const cPosition& position, const cMapView& map, const cStaticUnitData& unitData) const
 {
-	if (!map.possiblePlaceVehicle(unitData, position)) return false;
-	if (staticData->factorAir > 0 && (position != getPosition())) return false;
-	if (!isNextTo(position)) return false;
+    if (!map.possiblePlaceVehicle(unitData, position))
+        return false;
+    if (staticData->factorAir > 0 && (position != getPosition()))
+        return false;
+    if (!isNextTo(position, unitData.cellSize, unitData.cellSize))
+        return false;
 
 	return true;
 }
@@ -1012,9 +1091,12 @@ bool cVehicle::canExitTo(const cPosition& position, const cMapView& map, const c
 //-----------------------------------------------------------------------------
 bool cVehicle::canExitTo(const cPosition& position, const cMap& map, const cStaticUnitData& unitData) const
 {
-	if (!map.possiblePlaceVehicle(unitData, position, getOwner())) return false;
-	if (staticData->factorAir > 0 && (position != getPosition())) return false;
-	if (!isNextTo(position)) return false;
+    if (!map.possiblePlaceVehicle(unitData, position, getOwner()))
+        return false;
+    if (staticData->factorAir > 0 && (position != getPosition()))
+        return false;
+    if (!isNextTo(position, unitData.cellSize, unitData.cellSize))
+        return false;
 
 	return true;
 }
@@ -1036,7 +1118,8 @@ bool cVehicle::canLoad (const cVehicle* Vehicle, bool checkPosition) const
 
 	if (storedUnits.size() >= static_cast<unsigned> (staticData->storageUnitsMax)) return false;
 
-	if (checkPosition && !isNextTo (Vehicle->getPosition())) return false;
+    if (checkPosition && !isNextTo (*Vehicle))
+        return false;
 
 	if (checkPosition && staticData->factorAir > 0 && (Vehicle->getPosition() != getPosition())) return false;
 
@@ -1114,7 +1197,7 @@ bool cVehicle::canSupply (const cUnit* unit, int supplyType) const
 	if (getStoredResources() <= 0)
 		return false;
 
-	if (unit->isNextTo (getPosition()) == false)
+    if (isNextTo (*unit) == false)
 		return false;
 
 	if (unit->isAVehicle() && unit->getStaticUnitData().factorAir > 0 && static_cast<const cVehicle*> (unit)->getFlightHeight() > 0)
@@ -1213,7 +1296,7 @@ bool cVehicle::canDoCommandoAction (const cUnit* unit, bool steal) const
 		return false;
 	if (data.getShots() == 0) return false;
 
-	if (unit->isNextTo (getPosition()) == false)
+    if (isNextTo (*unit) == false)
 		return false;
 
 	if (steal == false && unit->isDisabled()) return false;
@@ -1456,25 +1539,71 @@ sVehicleUIData::sVehicleUIData() :
 	hasFrames(0)
 {}
 
+sUnitUIData::sUnitUIData()
+{
+
+}
+
+sUnitUIData::sUnitUIData(sUnitUIData&& other)
+{
+    overlay = std::move (other.overlay);
+    info = std::move (other.info);
+    image = std::move(other.image);
+    shadow = std::move(other.shadow);
+    Wait = std::move (other.Wait);
+    WaitWater = std::move (other.WaitWater);
+    Start = std::move (other.Start);
+    StartWater = std::move (other.StartWater);
+    Stop = std::move (other.Stop);
+    StopWater = std::move (other.StopWater);
+    Drive = std::move (other.Drive);
+    DriveWater = std::move (other.DriveWater);
+    Attack = std::move (other.Attack);
+    Running = std::move(other.Running);
+
+    directed_image = std::move(other.directed_image);
+    directed_shadow = std::move(other.directed_shadow);
+}
+
+sUnitUIData& sUnitUIData::operator= (sUnitUIData && other)
+{
+    overlay = std::move (other.overlay);
+    info = std::move (other.info);
+    image = std::move(other.image);
+    shadow = std::move(other.shadow);
+    Wait = std::move (other.Wait);
+    WaitWater = std::move (other.WaitWater);
+    Start = std::move (other.Start);
+    StartWater = std::move (other.StartWater);
+    Stop = std::move (other.Stop);
+    StopWater = std::move (other.StopWater);
+    Drive = std::move (other.Drive);
+    DriveWater = std::move (other.DriveWater);
+    Attack = std::move (other.Attack);
+    Running = std::move(other.Running);
+
+    directed_image = std::move(other.directed_image);
+    directed_shadow = std::move(other.directed_shadow);
+    /*
+    for (size_t i = 0; i < directed_image.size(); ++i)
+        directed_image[i] = std::move (other.directed_image[i]);
+
+    for (size_t i = 0; i < directed_shadow.size(); ++i)
+        directed_shadow[i] = std::move (other.directed_shadow[i]);
+        */
+
+    return *this;
+}
+
 //-----------------------------------------------------------------------------
 sVehicleUIData::sVehicleUIData (sVehicleUIData&& other) :
+    sUnitUIData(std::move(other)),
 	build (std::move (other.build)), build_org (std::move (other.build_org)),
 	build_shw (std::move (other.build_shw)), build_shw_org (std::move (other.build_shw_org)),
 	clear_small (std::move (other.clear_small)), clear_small_org (std::move (other.clear_small_org)),
 	clear_small_shw (std::move (other.clear_small_shw)), clear_small_shw_org (std::move (other.clear_small_shw_org)),
-	overlay (std::move (other.overlay)), overlay_org (std::move (other.overlay_org)),
 	storage (std::move (other.storage)),
 	FLCFile (std::move (other.FLCFile)),
-	info (std::move (other.info)),
-	Wait (std::move (other.Wait)),
-	WaitWater (std::move (other.WaitWater)),
-	Start (std::move (other.Start)),
-	StartWater (std::move (other.StartWater)),
-	Stop (std::move (other.Stop)),
-	StopWater (std::move (other.StopWater)),
-	Drive (std::move (other.Drive)),
-	DriveWater (std::move (other.DriveWater)),
-	Attack (std::move (other.Attack)),
 	hasCorpse(other.hasCorpse),
 	hasDamageEffect(other.hasDamageEffect),
 	hasPlayerColor(other.hasPlayerColor),
@@ -1486,19 +1615,13 @@ sVehicleUIData::sVehicleUIData (sVehicleUIData&& other) :
 	makeTracks(other.makeTracks),
 	hasFrames(0)
 {
-	for (size_t i = 0; i < img.size(); ++i) img[i] = std::move (other.img[i]);
-	for (size_t i = 0; i < img_org.size(); ++i) img_org[i] = std::move (other.img_org[i]);
-	for (size_t i = 0; i < shw.size(); ++i) shw[i] = std::move (other.shw[i]);
-	for (size_t i = 0; i < shw_org.size(); ++i) shw_org[i] = std::move (other.shw_org[i]);
+
 }
 
 //-----------------------------------------------------------------------------
 sVehicleUIData& sVehicleUIData::operator= (sVehicleUIData && other)
 {
-	for (size_t i = 0; i < img.size(); ++i) img[i] = std::move (other.img[i]);
-	for (size_t i = 0; i < img_org.size(); ++i) img_org[i] = std::move (other.img_org[i]);
-	for (size_t i = 0; i < shw.size(); ++i) shw[i] = std::move (other.shw[i]);
-	for (size_t i = 0; i < shw_org.size(); ++i) shw_org[i] = std::move (other.shw_org[i]);
+    sUnitUIData::operator =(std::move(other));
 
 	build = std::move (other.build);
 	build_org = std::move (other.build_org);
@@ -1508,18 +1631,6 @@ sVehicleUIData& sVehicleUIData::operator= (sVehicleUIData && other)
 	clear_small_org = std::move (other.clear_small_org);
 	clear_small_shw = std::move (other.clear_small_shw);
 	clear_small_shw_org = std::move (other.clear_small_shw_org);
-	overlay = std::move (other.overlay);
-	overlay_org = std::move (other.overlay_org);
-
-	Wait = std::move (other.Wait);
-	WaitWater = std::move (other.WaitWater);
-	Start = std::move (other.Start);
-	StartWater = std::move (other.StartWater);
-	Stop = std::move (other.Stop);
-	StopWater = std::move (other.StopWater);
-	Drive = std::move (other.Drive);
-	DriveWater = std::move (other.DriveWater);
-	Attack = std::move (other.Attack);
 
 	hasCorpse = other.hasCorpse;
 	hasDamageEffect = other.hasDamageEffect;
@@ -1535,6 +1646,7 @@ sVehicleUIData& sVehicleUIData::operator= (sVehicleUIData && other)
 }
 
 //-----------------------------------------------------------------------------
+/* Not needed
 void sVehicleUIData::scaleSurfaces (float factor)
 {
 	int width, height;
@@ -1572,7 +1684,7 @@ void sVehicleUIData::scaleSurfaces (float factor)
 		scaleSurface (overlay_org.get(), overlay.get(), width, height);
 	}
 }
-
+*/
 //-----------------------------------------------------------------------------
 void cVehicle::blitWithPreScale (SDL_Surface* org_src, SDL_Surface* src, SDL_Rect* srcrect, SDL_Surface* dest, SDL_Rect* destrect, float factor, int frames)
 {
@@ -1580,9 +1692,12 @@ void cVehicle::blitWithPreScale (SDL_Surface* org_src, SDL_Surface* src, SDL_Rec
 	{
 		int width, height;
 		height = (int) (org_src->h * factor);
-		if (frames > 1) width = height * frames;
-		else width = (int) (org_src->w * factor);
-		if (src->w != width || src->h != height)
+        if (frames > 1)
+            width = height * frames;
+        else
+            width = (int) (org_src->w * factor);
+
+        //if (src->w != width || src->h != height)
 		{
 			scaleSurface (org_src, src, width, height);
 		}

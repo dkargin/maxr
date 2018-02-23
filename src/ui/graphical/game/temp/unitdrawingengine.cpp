@@ -69,12 +69,13 @@ void cUnitDrawingEngine::setDrawColor (bool drawColor)
 }
 
 //--------------------------------------------------------------------------
-void cUnitDrawingEngine::drawUnit (const cBuilding& building, SDL_Rect destination, float zoomFactor, const cUnitSelection* unitSelection, const cPlayer* player)
+void cUnitDrawingEngine::drawBuilding(const cBuilding& building, SDL_Rect destination, float zoomFactor, const cUnitSelection* unitSelection, const cPlayer* player)
 {
 	unsigned long long animationTime = animationTimer->getAnimationTime(); //call getAnimationTime only once in this method and save the result,
 	//to avoid a changing time within this method
 
-	SDL_Rect dest = {0, 0, 0, 0};
+    SDL_Rect dest = {0,0, destination.w, destination.h};
+
 	int cellSize = building.getCellSize();
 
 	bool bDraw = false;
@@ -95,7 +96,7 @@ void cUnitDrawingEngine::drawUnit (const cBuilding& building, SDL_Rect destinati
 
 	if (bDraw)
 	{
-		building.render (animationTime, drawingSurface, dest, zoomFactor, cSettings::getInstance().isShadows(), true);
+        building.render(animationTime, drawingSurface, dest, zoomFactor, cSettings::getInstance().isShadows(), true);
 	}
 
 	// now check, whether the image has to be blitted to screen buffer
@@ -114,10 +115,10 @@ void cUnitDrawingEngine::drawUnit (const cBuilding& building, SDL_Rect destinati
 	if (building.uiData->powerOnGraphic && cSettings::getInstance().isAnimations() && (building.isUnitWorking() || !building.getStaticUnitData().canWork))
 	{
 		SDL_Rect tmp = dest;
-		SDL_SetSurfaceAlphaMod (building.uiData->eff.get(), building.effectAlpha);
+        SDL_SetSurfaceAlphaMod (building.uiData->img_effect.get(), building.effectAlpha);
 
-		CHECK_SCALING (*building.uiData->eff, *building.uiData->eff_org, zoomFactor);
-		SDL_BlitSurface (building.uiData->eff.get(), nullptr, cVideo::buffer, &tmp);
+        CHECK_SCALING (*building.uiData->img_effect, *building.uiData->img_effect_original, zoomFactor);
+        SDL_BlitSurface (building.uiData->img_effect.get(), nullptr, cVideo::buffer, &tmp);
 	}
 
 	// draw the mark, when a build order is finished
@@ -125,17 +126,10 @@ void cUnitDrawingEngine::drawUnit (const cBuilding& building, SDL_Rect destinati
 		(building.getStaticUnitData().canResearch && building.getOwner()->isCurrentTurnResearchAreaFinished(building.getResearchArea()))))
 	{
 		const cRgbColor finishedMarkColor = cRgbColor::green();
-
-		//const cBox<cPosition> d (
-		//	cPosition (dest.x + 2, dest.y + 2),
-		//	cPosition (
-		//		dest.x + 2 + (building.getIsBig() ? 2 * destination.w - 3 : destination.w - 3),
-		//		dest.y + 2 + (building.getIsBig() ? 2 * destination.h - 3 : destination.h - 3)));
-
 		cPosition minCorner(dest.x + 2, dest.y + 2);
 		cPosition maxCorner(
-				dest.x + 2 + (cellSize * destination.w - 3),
-				dest.y + 2 + (cellSize * destination.h - 3));
+                dest.x + 2 + (destination.w - 3),
+                dest.y + 2 + (destination.h - 3));
 		const cBox<cPosition> d(minCorner, maxCorner);
 
 		drawRectangle (*cVideo::buffer, d, finishedMarkColor.exchangeGreen (255 - 16 * (animationTime % 0x8)), 3);
@@ -156,42 +150,10 @@ void cUnitDrawingEngine::drawUnit (const cBuilding& building, SDL_Rect destinati
 		DrawRectangle (cVideo::buffer, d, color, 1);
 	}
 #endif
-	// draw the seleted-unit-flash-frame for bulidings
-	if (unitSelection && &building == unitSelection->getSelectedBuilding())
-	{
-		//Uint16 maxX = building.getIsBig() ? destination.w * 2 : destination.w;
-		//Uint16 maxY = building.getIsBig() ? destination.h * 2 : destination.h;
-		Uint16 maxX = destination.w * cellSize;
-		Uint16 maxY = destination.h * cellSize;
-		const int len = maxX / 4;
-		maxX -= 3;
-		maxY -= 3;
-		const cBox<cPosition> d (cPosition (dest.x + 2, dest.y + 2), cPosition (dest.x + 2 + maxX, dest.y + 2 + maxY));
-
-		drawSelectionCorner (*cVideo::buffer, d, blinkColor, len);
-	}
-
-	// draw health bar
-	if (shouldDrawHits)
-	{
-		drawHealthBar (building, destination);
-	}
-
-	// draw ammo bar
-	if (shouldDrawAmmo && (!player || building.getOwner() == player) && building.getStaticUnitData().canAttack && building.data.getAmmoMax() > 0)
-	{
-		drawMunBar (building, destination);
-	}
-
-	// draw status
-	if (shouldDrawStatus)
-	{
-		drawStatus (building, destination);
-	}
 }
 
 //--------------------------------------------------------------------------
-void cUnitDrawingEngine::drawUnit (const cVehicle& vehicle, SDL_Rect destination, float zoomFactor, const cMapView& map, const cUnitSelection* unitSelection, const cPlayer* player)
+void cUnitDrawingEngine::drawVehicle(const cVehicle& vehicle, SDL_Rect destination, float zoomFactor, const cMapView& map, const cUnitSelection* unitSelection, const cPlayer* player)
 {
 	unsigned long long animationTime = animationTimer->getAnimationTime(); //call getAnimationTime only once in this method and save the result,
 	//to avoid a changing time within this method
@@ -210,8 +172,8 @@ void cUnitDrawingEngine::drawUnit (const cVehicle& vehicle, SDL_Rect destination
 		destination.y += vehicle.ditherY;
 	}
 
-	SDL_Rect dest;
-	dest.x = dest.y = 0;
+    SDL_Rect dest = {0,0, destination.w, destination.h};
+
 	bool bDraw = false;
 	SDL_Surface* drawingSurface = drawingCache.getCachedImage (vehicle, zoomFactor, map, animationTime);
 	if (drawingSurface == nullptr)
@@ -230,7 +192,8 @@ void cUnitDrawingEngine::drawUnit (const cVehicle& vehicle, SDL_Rect destination
 
 	if (bDraw)
 	{
-		vehicle.render (&map, animationTime, player, drawingSurface, dest, zoomFactor, cSettings::getInstance().isShadows());
+        bool shadows = cSettings::getInstance().isShadows();
+        vehicle.render (&map, animationTime, player, drawingSurface, dest, zoomFactor, shadows);
 	}
 
 	// now check, whether the image has to be blitted to screen buffer
@@ -260,13 +223,14 @@ void cUnitDrawingEngine::drawUnit (const cVehicle& vehicle, SDL_Rect destination
 	// draw indication, when building is complete
 	if (vehicle.isUnitBuildingABuilding() && vehicle.getBuildTurns() == 0 && vehicle.getOwner() == player && !vehicle.BuildPath)
 	{
+        int offset = 2;
 		const cRgbColor finishedMarkColor = cRgbColor::green();
 		//const cBox<cPosition> d (cPosition (destination.x + 2, destination.y + 2), cPosition (destination.x + 2 + (vehicle.getIsBig() ? 2 * destination.w - 3 : destination.w - 3), destination.y + 2 + (vehicle.getIsBig() ? 2 * destination.h - 3 : destination.h - 3)));
-		cPosition minCorner(destination.x + 2, destination.y + 2);
+        cPosition minCorner(destination.x + offset, destination.y + offset);
 		cPosition maxCorner(
-				destination.x + 2 + (cellSize * destination.w - 3),
-				destination.y + 2 + (cellSize * destination.h - 3));
-		const cBox<cPosition> d (minCorner, maxCorner);
+                destination.x + destination.w - offset-1,
+                destination.y + destination.h - offset-1);
+        const cBox<cPosition> d(minCorner, maxCorner);
 
 		drawRectangle (*cVideo::buffer, d, finishedMarkColor.exchangeGreen (255 - 16 * (animationTime % 0x8)), 3);
 	}
@@ -274,12 +238,13 @@ void cUnitDrawingEngine::drawUnit (const cVehicle& vehicle, SDL_Rect destination
 	// Draw the colored frame if necessary
 	if (shouldDrawColor)
 	{
+        int offset = 1;
 		//const cBox<cPosition> d (cPosition (destination.x + 1, destination.y + 1), cPosition (destination.x + 1 + (vehicle.getIsBig() ? 2 * destination.w - 1 : destination.w - 1), destination.y + 1 + (vehicle.getIsBig() ? 2 * destination.h - 1 : destination.h - 1)));
-		cPosition minCorner(destination.x + 1, destination.y + 1);
+        cPosition minCorner(destination.x + offset, destination.y + offset);
 		cPosition maxCorner(
-				destination.x + 1 + (cellSize * destination.w - 1),
-				destination.y + 1 + (cellSize * destination.h - 1));
-		const cBox<cPosition> d (minCorner, maxCorner);
+                destination.x + destination.w - 2*offset,
+                destination.y + destination.h - 2*offset);
+        const cBox<cPosition> d(minCorner, maxCorner);
 
 		drawRectangle (*cVideo::buffer, d, vehicle.getOwner()->getColor().getColor());
 	}
@@ -288,49 +253,14 @@ void cUnitDrawingEngine::drawUnit (const cVehicle& vehicle, SDL_Rect destination
 	if (unitSelection && unitSelection->getSelectedUnitsCount() > 1 && unitSelection->isSelected (vehicle))
 	{
 		const cRgbColor groupSelectionColor = cRgbColor::yellow();
-		//const cBox<cPosition> d (cPosition (destination.x + 2, destination.y + 2), cPosition (destination.x + 2 + (vehicle.getIsBig() ? 2 * destination.w - 3 : destination.w - 3), destination.y + 2 + (vehicle.getIsBig() ? 2 * destination.h - 3 : destination.h - 3)));
-		cPosition minCorner(destination.x + 2, destination.y + 2);
+        cPosition minCorner(destination.x + 2, destination.y + 2);
 		cPosition maxCorner(
-				destination.x + 2 + (cellSize * destination.w - 3),
-				destination.y + 2 + (cellSize * destination.h - 3));
+                destination.x + 2 + (destination.w - 3),
+                destination.y + 2 + (destination.h - 3));
 		const cBox<cPosition> d (minCorner, maxCorner);
-
 
 		drawRectangle (*cVideo::buffer, d, groupSelectionColor, 1);
 	}
-	// draw the seleted-unit-flash-frame for vehicles
-	if (unitSelection && &vehicle == unitSelection->getSelectedVehicle())
-	{
-		//Uint16 maxX = vehicle.getIsBig() ? destination.w * 2 : destination.w;
-		//Uint16 maxY = vehicle.getIsBig() ? destination.h * 2 : destination.h;
-		Uint16 maxX = cellSize * destination.w;
-		Uint16 maxY = cellSize * destination.h;
-		const int len = maxX / 4;
-		maxX -= 3;
-		maxY -= 3;
-		const cBox<cPosition> d (cPosition (destination.x + 2, destination.y + 2), cPosition (destination.x + 2 + maxX, destination.y + 2 + maxY));
-
-		drawSelectionCorner (*cVideo::buffer, d, blinkColor, len);
-	}
-
-	// draw health bar
-	if (shouldDrawHits)
-	{
-		drawHealthBar (vehicle, destination);
-	}
-
-	// draw ammo bar
-	if (shouldDrawAmmo && (!player || vehicle.getOwner() == player) && vehicle.getStaticUnitData().canAttack)
-	{
-		drawMunBar (vehicle, destination);
-	}
-
-	// draw status info
-	if (shouldDrawStatus)
-	{
-		drawStatus (vehicle, destination);
-	}
-
 }
 
 //--------------------------------------------------------------------------

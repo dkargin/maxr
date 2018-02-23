@@ -975,7 +975,8 @@ void cGameGuiController::connectClient (cClient& client)
 			}
 			else if (overVehicle)
 			{
-				if (vehicle.isNextTo (overVehicle->getPosition())) sendWantLoad (client, vehicle.iID, true, overVehicle->iID);
+                if (vehicle.isNextTo (*overVehicle))
+                    sendWantLoad (client, vehicle.iID, true, overVehicle->iID);
 				else
 				{
 					cPathCalculator pc (vehicle, *mapView, *overVehicle, true);
@@ -997,7 +998,8 @@ void cGameGuiController::connectClient (cClient& client)
 			const auto& building = static_cast<const cBuilding&> (unit);
 			if (overVehicle && building.canLoad (overVehicle, false))
 			{
-				if (building.isNextTo (overVehicle->getPosition())) sendWantLoad (client, building.iID, false, overVehicle->iID);
+                if (building.isNextTo (*overVehicle))
+                    sendWantLoad (client, building.iID, false, overVehicle->iID);
 				else
 				{
 					cPathCalculator pc (*overVehicle, *mapView, building, true);
@@ -1015,7 +1017,8 @@ void cGameGuiController::connectClient (cClient& client)
 			}
 			else if (overPlane && building.canLoad (overPlane, false))
 			{
-				if (building.isNextTo (overPlane->getPosition())) sendWantLoad (client, building.iID, false, overPlane->iID);
+                if (building.isNextTo (*overPlane))
+                    sendWantLoad (client, building.iID, false, overPlane->iID);
 				else
 				{
 					cPathCalculator pc (*overPlane, *mapView, building, true);
@@ -1049,7 +1052,7 @@ void cGameGuiController::connectClient (cClient& client)
 
 			cUnit* target = cAttackJob::selectTarget (position, vehicle.getStaticUnitData().canAttack, *mapView, vehicle.getOwner());
 
-			if (vehicle.isInRange (position))
+			if (vehicle.isInWeaponRange (position))
 			{
 				activeClient->sendNetMessage(cActionAttack(vehicle, position, target));
 			}

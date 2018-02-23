@@ -19,7 +19,7 @@
 
 #include <algorithm>
 
-#include "pcx.h"
+#include "utility/pcx.h"
 #include "utility/log.h"
 #include "utility/files.h"
 #include "settings.h"

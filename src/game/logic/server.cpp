@@ -632,7 +632,8 @@ void cServer::handleNetMessage_GAME_EV_WANT_EXIT (cNetMessage& message)
 
 		const auto position = message.popPosition();
 
-		if (!StoringVehicle->isNextTo (position)) return;
+        if (!StoringVehicle->isNextTo (*StoredVehicle))
+            return;
 
 		// sidestep stealth units if necessary
 		sideStepStealthUnit (position, *StoredVehicle);
@@ -667,7 +668,8 @@ void cServer::handleNetMessage_GAME_EV_WANT_EXIT (cNetMessage& message)
 
 		const auto position = message.popPosition();
 
-		if (!StoringBuilding->isNextTo (position)) return;
+        if (!StoringBuilding->isNextTo (*StoringBuilding))
+            return;
 
 		// sidestep stealth units if necessary
 		sideStepStealthUnit (position, *StoredVehicle);
@@ -677,6 +679,7 @@ void cServer::handleNetMessage_GAME_EV_WANT_EXIT (cNetMessage& message)
 			StoringBuilding->exitVehicleTo (*StoredVehicle, position, *Map);
 			// vehicle is added to enemy clients by cServer::checkPlayerUnits()
 			sendActivateVehicle (*this, StoringBuilding->iID, false, StoredVehicle->iID, position, *StoringBuilding->getOwner());
+            // TODO: Surveyer can do this itself
 			if (StoredVehicle->getStaticUnitData().canSurvey)
 			{
 				sendVehicleResources (*this, *StoredVehicle);

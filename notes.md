@@ -4,16 +4,17 @@
 My plan so far:
 
 1. Increase map resolution x3. I just want to do it and see how MAX feels with such a change
-	- Fix compiler errors here and there 			OK
 	- Fix the rendeding of anysize units
-		- fix sprite scaling, up to full size
+		- fix sprite scaling, up to full size 		OK
 		- fix rendering of the underlay. Maybe we should bring here some sort of tiling generator
 	- Fix building process.  
-		- fix selection of build position
-	- Replace all XML fields
+		- fix selection of build position. Need a proper sprite
+	- Replace all XML fields 						OK
 	- Make constructor 2x2
 	- Fix pathfinder to deal with increased map size
-	- Update unit sizes according to this change
+		- fix collision checking
+		- fix unit projection
+	- Update unit sizes according to this change 	OK
 	- Update loading process to support multiple 'data' folders. Yeah, that means proper modding support.
 1. Lua AI in screeps style
 	- make lua bindings for
@@ -41,9 +42,9 @@ Broken functions. Should be fixed:
  - `void cVehicle::render_smallClearing` - 
  - `void cVehicle::render_BuildingOrBigClearing` - building process is so tricky ...
  - `void cBuilding::render_rubble` - I've just disabled it
- - `bool cUnit::isInRange (const cPosition& position) const` does inproper range calculations
- - `bool cUnit::isNextTo (const cPosition& position) const` does inproper adjacency calculation
- - `void cActionInitNewGame::execute(cModel& model) const` - disabled check for credits. Players can overspend
+ - `void cActionInitNewGame::execute(cModel& model) const` - disabled check for credits. Players 
+ can overspend
+ - ActionFinishBuild
  - broken the rendering of building's underlay tiles. This shit should be specified from XML, not the code!
  std::pair<bool, cPosition> cMouseModeSelectBuildPosition::findNextBuildPosition seems like broken
 
@@ -60,94 +61,151 @@ Now mostly all the units are multi-tile ones. So we need to rework a lot of inte
 Building process should not need the unit to move to the center of building area. Unit could do its building stuff standing near construction site. It will simplify a lot of things for everyone
 
 
-# Rendering pipeline #
+Mod loading process:
 
-@param destination - screen surface. We render everything to it
-@param clipRect - area, locked to widget. Is it handled by SDL?
-void cGameMapWidget::draw (SDL_Surface& destination, const cBox<cPosition>& clipRect)
+Thematic folders:
+ - buildings
+ 	- iterate through subfolders
+ 		- load data.xml
+ 		- load grapthics.xml
+ - vehicles
+ 	- iterate through subfolders
+ 		- load data.xml
+ 		- load grapthics.xml
+
+All paths should be relative to 'data' directory
+
+iterate through all xml files inside
+handle tags
+
+class cRenderable
 {
-...
-	drawBaseUnits();
-	drawTopBuildings();
-	drawShips();
-	drawAboveSeaBaseUnits();
-	drawVehicles();
-	drawConnectors();
-	drawPlanes();
+public:
+	virtual ~cRenderable();
+	virtual void updateScale(float scale);
+	virtual cBox<Vector2> getRect() const;	// Get bounding rectangle
+};
 
-	drawResources(...)
-	drawPath()
-	drawSelectionBox()
-	
-...
-}
-
-Iterates through all visible map tiles. IndexIterator is a wonderfull thingy
-
-```
-void cGameMapWidget::drawTopBuildings()
+// Scale-cached sprite
+class cSprite: public cRenderable
 {
-	if (!mapView) return;
+	std::shared_ptr<SDL_Surface> source;
+	SDL_Rect sourceFrame;
 
-	const auto zoomedTileSize = getZoomedTileSize();
-	const auto tileDrawingRange = computeTileDrawingRange();
-	const auto zoomedStartTilePixelOffset = getZoomedStartTilePixelOffset();
+	// Scaled surface
+	AutoSurface cache;
 
-	for (auto i = makeIndexIterator (tileDrawingRange.first, tileDrawingRange.second); i.hasMore(); i.next())
+	// Rect in relative world coordinates
+	cBox<Vector2> rect;
+
+	void updateScale(float scale) override;
+
+	bool ready = false;
+};
+
+```xml
+<Sprite path="vehicle.pcx" size="1x1" pos="1x1">
+<Size xy="1;1"/>
+<Pos xy="0;0"/>
+</Sprite>
+```
+
+// Scale-cached animation
+// 
+struct sAnim: public cRenderable
+{
+	std::shared_ptr<SDL_Surface> source;
+	std::vector<SDL_Rect> sourceFrames;
+	// Scaled surface
+	AutoSurface cache;
+
+	void updateScale(float scale) override;
+	bool ready = false;
+};
+
+<TileGen name="connectors" file="connectors.pcx" size="64x64">
+	<!--Central connector not connected anywhere-->
+	<Rule pos="0x0">
+		000
+		010
+		000
+	</Rule>
+	<!--Use this tile if there is a connection from the upper side-->
+	<Rule pos="1x0">
+		010
+		010
+		000
+	</Rule>
+</TileGen>
+
+# Fiddling with cropped sprites #
+Mine:
+	Shadow image 170x140
+	Two tiles = 128x128
+	Base size =128x128
+
+Small energy:
+	Image=64x64
+	Effect=50x49
+	Shadow=90x90
+
+Need to rescale local rect accordingly
+
+So we have: 
+vec2i refsize - reference size to determine intended size of the unit. Some sprites are larger than default tile, and some of them are smaller. We should track this stuff
+Rect srcSize - area from the source image
+RectF relativeArea - where do we draw this sprite, in unit's coordinates
+
+relativeArea and refsize replace each other
+
+// Shared pointer to SDL surface
+SurfacePtr surface;
+// Area of source surface. We copy data from that area
+SDL_Rect srcRect;
+// Desired size. In 'world' tile coordinates. That's static data from XML
+cVector2 size;
+
+We could recalculate size, according to refSize and srcRect:
+```
+size.x() *= float(refSize.x()) / float(srcRect.x())
+size.y() *= float(refSize.y()) / float(srcRect.y())
 ```
 
 
-Rendering process:
+TODO right now:
 
-Building:
-	building.render - generate sprites
-		.render_rubble -> sprites
-		.render_beton -> sprites
-		.drawConnectors -> tricky sprites
-		.drawShadow -> sprites
-		.render_simple
-			player color
-			main building sprite
-			clan logo
+1. Fix image for mine
+	Add xml tag for selectable sprite sheet
+2. Fix oversized and undersized images (ifder FIX_SHADOW)
+	Add xml tag
 
-	building.uiData->eff - some sort of pulsing effect
-	finished status - rectangle
+// Wrapper for drawing sprites from world coordinates
+struct cSprite: public cRenderable
+{
+    // Shared pointer to SDL surface
+    SurfacePtr surface;
+    // Area of source surface. We copy data from that area
+    SDL_Rect srcRect;
+    // Rendering mode. That's static data from XML
+    FitMode mode;
+public:
+    cSprite();
 
-	drawSelectionCorner - rectangle brackets
-	drawHealthBar
-	drawMunBar
-	drawStatus
+    virtual cBox<cVector2> getRect() const override;
+    // @param scale - multiplier between world coordinates and screen coordinates
+    // usually it is like tileSize*zoom
+    virtual void updateScale(float scale) override;
 
-Vehicle:
-	shadow bitmap with altered height
-	drawSelectionRectangle
-	drawSelectionCorner
-	drawHealthBar
-	drawMunBar
-	drawStatus
+    operator SDL_Surface*();
 
-std::pair<cPosition, cPosition> computeTileDrawingRange() const;
-
-
--std::pair<cPosition, cPosition> cGameMapWidget::computeTileDrawingRange() const
-+cBox<cVector2> cGameMapWidget::computeTileDrawingRange() const^M
- {
--       const auto zoomedTileSize = getZoomedTileSize();
--
-+    cPosition zoomedTileSize = getZoomedTileSize();^M
-        const cPosition drawingPixelRange = getSize() + getZoomedStartTilePixelOffset();
- 
-        const cPosition tilesSize ((int)std::ceil (drawingPixelRange.x() / zoomedTileSize.x()), (int)std::ceil (drawingPixelRange.y() / zoomedTileSize.y()));
- 
--       cPosition startTile ((int)std::floor (pixelOffset.x() / cStaticMap::tilePixelWidth), (int)std::floor (pixelOffset.y() / cStaticMap::tilePixelHeight));
-+    cPosition startTile((int)std::floor (pixelOffset.x() / cStaticMap::tilePixelWidth), (int)std::floor (pixelOffset.y() / cStaticMap::tilePixelHeight));^M
-        cPosition endTile (startTile + tilesSize + 1);
- 
-        startTile.x() = std::max (0, startTile.x());
-@@ -978,21 +1003,22 @@ std::pair<cPosition, cPosition> cGameMapWidget::computeTileDrawingRange() const
-        endTile.x() = std::min (staticMap->getSize().x(), endTile.x());
-        endTile.y() = std::min (staticMap->getSize().y(), endTile.y());
- 
--       return std::make_pair (startTile, endTile);
-+    return cBox<(startTile, endTile);^M
- }
+    void setColorKey(int key);
+    void setAlphaKey(int alpha = -1);
+    // Blit this sprite to output surface
+    // Will do rescaling, if necessary
+    void blit_and_cache(SDL_Surface* surface, SDL_Rect rect) override;
+protected:
+    // Cached surface. Will be updated at 'updateScale' invocation
+    SurfaceUPtr cache;
+    // Last used scale
+    cVector2 lastSize;
+};
