@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Unit ID="0 3" name="alien_plane">
+<Vehicle ID="0 3" name="alien_plane">
   <Header>
     <Author name="Someone">
     <Editor name="Rocky" time="2007-10-15 13:30:00"/>
@@ -33,7 +33,7 @@
     <Built_Costs Num="56"/>
     <Built_Costs_Max Num="224"/>
     <Is_Produced_by>
-      <Unit ID="1 10"/>
+      <Vehicle ID="1 10"/>
     </Is_Produced_by>
   </Production>
 
@@ -150,7 +150,7 @@
     <Capacity_Units_Ground Num="0"/>
     <Capacity_Units_Infantry Num="0"/>
     <Can_Use_Unit_As_Garage>
-      <Unit ID="0 0" Size="0"/>
+      <Vehicle ID="0 0" Size="0"/>
     </Can_Use_Unit_As_Garage>
   </Storage>
   <Graphic>
@@ -161,4 +161,4 @@
       <Power_On YN="No"/>
     </Animations>
   </Graphic>
-</Unit>
+</Vehicle>

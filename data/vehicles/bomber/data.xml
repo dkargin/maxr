@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Unit ID="0 9" name="bomber">
+<Vehicle ID="0 9" name="bomber">
   <Header>
     <Author name="Someone">
     <Editor name="Rocky" time="2007-10-16 11:30:00"/>
@@ -42,4 +42,9 @@
   <Storage>
     <Is_Storage_Type String="Plane"/>
   </Storage>
-</Unit>
+
+  <Graphic>
+    <Has_Damage_Effect YN="Yes"/>
+    <Has_Player_Color YN="Yes"/>
+  </Graphic>
+</Vehicle>

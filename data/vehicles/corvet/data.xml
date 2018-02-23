@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Unit ID="0 14" name="corvet">
+<Vehicle ID="0 14" name="corvet">
   <Header>
     <Author name="Someone">
       <Editor name="Someone" time="2007-09-30 13:05:00"/>
@@ -42,4 +42,9 @@
   <Storage>
     <Is_Storage_Type String="Ship"/>
   </Storage>
-</Unit>
+  
+  <Graphic>
+    <Has_Damage_Effect YN="Yes"/>
+    <Has_Player_Color YN="Yes"/>
+  </Graphic>
+</Vehicle>

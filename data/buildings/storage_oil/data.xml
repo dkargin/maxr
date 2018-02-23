@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Unit ID="1 33" name="storage-oil">
+<Building ID="1 33" name="storage-oil">
   <Header>
     <Author name="DoctorDeath">
       <Editor name="DoctorDeath" time="2007-10-30 22:40:00"/>
@@ -31,6 +31,12 @@
     <Capacity_Resources Num="50"/>
     <Capacity_Res_Type Const="Oil"/>
   </Storage>
-</Unit>
+
+  <Graphic>
+    <Has_Player_Color YN="Yes"/>
+    <Has_Damage_Effect YN="Yes"/>
+    <Has_Beton_Underground YN="Yes"/>
+  </Graphic>
+</Building>
 
 

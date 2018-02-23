@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Unit ID="1 26" name="radar">
+<Building ID="1 26" name="radar">
   <Header>
     <Author name="Someone">
       <Editor name="Someone" time="2007-09-30 13:05:00"/>
@@ -28,6 +28,30 @@
     <Can_Be_Disabled YN="Yes"/>
     <Can_Self_Destroy YN="Yes"/>
   </Abilities>
-</Unit>
+
+  <!-- Graphics block describes the sprites, used to draw a unit -->
+  <!-- field "refsize" specifies reference size of a unit in image' pixels -->
+  <Graphics refsize="64x64">
+    <!-- All the sprites from this block are added to 'image' layer -->
+    <!-- You can add sprites directly, and add parameter layer="image" -->
+    <Layer name="image">
+      <!-- There can be several sprites -->
+      <VariantSprite file="img.pcx" frames="25" channel="animation"/>
+    </Layer>
+
+    <Layer name="shadow">
+      <Sprite file="shw.pcx"/>
+    </Layer>
+  </Graphics>
+
+  <Graphic>
+    <Has_Damage_Effect YN="Yes"/>
+    <Has_Beton_Underground YN="Yes"/>
+    <Has_Player_Color YN="Yes"/>
+    <Animations>
+      <Is_Animated YN="Yes"/>
+    </Animations>
+  </Graphic>
+</Building>
 
 

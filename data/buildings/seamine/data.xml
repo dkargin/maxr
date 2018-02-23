@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Unit ID="1 29" name="seamine">
+<Building ID="1 29" name="seamine">
   <Header>
     <Author name="DoctorDeath">
       <Editor name="DoctorDeath" time="2007-10-31 00:13:00"/>
@@ -29,6 +29,10 @@
     <Surface_Position Const="BeneathSea"/>
     <Explodes_On_Contact YN="Yes"/>
   </Abilities>
-</Unit>
+
+  <Graphic>
+    <Has_Player_Color YN="Yes"/>
+  </Graphic>
+</Building>
 
 

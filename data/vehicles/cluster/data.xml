@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Unit ID="0 12" name="cluster">
+<Vehicle ID="0 12" name="cluster">
   <Header>
     <Author name="Someone">
     <Editor name="Rocky" time="2007-10-21 11:00:00"/>
@@ -41,4 +41,12 @@
   <Storage>
     <Is_Storage_Type String="Ground"/>
   </Storage>
-</Unit>
+
+  <Graphic>
+    <Has_Damage_Effect YN="Yes"/>
+    <Has_Player_Color YN="Yes"/>
+    <Animations>
+      <Makes_Tracks YN="Yes"/>
+    </Animations>
+  </Graphic>
+</Vehicle>

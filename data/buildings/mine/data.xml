@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<Unit ID="1 22" name="mine">
+<Building ID="1 22" name="mine">
   <Header>
     <Author name="Someone">
       <Editor name="Someone" time="2007-09-30 13:05:00"/>
@@ -40,4 +40,23 @@
     <Capacity_Resources Num="25"/>
     <Capacity_Res_Type Const="Metal"/>
   </Storage>
-</Unit>
+
+  <Graphics refsize="128x128">
+    <Layer name="image">
+      <VariantSprite file="img.pcx" frames="9" channel="clan"/>
+    </Layer>
+    <Layer name="shadow">
+      <Sprite file="shw.pcx"/>
+    </Layer>
+  </Graphics>
+
+  <Graphic>
+    <Has_Clan_Logos YN="Yes"/>
+    <Has_Damage_Effect YN="Yes"/>
+    <Has_Beton_Underground YN="Yes"/>
+    <Has_Player_Color YN="Yes"/>
+    <Animations>
+      <Power_On YN="Yes"/>
+    </Animations>
+  </Graphic>
+</Building>
