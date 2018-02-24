@@ -509,7 +509,7 @@ void cDebugOutputWidget::traceBuilding (const cBuilding& building, cPosition& dr
 	for (size_t i = 0; i != buildingBuildListSize; ++i)
 	{
 		const auto& item = building.getBuildListItem (i);
-		font->showText (drawPosition, "  build " + iToStr (i) + lngPack.i18n ("Text~Punctuation~Colon") + item.getType().getText() + " \"" + client->getModel().getUnitsData()->getStaticUnitData(item.getType()).getName() + "\"", FONT_LATIN_SMALL_WHITE);
+        font->showText (drawPosition, "  build " + iToStr (i) + lngPack.i18n ("Text~Punctuation~Colon") + item.getType().getText() + " \"" + client->getModel().getUnitsData()->getUnit(item.getType())->getName() + "\"", FONT_LATIN_SMALL_WHITE);
 		drawPosition.y() += 8;
 	}
 

@@ -184,30 +184,31 @@ void cWindowStorage::updateUnitsWidgets()
 
 			if (unitIndex < unit.storedUnits.size())
 			{
-				const auto& storedUnit = *unit.storedUnits[unitIndex];
+                const cVehicle& vehicle = *unit.storedUnits[unitIndex];
+                const auto& data = *vehicle.getVehicleData();
 
-				AutoSurface surface (SDL_CreateRGBSurface (0, storedUnit.uiData->storage->w, storedUnit.uiData->storage->h, Video.getColDepth(), 0, 0, 0, 0));
-				SDL_BlitSurface (storedUnit.uiData->storage.get(), nullptr, surface.get(), nullptr);
+                AutoSurface surface(SDL_CreateRGBSurface (0, data.storage->w, data.storage->h, Video.getColDepth(), 0, 0, 0, 0));
+                SDL_BlitSurface (data.storage.get(), nullptr, surface.get(), nullptr);
 				unitImages[positionIndex]->setImage (surface.get());
 
-				unitDetails[positionIndex]->setUnit (&storedUnit);
+                unitDetails[positionIndex]->setUnit (&vehicle);
 
-				updateUnitName (storedUnit, positionIndex);
-				updateUnitButtons (storedUnit, positionIndex);
+                updateUnitName (vehicle, positionIndex);
+                updateUnitButtons (vehicle, positionIndex);
 
-				unitsSignalConnectionManager.connect (storedUnit.data.versionChanged, std::bind (&cWindowStorage::updateUnitName, this, std::ref (storedUnit), positionIndex));
+                unitsSignalConnectionManager.connect (vehicle.data.versionChanged, std::bind (&cWindowStorage::updateUnitName, this, std::ref (vehicle), positionIndex));
 
-				unitsSignalConnectionManager.connect (storedUnit.data.hitpointsChanged, std::bind (&cWindowStorage::updateUnitButtons, this, std::ref (storedUnit), positionIndex));
-				unitsSignalConnectionManager.connect (storedUnit.data.ammoChanged, std::bind (&cWindowStorage::updateUnitButtons, this, std::ref (storedUnit), positionIndex));
-				unitsSignalConnectionManager.connect (storedUnit.data.hitpointsMaxChanged, std::bind (&cWindowStorage::updateUnitButtons, this, std::ref (storedUnit), positionIndex));
-				unitsSignalConnectionManager.connect (storedUnit.data.ammoMaxChanged, std::bind (&cWindowStorage::updateUnitButtons, this, std::ref (storedUnit), positionIndex));
-				unitsSignalConnectionManager.connect (storedUnit.data.versionChanged, std::bind (&cWindowStorage::updateUnitButtons, this, std::ref (storedUnit), positionIndex));
+                unitsSignalConnectionManager.connect (vehicle.data.hitpointsChanged, std::bind (&cWindowStorage::updateUnitButtons, this, std::ref (vehicle), positionIndex));
+                unitsSignalConnectionManager.connect (vehicle.data.ammoChanged, std::bind (&cWindowStorage::updateUnitButtons, this, std::ref (vehicle), positionIndex));
+                unitsSignalConnectionManager.connect (vehicle.data.hitpointsMaxChanged, std::bind (&cWindowStorage::updateUnitButtons, this, std::ref (vehicle), positionIndex));
+                unitsSignalConnectionManager.connect (vehicle.data.ammoMaxChanged, std::bind (&cWindowStorage::updateUnitButtons, this, std::ref (vehicle), positionIndex));
+                unitsSignalConnectionManager.connect (vehicle.data.versionChanged, std::bind (&cWindowStorage::updateUnitButtons, this, std::ref (vehicle), positionIndex));
 
-				unitsSignalConnectionManager.connect (storedUnit.data.hitpointsChanged, std::bind (&cWindowStorage::updateGlobalButtons, this));
-				unitsSignalConnectionManager.connect (storedUnit.data.ammoChanged, std::bind (&cWindowStorage::updateGlobalButtons, this));
-				unitsSignalConnectionManager.connect (storedUnit.data.hitpointsMaxChanged, std::bind (&cWindowStorage::updateGlobalButtons, this));
-				unitsSignalConnectionManager.connect (storedUnit.data.ammoMaxChanged, std::bind (&cWindowStorage::updateGlobalButtons, this));
-				unitsSignalConnectionManager.connect (storedUnit.data.versionChanged, std::bind (&cWindowStorage::updateGlobalButtons, this));
+                unitsSignalConnectionManager.connect (vehicle.data.hitpointsChanged, std::bind (&cWindowStorage::updateGlobalButtons, this));
+                unitsSignalConnectionManager.connect (vehicle.data.ammoChanged, std::bind (&cWindowStorage::updateGlobalButtons, this));
+                unitsSignalConnectionManager.connect (vehicle.data.hitpointsMaxChanged, std::bind (&cWindowStorage::updateGlobalButtons, this));
+                unitsSignalConnectionManager.connect (vehicle.data.ammoMaxChanged, std::bind (&cWindowStorage::updateGlobalButtons, this));
+                unitsSignalConnectionManager.connect (vehicle.data.versionChanged, std::bind (&cWindowStorage::updateGlobalButtons, this));
 			}
 			else
 			{

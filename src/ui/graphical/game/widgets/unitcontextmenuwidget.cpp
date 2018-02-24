@@ -316,13 +316,13 @@ const cUnit* cUnitContextMenuWidget::getUnit()
 //------------------------------------------------------------------------------
 /*static*/ bool cUnitContextMenuWidget::unitHasStartEntry(const cUnit* unit, const cPlayer* player)
 {
-	return unit && !unit->isDisabled() && unit->getOwner() == player && unit->getStaticUnitData().canWork && unit->buildingCanBeStarted();
+    return unit && !unit->isDisabled() && unit->getOwner() == player && unit->getStaticUnitData().hasFlag(UnitFlag::CanWork) && unit->buildingCanBeStarted();
 }
 
 //------------------------------------------------------------------------------
 /*static*/ bool cUnitContextMenuWidget::unitHasAutoEntry(const cUnit* unit, const cPlayer* player)
 {
-	return unit && !unit->isDisabled() && unit->getOwner() == player && unit->getStaticUnitData().canSurvey;
+    return unit && !unit->isDisabled() && unit->getOwner() == player && unit->getStaticUnitData().hasFlag(UnitFlag::CanSurvey);
 }
 
 //------------------------------------------------------------------------------
@@ -334,7 +334,7 @@ const cUnit* cUnitContextMenuWidget::getUnit()
 //------------------------------------------------------------------------------
 /*static*/ bool cUnitContextMenuWidget::unitHasRemoveEntry (const cUnit* unit, const cPlayer* player, const cMapView* map)
 {
-	return unit && !unit->isDisabled() && unit->getOwner() == player && unit->getStaticUnitData().canClearArea && map && map->getField(unit->getPosition()).getRubble() && !unit->isUnitClearing();
+    return unit && !unit->isDisabled() && unit->getOwner() == player && unit->getStaticUnitData().hasFlag(UnitFlag::CanClearArea) && map && map->getField(unit->getPosition()).getRubble() && !unit->isUnitClearing();
 }
 
 //------------------------------------------------------------------------------
@@ -364,7 +364,7 @@ const cUnit* cUnitContextMenuWidget::getUnit()
 //------------------------------------------------------------------------------
 /*static*/ bool cUnitContextMenuWidget::unitHasResearchEntry(const cUnit* unit, const cPlayer* player)
 {
-	return unit && !unit->isDisabled() && unit->getOwner() == player && unit->getStaticUnitData().canResearch && unit->isUnitWorking();
+    return unit && !unit->isDisabled() && unit->getOwner() == player && unit->getStaticUnitData().hasFlag(UnitFlag::CanResearch) && unit->isUnitWorking();
 }
 
 //------------------------------------------------------------------------------
@@ -388,43 +388,43 @@ const cUnit* cUnitContextMenuWidget::getUnit()
 //------------------------------------------------------------------------------
 /*static*/ bool cUnitContextMenuWidget::unitHasSelfDestroyEntry(const cUnit* unit, const cPlayer* player)
 {
-	return unit && !unit->isDisabled() && unit->getOwner() == player && unit->getStaticUnitData().canSelfDestroy;
+    return unit && !unit->isDisabled() && unit->getOwner() == player && unit->getStaticUnitData().hasFlag(UnitFlag::CanSelfDestroy);
 }
 
 //------------------------------------------------------------------------------
 /*static*/ bool cUnitContextMenuWidget::unitHasSupplyEntry(const cUnit* unit, const cPlayer* player)
 {
-	return unit && !unit->isDisabled() && unit->getOwner() == player && unit->getStaticUnitData().canRearm && unit->getStoredResources() >= 1;
+    return unit && !unit->isDisabled() && unit->getOwner() == player && unit->getStaticUnitData().hasFlag(UnitFlag::CanRearm) && unit->getStoredResources() >= 1;
 }
 
 //------------------------------------------------------------------------------
 /*static*/ bool cUnitContextMenuWidget::unitHasRepairEntry(const cUnit* unit, const cPlayer* player)
 {
-	return unit && !unit->isDisabled() && unit->getOwner() == player && unit->getStaticUnitData().canRepair && unit->getStoredResources() >= 1;
+    return unit && !unit->isDisabled() && unit->getOwner() == player && unit->getStaticUnitData().hasFlag(UnitFlag::CanRepair) && unit->getStoredResources() >= 1;
 }
 
 //------------------------------------------------------------------------------
 /*static*/ bool cUnitContextMenuWidget::unitHasLayMinesEntry(const cUnit* unit, const cPlayer* player)
 {
-	return unit && !unit->isDisabled() && unit->getOwner() == player && unit->getStaticUnitData().canPlaceMines && unit->getStoredResources() > 0;
+    return unit && !unit->isDisabled() && unit->getOwner() == player && unit->getStaticUnitData().hasFlag(UnitFlag::CanPlaceMines) && unit->getStoredResources() > 0;
 }
 
 //------------------------------------------------------------------------------
 /*static*/ bool cUnitContextMenuWidget::unitHasCollectMinesEntry(const cUnit* unit, const cPlayer* player)
 {
-	return unit && !unit->isDisabled() && unit->getOwner() == player && unit->getStaticUnitData().canPlaceMines && unit->getStoredResources() < unit->getStaticUnitData().storageResMax;
+    return unit && !unit->isDisabled() && unit->getOwner() == player && unit->getStaticUnitData().hasFlag(UnitFlag::CanPlaceMines) && unit->getStoredResources() < unit->getStaticUnitData().storageResMax;
 }
 
 //------------------------------------------------------------------------------
 /*static*/ bool cUnitContextMenuWidget::unitHasSabotageEntry(const cUnit* unit, const cPlayer* player)
 {
-	return unit && !unit->isDisabled() && unit->getOwner() == player && unit->getStaticUnitData().canDisable && unit->data.getShots();
+    return unit && !unit->isDisabled() && unit->getOwner() == player && unit->getStaticUnitData().hasFlag(UnitFlag::CanDisable) && unit->data.getShots();
 }
 
 //------------------------------------------------------------------------------
 /*static*/ bool cUnitContextMenuWidget::unitHasStealEntry(const cUnit* unit, const cPlayer* player)
 {
-	return unit && !unit->isDisabled() && unit->getOwner() == player && unit->getStaticUnitData().canCapture && unit->data.getShots();
+    return unit && !unit->isDisabled() && unit->getOwner() == player && unit->getStaticUnitData().hasFlag(UnitFlag::CanCapture) && unit->data.getShots();
 }
 
 //------------------------------------------------------------------------------

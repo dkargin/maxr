@@ -22,6 +22,8 @@
 #include "savegame.h"
 #include "savegameinfo.h"
 #include "model.h"
+#include "units/building.h"
+#include "units/vehicle.h"
 #include "player/player.h"
 #include "gamesettings.h"
 #include "maxrversion.h"

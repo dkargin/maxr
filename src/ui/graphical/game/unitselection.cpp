@@ -46,7 +46,7 @@ bool cUnitSelection::selectUnitAt (const cMapFieldView& field, bool base)
 	}
 	cBuilding* topBuilding = field.getTopBuilding();
 	const cVehicle* selectedVehicle = getSelectedVehicle();
-	if (topBuilding && (base || ((topBuilding->getStaticUnitData().surfacePosition != cStaticUnitData::SURFACE_POS_ABOVE || !selectedVehicle) && (!field.getTopBuilding()->getStaticUnitData().canBeLandedOn || (!selectedVehicle || selectedVehicle->getStaticUnitData().factorAir == 0)))))
+    if (topBuilding && (base || ((topBuilding->getStaticUnitData().surfacePosition != cStaticUnitData::SURFACE_POS_ABOVE || !selectedVehicle) && (!field.getTopBuilding()->getStaticUnitData().hasFlag(UnitFlag::CanBeLandedOn) || (!selectedVehicle || selectedVehicle->getStaticUnitData().factorAir == 0)))))
 	{
 		return selectUnit (*topBuilding);
 	}
@@ -343,7 +343,7 @@ cBuilding* cUnitSelection::getNextBuilding(const cPlayer& player, const std::vec
 			!b.isSentryActive() && 
 			(!b.getStaticUnitData().canBuild.empty() || b.data.getShots()
 			 || b.getStaticUnitData().canMineMaxRes > 0 || b.getStaticUnitData().convertsGold > 0
-			 || b.getStaticUnitData().canResearch))
+             || b.getStaticUnitData().hasFlag(UnitFlag::CanResearch)))
 		{
 			return it->get();
 		}
@@ -447,7 +447,7 @@ cBuilding* cUnitSelection::getPrevBuilding(const cPlayer& player, const std::vec
 			!b.isSentryActive() &&
 			(!b.getStaticUnitData().canBuild.empty() || b.data.getShots()
 			 || b.getStaticUnitData().canMineMaxRes > 0 || b.getStaticUnitData().convertsGold > 0
-			 || b.getStaticUnitData().canResearch))
+             || b.getStaticUnitData().hasFlag(UnitFlag::CanResearch)))
 		{
 			return it->get();
 		}

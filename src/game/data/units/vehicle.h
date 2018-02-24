@@ -91,44 +91,28 @@ enum eSymbolsBig
 //-----------------------------------------------------------------------------
 // Struct for the pictures and sounds
 //-----------------------------------------------------------------------------
-struct sVehicleUIData : public sUnitUIData
+struct cVehicleData : public cStaticUnitData
 {
-	sID id;
+    bool animationMovement = false;
+    bool makeTracks = false;
 
-	bool hasCorpse;
-	bool hasDamageEffect;
-	bool hasPlayerColor;
-	bool hasOverlay;
+    cRenderablePtr build;
+    cRenderablePtr build_shadow;
+    cRenderablePtr clear_small;
+    cRenderablePtr clear_small_shadow;
 
-	bool buildUpGraphic;
-	bool animationMovement;
-	bool powerOnGraphic;
-	bool isAnimated;
-	bool makeTracks;
-
-	int hasFrames;
-
-    // TODO: Remove this shit. Building should have it, not a vehicle
-	AutoSurface build, build_org;        // Surfaces when building
-	AutoSurface build_shw, build_shw_org; // Surfaces of shadows when building
-
-	AutoSurface clear_small, clear_small_org;        // Surfaces when clearing
-	AutoSurface clear_small_shw, clear_small_shw_org; // Surfaces when clearing
+    virtual UnitType getType() const
+    {
+        return UnitType::Vehicle;
+    }
 
     AutoSurface storage;        // image of the vehicle in storage
     std::string FLCFile;        // FLC-Video
 
-	sVehicleUIData();
-	sVehicleUIData (sVehicleUIData&& other);
-	sVehicleUIData& operator= (sVehicleUIData && other);
-
-    // Not needed
-    //void scaleSurfaces (float faktor);
-
-private:
-	sVehicleUIData (const sVehicleUIData& other) MAXR_DELETE_FUNCTION;
-	sVehicleUIData& operator= (const sVehicleUIData& other) MAXR_DELETE_FUNCTION;
+    cVehicleData();
 };
+
+typedef std::shared_ptr<cVehicleData> sVehicleDataPtr;
 
 //-----------------------------------------------------------------------------
 /** Class for a vehicle-unit of a player */
@@ -137,7 +121,7 @@ class cVehicle : public cUnit
 {
 	//-----------------------------------------------------------------------------
 public:
-	cVehicle (const cStaticUnitData& staticData,  const cDynamicUnitData& data, cPlayer* Owner, unsigned int ID);
+    cVehicle (sVehicleDataPtr staticData,  const cDynamicUnitData& data, cPlayer* Owner, unsigned int ID);
 	virtual ~cVehicle();
 
 	virtual bool isAVehicle() const { return true; }
@@ -146,7 +130,10 @@ public:
 	virtual const cPosition& getMovementOffset() const MAXR_OVERRIDE_FUNCTION { return tileMovementOffset; }
 	void setMovementOffset (const cPosition& newOffset) { tileMovementOffset = newOffset; }
 
-	const sVehicleUIData* uiData;
+    sVehicleDataPtr getVehicleData() const;
+
+    sVehicleDataPtr vehicleData;
+
 	mutable int ditherX, ditherY;
 	mutable int bigBetonAlpha;
 	bool hasAutoMoveJob; // this is just a status information for the server, so that he can write the information to the saves
@@ -257,8 +244,7 @@ public:
 	void render (const cMapView* map, unsigned long long animationTime, const cPlayer* activePlayer, SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, bool drawShadow) const;
 	void render_simple (SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, int alpha = 254) const;
     static void render_simple (SDL_Surface* surface, const SDL_Rect& dest,
-                               float zoomFactor,
-                               const cStaticUnitData& unitData, const sVehicleUIData& uiData,
+                               float zoomFactor, const cVehicleData& vehicleData,
                                const cPlayer* owner, int dir = 0, int walkFrame = 0, int alpha = 254);
 	/**
      * draws the overlay animation of the vehicle on the given surface
@@ -268,8 +254,7 @@ public:
 	void drawOverlayAnimation (unsigned long long animationTime, SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor) const;
 	void drawOverlayAnimation (SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, int frameNr, int alpha = 254) const;
     static void drawOverlayAnimation (SDL_Surface* surface, const SDL_Rect& dest,
-                                      float zoomFactor,
-                                      const cStaticUnitData& unitData, const sVehicleUIData& uiData,
+                                      float zoomFactor, const cVehicleData& vehicleData,
                                       int frameNr = 0, int alpha = 254);
 
 	bool isUnitLoaded() const { return loaded; }
@@ -367,7 +352,9 @@ public:
 
 		if (!archive.isWriter)
 		{
-			uiData = UnitsUiData.getVehicleUI(data.getId());
+            vehicleData = std::dynamic_pointer_cast<cVehicleData>(staticData);
+            //archive.getPointerLoader()->get(data.getId(), vehicleData);
+            //uiData = UnitsUiData.getVehicleUI(data.getId());
 		}
 	}
 private:

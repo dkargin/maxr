@@ -113,16 +113,17 @@ void cActionChangeBuildList::execute(cModel& model) const
 	std::vector<cBuildListItem> newBuildList;
 	for (const auto& id : buildList)
 	{
-		if (!model.getUnitsData()->isValidId(id)) continue;
-
+        auto unit = model.getUnitsData()->getUnit(id);
+        if (!unit)
+            continue;
 
 		// check whether the building can build this unit
-		if (model.getUnitsData()->getStaticUnitData(id).factorSea > 0 && model.getUnitsData()->getStaticUnitData(id).factorGround == 0 && !water)
+        if (unit->factorSea > 0 && unit->factorGround == 0 && !water)
 			continue;
-		else if (model.getUnitsData()->getStaticUnitData(id).factorGround > 0 && model.getUnitsData()->getStaticUnitData(id).factorSea == 0 && !land)
+        else if (unit->factorGround > 0 && unit->factorSea == 0 && !land)
 			continue;
 
-		if (building->getStaticUnitData().canBuild != model.getUnitsData()->getStaticUnitData(id).buildAs)
+        if (building->getStaticUnitData().canBuild != unit->buildAs)
 			continue;
 
 		cBuildListItem BuildListItem(id, -1);

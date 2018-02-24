@@ -190,10 +190,11 @@ private:
 		archive >> *clanDataNonConst;
 		clanData = clanDataNonConst;
 	}
+
 	template<typename T>
 	void saveThis(T& archive)
 	{
-		archive << *unitsData;
+        archive << (*unitsData);
 		archive << *clanData;
 	}
 };

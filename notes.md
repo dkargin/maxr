@@ -61,68 +61,6 @@ Now mostly all the units are multi-tile ones. So we need to rework a lot of inte
 Building process should not need the unit to move to the center of building area. Unit could do its building stuff standing near construction site. It will simplify a lot of things for everyone
 
 
-Mod loading process:
-
-Thematic folders:
- - buildings
- 	- iterate through subfolders
- 		- load data.xml
- 		- load grapthics.xml
- - vehicles
- 	- iterate through subfolders
- 		- load data.xml
- 		- load grapthics.xml
-
-All paths should be relative to 'data' directory
-
-iterate through all xml files inside
-handle tags
-
-class cRenderable
-{
-public:
-	virtual ~cRenderable();
-	virtual void updateScale(float scale);
-	virtual cBox<Vector2> getRect() const;	// Get bounding rectangle
-};
-
-// Scale-cached sprite
-class cSprite: public cRenderable
-{
-	std::shared_ptr<SDL_Surface> source;
-	SDL_Rect sourceFrame;
-
-	// Scaled surface
-	AutoSurface cache;
-
-	// Rect in relative world coordinates
-	cBox<Vector2> rect;
-
-	void updateScale(float scale) override;
-
-	bool ready = false;
-};
-
-```xml
-<Sprite path="vehicle.pcx" size="1x1" pos="1x1">
-<Size xy="1;1"/>
-<Pos xy="0;0"/>
-</Sprite>
-```
-
-// Scale-cached animation
-// 
-struct sAnim: public cRenderable
-{
-	std::shared_ptr<SDL_Surface> source;
-	std::vector<SDL_Rect> sourceFrames;
-	// Scaled surface
-	AutoSurface cache;
-
-	void updateScale(float scale) override;
-	bool ready = false;
-};
-
 <TileGen name="connectors" file="connectors.pcx" size="64x64">
 	<!--Central connector not connected anywhere-->
 	<Rule pos="0x0">
@@ -209,3 +147,11 @@ protected:
     // Last used scale
     cVector2 lastSize;
 };
+
+hasFlag(UnitFlag::C
+
+#ifdef FIX_THIS
+#ifdef OVERLAYS_TO_BE_FIXED
+#ifdef FIX_BUILD_ANIMATION
+#ifdef FIX_MINE_LAYER
+#ifdef FIX_BUILDING_UNDERLAY

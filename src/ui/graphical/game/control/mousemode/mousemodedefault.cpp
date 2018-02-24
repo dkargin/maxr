@@ -211,7 +211,7 @@ cMouseModeDefault::eActionType cMouseModeDefault::selectAction (const cPosition&
 								 (
 									 field.getTopBuilding() &&
 									 field.getTopBuilding()->getStaticUnitData().surfacePosition != cStaticUnitData::SURFACE_POS_ABOVE &&
-									 !field.getTopBuilding()->getStaticUnitData().canBeLandedOn
+                                     !field.getTopBuilding()->getStaticUnitData().hasFlag(UnitFlag::CanBeLandedOn)
 								 )
 							 )
 						 )
@@ -271,7 +271,8 @@ cMouseModeDefault::eActionType cMouseModeDefault::selectAction (const cPosition&
 			 !selectedBuilding->isUnitWorking() &&
 			 selectedBuilding->getBuildListItem (0).getRemainingMetal() <= 0)
 	{
-		if (selectedBuilding->canExitTo (mapPosition, *map, unitsData.getStaticUnitData(selectedBuilding->getBuildListItem (0).getType())) && selectedUnit->isDisabled() == false)
+        auto unitData = unitsData.getUnit(selectedBuilding->getBuildListItem (0).getType());
+        if (selectedBuilding->canExitTo (mapPosition, *map, *unitData) && selectedUnit->isDisabled() == false)
 		{
 			return eActionType::ActivateFinished;
 		}

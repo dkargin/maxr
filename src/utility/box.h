@@ -48,6 +48,12 @@ public:
 	PointType getSize() const;
 	void resize (const PointType& newSize);
 
+    /**
+     * Expands a box in all directions
+     * @param lower - additional size for 'lower' sides
+     * @param upper - additional size for 'upper' sides
+     */
+    void expand(const PointType& lower, const PointType& upper);
 	void add (const PointType& point);
 	void add (const cBox<PointType>& box);
 
@@ -253,6 +259,18 @@ void cBox<PointType>::fromSdlRect (const SDL_Rect& rect)
 
 	maxCorner[0] = rect.x + rect.w - 1;
 	maxCorner[1] = rect.y + rect.h - 1;
+}
+
+template<typename PointType>
+void cBox<PointType>::expand(const PointType &lower, const PointType &upper)
+{
+    auto& min = getMinCorner();
+    auto& max = getMaxCorner();
+    for (size_t d = 0; d < PointType::const_size::value; ++d)
+    {
+        min[d] -= fabs(lower[d]);
+        max[d] += fabs(upper[d]);
+    }
 }
 
 #endif // utility_boxH

@@ -348,7 +348,7 @@ void cMoveJob::moveVehicle(cModel& model)
 
 	int x = abs(vehicle->getMovementOffset().x());
 	int y = abs(vehicle->getMovementOffset().y());
-	if ( vehicle->uiData->makeTracks && (
+	if ( vehicle->vehicleData->makeTracks && (
 		(x > 32 && x - pixelToMove <= 32) ||
 		(y > 32 && y - pixelToMove <= 32) ||
 		(x == 64 && pixelToMove >= 1) ||
@@ -373,7 +373,7 @@ void cMoveJob::moveVehicle(cModel& model)
 void cMoveJob::updateSpeed(const cMap &map)
 {
 	double maxSpeed = MOVE_SPEED;
-	if (vehicle->uiData->animationMovement)
+	if (vehicle->vehicleData->animationMovement)
 	{
 		maxSpeed = MOVE_SPEED / 2;
 	}
@@ -441,7 +441,7 @@ void cMoveJob::endMove(cModel& model)
 
 	vehicle->inSentryRange(model);
 
-	if (vehicle->getStaticUnitData().canSurvey)
+    if (vehicle->getStaticUnitData().hasFlag(UnitFlag::CanSurvey))
 	{
 		vehicle->doSurvey();
 	}

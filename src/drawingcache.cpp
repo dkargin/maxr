@@ -103,7 +103,7 @@ void sDrawingCacheEntry::init (const cVehicle& vehicle, const cMapView& map, con
 	flightHigh = vehicle.getFlightHeight();
 	size = vehicle.getCellSize();
 	id = vehicle.data.getId();
-	if (vehicle.uiData->animationMovement)
+	if (vehicle.vehicleData->animationMovement)
 		frame = vehicle.WalkFrame;
 	else
 		frame = animationTime % 4;
@@ -239,13 +239,17 @@ SDL_Surface* cDrawingCache::getCachedImage (const cBuilding& building, double zo
 			}
 #endif
 		}
-		if (building.uiData->hasFrames && !building.uiData->isAnimated)
+        //if (building.uiData->hasFrames && !building.uiData->isAnimated)
 		{
-			if (entry.dir != building.dir) continue;
+            if (entry.dir != building.dir)
+                continue;
 		}
-		if (entry.zoom != zoom) continue;
+        if (entry.zoom != zoom)
+            continue;
 
-		if (building.uiData->hasClanLogos && building.getOwner()->getClan() != entry.clan) continue;
+        //if (building.uiData->hasClanLogos && building.getOwner()->getClan() != entry.clan)
+        if (building.getOwner()->getClan() != entry.clan)
+            continue;
 
 		//cache hit!
 		cacheHits++;
@@ -281,7 +285,7 @@ SDL_Surface* cDrawingCache::getCachedImage (const cVehicle& vehicle, double zoom
 		if (entry.flightHigh != vehicle.getFlightHeight()) continue;
 		if (entry.dir != vehicle.dir) continue;
 
-		if (vehicle.uiData->animationMovement)
+		if (vehicle.vehicleData->animationMovement)
 		{
 			if (entry.frame != vehicle.WalkFrame) continue;
 		}
@@ -422,8 +426,7 @@ void cDrawingCache::flush()
 bool cDrawingCache::canCache (const cBuilding& building)
 {
 	if (!building.getOwner() ||
-		building.alphaEffectValue ||
-		building.uiData->isAnimated)
+        building.alphaEffectValue)
 	{
 		notCached++;
 		return false;

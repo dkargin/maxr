@@ -117,6 +117,15 @@ public:
     int LoadVehicles();
 
     /**
+     * @brief parseDataFile parses XML file and adds all the data from it to BD
+     * @param path - path to XML file
+     */
+    void parseDataFile(const std::string& path);
+
+    void parseVehicle(const XMLElement* source);
+    void parseBuilding(const XMLElement* source);
+
+    /**
      * Loads the clan values and stores them in the cUnitData class
      * @return 1 on success
      */
@@ -127,11 +136,12 @@ protected:
      * @param directory Unitdirectory, relative to the main game directory
      */
     void LoadUnitData(cStaticUnitData& staticData, cDynamicUnitData& dynamicData, char const* const directory, int const iID);
-
-    void LoadUnitGraphicProperties (sVehicleUIData& data, char const* directory);
-    void LoadUnitGraphicProperties (sBuildingUIData& data, char const* directory);
+    void LoadVehicleGraphicProperties (cVehicleData& data, char const* directory);
+    void LoadBuildingGraphicProperties (cBuildingData& data, char const* directory);
 protected:
+
     std::string path;
+    bool loadMedia;
 };
 
 /**
@@ -915,32 +925,31 @@ void cResourceData::load (const char* path)
 }
 
 // Loads unit data from the path
-void loadUnitData(std::string srcPath,
+void LoadLegacyUnitGraphics(std::string srcPath,
                   cSpriteTool& tool,
-                  cStaticUnitData& staticData,
-                  sUnitUIData& ui)
+                  cStaticUnitData& data)
 {
     std::string sTmpString;
 
-    int size = staticData.cellSize;
+    int size = data.cellSize;
     cVector2 unitSize(size, size);
 
     // Load an old 'static' data
     // New graphics is described inside XMLs
-    if(!staticData.customGraphics)
+    //if(!staticData.customGraphics)
     {
         // load img
-        ui.image = tool.makeSprite(srcPath + "img.pcx", unitSize);
+        data.image = tool.makeSprite(srcPath + "img.pcx", unitSize);
 
-        if(!ui.image)
+        if(!data.image)
         {
             Log.write ("Missing GFX - your MAXR install seems to be incomplete!", cLog::eLOG_TYPE_ERROR);
         }
 
         // load shadow
-        ui.shadow = tool.makeSprite(srcPath + "shw.pcx", unitSize);
+        data.shadow = tool.makeSprite(srcPath + "shw.pcx", unitSize);
         // load overlay graphics, if necessary
-        ui.overlay = tool.makeSprite(srcPath + "overlay.pcx", unitSize);
+        data.overlay = tool.makeSprite(srcPath + "overlay.pcx", unitSize);
 
         // load infantery graphics
         //if (ui.animationMovement)
@@ -1022,10 +1031,10 @@ void loadUnitData(std::string srcPath,
                 Log.write (sTmpString, cLog::eLOG_TYPE_DEBUG);
 
                 //SDL_SetColorKey (ui.img[n].get(), SDL_TRUE, 0xFFFFFF);
-                ui.directed_image[n] = tool.makeSprite(sTmpString.c_str(), unitSize);
-                if(ui.directed_image[n])
+                data.directed_image[n] = tool.makeSprite(sTmpString.c_str(), unitSize);
+                if(data.directed_image[n])
                 {
-                    ui.directed_image[n]->setColorKey(0xFFFFFF);
+                    data.directed_image[n]->setColorKey(0xFFFFFF);
                 }
                 else
                 {
@@ -1034,10 +1043,10 @@ void loadUnitData(std::string srcPath,
                 }
 
                 // load shadow
-                ui.directed_shadow[n] = tool.makeSprite(srcPath + "shw.pcx", unitSize);
-                if (ui.directed_shadow[n])
+                data.directed_shadow[n] = tool.makeSprite(srcPath + "shw.pcx", unitSize);
+                if (data.directed_shadow[n])
                 {
-                    ui.directed_shadow[n]->setAlphaKey(50);
+                    data.directed_shadow[n]->setAlphaKey(50);
                 }
             }
         }
@@ -1045,18 +1054,82 @@ void loadUnitData(std::string srcPath,
 
     // load sounds
     Log.write ("Loading sounds", cLog::eLOG_TYPE_DEBUG);
-    LoadUnitSoundfile (ui.Wait,       srcPath.c_str(), "wait.ogg");
-    LoadUnitSoundfile (ui.WaitWater,  srcPath.c_str(), "wait_water.ogg");
-    LoadUnitSoundfile (ui.Start,      srcPath.c_str(), "start.ogg");
-    LoadUnitSoundfile (ui.StartWater, srcPath.c_str(), "start_water.ogg");
-    LoadUnitSoundfile (ui.Stop,       srcPath.c_str(), "stop.ogg");
-    LoadUnitSoundfile (ui.StopWater,  srcPath.c_str(), "stop_water.ogg");
-    LoadUnitSoundfile (ui.Drive,      srcPath.c_str(), "drive.ogg");
-    LoadUnitSoundfile (ui.DriveWater, srcPath.c_str(), "drive_water.ogg");
-    LoadUnitSoundfile (ui.Attack,     srcPath.c_str(), "attack.ogg");
-
+    LoadUnitSoundfile (data.Wait,       srcPath.c_str(), "wait.ogg");
+    LoadUnitSoundfile (data.WaitWater,  srcPath.c_str(), "wait_water.ogg");
+    LoadUnitSoundfile (data.Start,      srcPath.c_str(), "start.ogg");
+    LoadUnitSoundfile (data.StartWater, srcPath.c_str(), "start_water.ogg");
+    LoadUnitSoundfile (data.Stop,       srcPath.c_str(), "stop.ogg");
+    LoadUnitSoundfile (data.StopWater,  srcPath.c_str(), "stop_water.ogg");
+    LoadUnitSoundfile (data.Drive,      srcPath.c_str(), "drive.ogg");
+    LoadUnitSoundfile (data.DriveWater, srcPath.c_str(), "drive_water.ogg");
+    LoadUnitSoundfile (data.Attack,     srcPath.c_str(), "attack.ogg");
     // load sounds
-    LoadUnitSoundfile (ui.Running, srcPath.c_str(), "running.ogg");
+    LoadUnitSoundfile (data.Running, srcPath.c_str(), "running.ogg");
+}
+
+void ModData::parseVehicle(const XMLElement* source)
+{
+    // 1. Find name
+    // 2. Obtain pointer to data
+    // 3. Iterate all the fields
+}
+
+void ModData::parseBuilding(const XMLElement* source)
+{
+    // 1. Find name
+    // 2. Obtain pointer to data
+    // 3. Iterate all the fields
+}
+
+void ModData::parseDataFile(const std::string& path)
+{
+    if (!FileExists (path.c_str()))
+        return;
+
+    tinyxml2::XMLDocument xml;
+
+    if (xml.LoadFile (path.c_str()) != XML_NO_ERROR)
+    {
+        Log.write ("Can't load " + path, cLog::eLOG_TYPE_WARNING);
+        return ;
+    }
+
+    XMLElement* root = xml.RootElement();
+    if (root == nullptr)
+    {
+        Log.write ("Can't load " + path + ": root element is empty", cLog::eLOG_TYPE_WARNING);
+    }
+
+    XMLElement* element = root->FirstChildElement();
+    if (element == nullptr)
+    {
+        Log.write ("File " + path + " has no proper data", cLog::eLOG_TYPE_WARNING);
+    }
+
+    /* We are looking for the following tags:
+     * <Vehicle>
+     * <Building>
+     */
+    while(element != nullptr)
+    {
+        std::string type = element->Value();
+        if(type== "Vehicle")
+        {
+            // Parse vehicle
+            parseVehicle(element);
+        }
+        else if(type=="Building")
+        {
+            // Parse building
+            parseBuilding(element);
+        }
+        else
+        {
+            Log.write ("Unknown element " + type + " in file " + path, cLog::eLOG_TYPE_WARNING);
+        }
+
+        element = element->NextSiblingElement();
+    }
 }
 
 int ModData::LoadVehicles()
@@ -1090,7 +1163,7 @@ int ModData::LoadVehicles()
 	}
 
 	// read vehicles.xml
-	std::vector<std::string> VehicleList;
+    std::vector<std::string> directories;
 	std::vector<int> IDList;
 
 	xmlElement = xmlElement->FirstChildElement();
@@ -1102,7 +1175,7 @@ int ModData::LoadVehicles()
 	{
 		const char* directory = xmlElement->Attribute ("directory");
 		if (directory != nullptr)
-			VehicleList.push_back (directory);
+            directories.push_back (directory);
 		else
 		{
 			string msg = string ("Can't read directory-attribute from \"") + xmlElement->Value() + "\" - node";
@@ -1121,35 +1194,32 @@ int ModData::LoadVehicles()
     }
 
 	// load found units
-	string sVehiclePath;
-	UnitsUiData.vehicleUIs.resize(VehicleList.size());
-
-	for (size_t i = 0; i != VehicleList.size(); ++i)
+    for (size_t i = 0; i != directories.size(); ++i)
 	{
-		sVehiclePath = cSettings::getInstance().getVehiclesPath();
-		sVehiclePath += PATH_DELIMITER;
-		sVehiclePath += VehicleList[i];
-		sVehiclePath += PATH_DELIMITER;
+        string xmlPath = cSettings::getInstance().getVehiclesPath();
+        xmlPath += PATH_DELIMITER;
+        xmlPath += directories[i];
+        xmlPath += PATH_DELIMITER;
+        xmlPath += "data.xml";
 
-		cStaticUnitData staticData;
-		cDynamicUnitData dynamicData;
-		sVehicleUIData& ui = UnitsUiData.vehicleUIs[i];
+        if (!FileExists (xmlPath.c_str()))
+            continue;
 
-		Log.write ("Reading values from XML", cLog::eLOG_TYPE_DEBUG);
+        Log.write ("Reading values from XML", cLog::eLOG_TYPE_DEBUG);
+        parseDataFile(xmlPath);
+
+#ifdef VERY_BROKEN
 		LoadUnitData (staticData, dynamicData, sVehiclePath.c_str(), IDList[i]);
 
 		// load graphics.xml
-		LoadUnitGraphicProperties(ui, sVehiclePath.c_str());
+        LoadVehicleGraphicProperties(ui, sVehiclePath.c_str());
 
-		ui.id = staticData.ID;
-
-		if (DEDICATED_SERVER) continue;
 
 		Log.write ("Loading graphics", cLog::eLOG_TYPE_DEBUG);
 
-        loadUnitData(sVehiclePath, spriteTool, staticData, dynamicData, ui);
-
+        LoadLegacyUnitGraphics(sVehiclePath, spriteTool, staticData, ui);
 		// load video
+
 		ui.FLCFile = sVehiclePath;
 		ui.FLCFile += "video.flc";
 		Log.write ("Loading video " + ui.FLCFile, cLog::eLOG_TYPE_DEBUG);
@@ -1227,7 +1297,8 @@ int ModData::LoadVehicles()
 
 		// load cleargraphics if necessary
 		Log.write ("Loading cleargraphics", cLog::eLOG_TYPE_DEBUG);
-		if (staticData.canClearArea)
+
+        if (staticData.hasFlag(UnitFlag::CanClearArea))
 		{
 			// load image (small)
 			sTmpString = sVehiclePath;
@@ -1242,9 +1313,6 @@ int ModData::LoadVehicles()
 			else
 			{
 				Log.write ("Missing GFX - your MAXR install seems to be incomplete!", cLog::eLOG_TYPE_WARNING);
-				ui.clear_small_org      = nullptr;
-				ui.clear_small          = nullptr;
-				staticData.canClearArea = false;
 			}
 			// load shadow (small)
 			sTmpString = sVehiclePath;
@@ -1257,10 +1325,7 @@ int ModData::LoadVehicles()
 			}
 			else
 			{
-				Log.write ("Missing GFX - your MAXR install seems to be incomplete!", cLog::eLOG_TYPE_WARNING);
-				ui.clear_small_shw_org  = nullptr;
-				ui.clear_small_shw      = nullptr;
-				staticData.canClearArea = false;
+                Log.write ("Missing GFX - your MAXR install seems to be incomplete!", cLog::eLOG_TYPE_WARNING);
 			}
 			// load image (big)
 			sTmpString = sVehiclePath;
@@ -1274,10 +1339,7 @@ int ModData::LoadVehicles()
 			}
 			else
 			{
-				Log.write ("Missing GFX - your MAXR install seems to be incomplete!", cLog::eLOG_TYPE_WARNING);
-				ui.build_org            = nullptr;
-				ui.build                = nullptr;
-				staticData.canClearArea = false;
+                Log.write ("Missing GFX - your MAXR install seems to be incomplete!", cLog::eLOG_TYPE_WARNING);
 			}
 			// load shadow (big)
 			sTmpString = sVehiclePath;
@@ -1290,26 +1352,15 @@ int ModData::LoadVehicles()
 			}
 			else
 			{
-				Log.write ("Missing GFX - your MAXR install seems to be incomplete!", cLog::eLOG_TYPE_WARNING);
-				ui.build_shw_org        = nullptr;
-				ui.build_shw            = nullptr;
-				staticData.canClearArea = false;
+                Log.write ("Missing GFX - your MAXR install seems to be incomplete!", cLog::eLOG_TYPE_WARNING);
 			}
-		}
-		else
-		{
-			ui.clear_small_org     = nullptr;
-			ui.clear_small         = nullptr;
-			ui.clear_small_shw_org = nullptr;
-			ui.clear_small_shw     = nullptr;
-		}
+        }
+#endif
+        //UnitsDataGlobal.addData(staticData);
+        //UnitsDataGlobal.addData(dynamicData);
+    }
 
-		UnitsDataGlobal.addData(staticData);
-		UnitsDataGlobal.addData(dynamicData);
-	}
-	
-
-	UnitsDataGlobal.initializeIDData();
+    //UnitsDataGlobal.initializeIDData();
 
 	return 1;
 }
@@ -1342,7 +1393,7 @@ int ModData::LoadBuildings()
 		Log.write ("Can't read \"BuildingData->Building\" node!", cLog::eLOG_TYPE_ERROR);
 		return 0;
 	}
-	std::vector<std::string> BuildingList;
+    std::vector<std::string> directories;
 	std::vector<int> IDList;
 
 	xmlElement = xmlElement->FirstChildElement();
@@ -1356,7 +1407,7 @@ int ModData::LoadBuildings()
 	{
         const char* directory = xmlElement->Attribute ("directory");
         if (directory != nullptr)
-            BuildingList.push_back (directory);
+            directories.push_back (directory);
         else
         {
             string msg = string ("Can't read directory-attribute from \"") + xmlElement->Value() + "\" - node";
@@ -1375,6 +1426,7 @@ int ModData::LoadBuildings()
         if (spezial != nullptr)
         {
             string specialString = spezial;
+#ifdef VERY_BROKEN
             // TODO: Get rid of this shit. Leave all data references to XML or scripts
             // C++ should not keep so specific data. Really.
             if (specialString == "mine")
@@ -1391,11 +1443,13 @@ int ModData::LoadBuildings()
                 UnitsDataGlobal.setSpecialIDSmallBeton(sID(1, IDList.back()));
             else
                 Log.write ("Unknown spacial in buildings.xml \"" + specialString + "\"", cLog::eLOG_TYPE_WARNING);
+#endif
         }
 
         xmlElement = xmlElement->NextSiblingElement();
 	}
 
+                /*
     if (UnitsDataGlobal.getSpecialIDMine().secondPart       == 0)
         Log.write ("special \"mine\" missing in buildings.xml", cLog::eLOG_TYPE_WARNING);
     if (UnitsDataGlobal.getSpecialIDSmallGen().secondPart   == 0)
@@ -1408,14 +1462,31 @@ int ModData::LoadBuildings()
         Log.write("special \"seamine\" missing in buildings.xml", cLog::eLOG_TYPE_WARNING);
     if (UnitsDataGlobal.getSpecialIDSmallBeton().secondPart == 0)
         Log.write("special \"smallBeton\" missing in buildings.xml", cLog::eLOG_TYPE_WARNING);
+                */
 
 	// load found units
-	UnitsUiData.buildingUIs.resize(BuildingList.size());
-	for (size_t i = 0; i != BuildingList.size(); ++i)
+
+    for (size_t i = 0; i != directories.size(); ++i)
+    {
+        string xmlPath = cSettings::getInstance().getBuildingsPath();
+        xmlPath += PATH_DELIMITER;
+        xmlPath += directories[i];
+        xmlPath += PATH_DELIMITER;
+        xmlPath += "data.xml";
+
+        if (!FileExists (xmlPath.c_str()))
+            continue;
+
+        Log.write ("Reading values from XML", cLog::eLOG_TYPE_DEBUG);
+        parseDataFile(xmlPath);
+    }
+
+#ifdef VERY_BROKEN
+    for (size_t i = 0; i != directories.size(); ++i)
 	{
 		string sBuildingPath = cSettings::getInstance().getBuildingsPath();
 		sBuildingPath += PATH_DELIMITER;
-		sBuildingPath += BuildingList[i];
+        sBuildingPath += directories[i];
 		sBuildingPath += PATH_DELIMITER;
 
 		cStaticUnitData staticData;
@@ -1424,14 +1495,15 @@ int ModData::LoadBuildings()
 
 		LoadUnitData (staticData, dynamicData, sBuildingPath.c_str(), IDList[i]);
 
-		ui.id = staticData.ID;
+        //ui.id = staticData.ID;
 
 		// load graphics.xml
-		LoadUnitGraphicProperties(ui, sBuildingPath.c_str());
+        LoadBuildingGraphicProperties(ui, sBuildingPath.c_str());
 
-		if (DEDICATED_SERVER) continue;
+        if (DEDICATED_SERVER)
+            continue;
 
-        loadUnitData(sBuildingPath, spriteTool, staticData, dynamicData, ui);
+        LoadLegacyUnitGraphics(sBuildingPath, spriteTool, staticData, ui);
 
 		// load video
 		sTmpString = sBuildingPath;
@@ -1501,7 +1573,7 @@ int ModData::LoadBuildings()
 		UnitsDataGlobal.addData(staticData);
 		UnitsDataGlobal.addData(dynamicData);
 	}
-
+#endif
 	// Dirtsurfaces
 	if (!DEDICATED_SERVER)
 	{
@@ -1526,6 +1598,7 @@ int ModData::LoadBuildings()
 
 
 //------------------------------------------------------------------------------
+#ifdef TOTALLY_BROKEN
 void ModData::LoadUnitData (cStaticUnitData& staticData, cDynamicUnitData& dynamicData, char const* const directory, int const iID)
 {
 	tinyxml2::XMLDocument unitDataXml;
@@ -1539,9 +1612,9 @@ void ModData::LoadUnitData (cStaticUnitData& staticData, cDynamicUnitData& dynam
 		Log.write ("Can't load " + path, cLog::eLOG_TYPE_WARNING);
 		return ;
 	}
-	// Read minimal game version
-	string gameVersion = getXMLAttributeString (unitDataXml, "text", "Unit", "Header", "Game_Version", nullptr);
 
+	// Read minimal game version
+    //string gameVersion = getXMLAttributeString (unitDataXml, "text", "Unit", "Header", "Game_Version", nullptr);
 	//TODO check game version
 
 	//read id
@@ -1610,7 +1683,8 @@ void ModData::LoadUnitData (cStaticUnitData& staticData, cDynamicUnitData& dynam
 
 	// TODO: make the code differ between attacking sea units and land units.
 	// until this is done being able to attack sea units means being able to attack ground units.
-	if (staticData.canAttack & TERRAIN_SEA) staticData.canAttack |= TERRAIN_GROUND;
+    if (staticData.canAttack & TERRAIN_SEA)
+        staticData.canAttack |= TERRAIN_GROUND;
 
 	staticData.canDriveAndFire = getXMLAttributeBool(unitDataXml, "Unit", "Weapon", "Can_Drive_And_Fire", nullptr);
 
@@ -1729,7 +1803,7 @@ void ModData::LoadUnitData (cStaticUnitData& staticData, cDynamicUnitData& dynam
 }
 
 //------------------------------------------------------------------------------
-void ModData::LoadUnitGraphicProperties(sVehicleUIData& data, char const* directory)
+void ModData::LoadUnitGraphicProperties(sVehicleData& data, char const* directory)
 {
 	tinyxml2::XMLDocument unitGraphicsXml;
 
@@ -1741,47 +1815,36 @@ void ModData::LoadUnitGraphicProperties(sVehicleUIData& data, char const* direct
 	{
 		Log.write("Can't load " + path, cLog::eLOG_TYPE_WARNING);
 		return;
-	}
+    }
 
-	data.hasCorpse = getXMLAttributeBool(unitGraphicsXml, "Unit", "Graphic", "Has_Corpse", nullptr);
-	data.hasDamageEffect = getXMLAttributeBool(unitGraphicsXml, "Unit", "Graphic", "Has_Damage_Effect", nullptr);
-	data.hasPlayerColor = getXMLAttributeBool(unitGraphicsXml, "Unit", "Graphic", "Has_Player_Color", nullptr);
-	data.hasOverlay = getXMLAttributeBool(unitGraphicsXml, "Unit", "Graphic", "Has_Overlay", nullptr);
+    data.hasCorpse = getXMLAttributeBool(unitGraphicsXml, "Unit", "Graphic", "Has_Corpse", nullptr);
+    data.hasDamageEffect = getXMLAttributeBool(unitGraphicsXml, "Unit", "Graphic", "Has_Damage_Effect", nullptr);
+    data.hasPlayerColor = getXMLAttributeBool(unitGraphicsXml, "Unit", "Graphic", "Has_Player_Color", nullptr);
+    data.hasOverlay = getXMLAttributeBool(unitGraphicsXml, "Unit", "Graphic", "Has_Overlay", nullptr);
 
-	data.buildUpGraphic = getXMLAttributeBool(unitGraphicsXml, "Unit", "Graphic", "Animations", "Build_Up", nullptr);
-	data.animationMovement = getXMLAttributeBool(unitGraphicsXml, "Unit", "Graphic", "Animations", "Movement", nullptr);
-	data.powerOnGraphic = getXMLAttributeBool(unitGraphicsXml, "Unit", "Graphic", "Animations", "Power_On", nullptr);
-	data.isAnimated = getXMLAttributeBool(unitGraphicsXml, "Unit", "Graphic", "Animations", "Is_Animated", nullptr);
-	data.makeTracks = getXMLAttributeBool(unitGraphicsXml, "Unit", "Graphic", "Animations", "Makes_Tracks", nullptr);
+    data.buildUpGraphic = getXMLAttributeBool(unitGraphicsXml, "Unit", "Graphic", "Animations", "Build_Up", nullptr);
+    data.animationMovement = getXMLAttributeBool(unitGraphicsXml, "Unit", "Graphic", "Animations", "Movement", nullptr);
+    data.powerOnGraphic = getXMLAttributeBool(unitGraphicsXml, "Unit", "Graphic", "Animations", "Power_On", nullptr);
+    data.isAnimated = getXMLAttributeBool(unitGraphicsXml, "Unit", "Graphic", "Animations", "Is_Animated", nullptr);
+    data.makeTracks = getXMLAttributeBool(unitGraphicsXml, "Unit", "Graphic", "Animations", "Makes_Tracks", nullptr);
 }
 
 //------------------------------------------------------------------------------
-void ModData::LoadUnitGraphicProperties(sBuildingUIData& data, char const* directory)
+void ModData::LoadUnitGraphicProperties(sBuildingUIData& data, XMLElement* element)
 {
-	tinyxml2::XMLDocument unitGraphicsXml;
+    // Iterate through all children elements
 
-	string path = directory;
-	path += "graphics.xml";
-    if (!FileExists(path.c_str()))
-        return;
-
-	if (unitGraphicsXml.LoadFile(path.c_str()) != XML_NO_ERROR)
-	{
-		Log.write("Can't load " + path, cLog::eLOG_TYPE_WARNING);
-		return;
-	}
-
-	data.hasClanLogos = getXMLAttributeBool(unitGraphicsXml, "Unit", "Graphic", "Has_Clan_Logos", nullptr);
+    //data.hasClanLogos = getXMLAttributeBool(unitGraphicsXml, "Unit", "Graphic", "Has_Clan_Logos", nullptr);
 	data.hasDamageEffect = getXMLAttributeBool(unitGraphicsXml, "Unit", "Graphic", "Has_Damage_Effect", nullptr);
 	data.hasBetonUnderground = getXMLAttributeBool(unitGraphicsXml, "Unit", "Graphic", "Has_Beton_Underground", nullptr);
 	data.hasPlayerColor = getXMLAttributeBool(unitGraphicsXml, "Unit", "Graphic", "Has_Player_Color", nullptr);
-	data.hasOverlay = getXMLAttributeBool(unitGraphicsXml, "Unit", "Graphic", "Has_Overlay", nullptr);
+    //data.hasOverlay = getXMLAttributeBool(unitGraphicsXml, "Unit", "Graphic", "Has_Overlay", nullptr);
 
 	data.buildUpGraphic = getXMLAttributeBool(unitGraphicsXml, "Unit", "Graphic", "Animations", "Build_Up", nullptr);
 	data.powerOnGraphic = getXMLAttributeBool(unitGraphicsXml, "Unit", "Graphic", "Animations", "Power_On", nullptr);
-	data.isAnimated = getXMLAttributeBool(unitGraphicsXml, "Unit", "Graphic", "Animations", "Is_Animated", nullptr);
+    //data.isAnimated = getXMLAttributeBool(unitGraphicsXml, "Unit", "Graphic", "Animations", "Is_Animated", nullptr);
 }
-
+#endif
 //------------------------------------------------------------------------------
 int ModData::LoadClans()
 {

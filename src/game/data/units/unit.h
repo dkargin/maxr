@@ -39,58 +39,15 @@ template<typename> class cBox;
 class cSoundManager;
 struct sTerrain;
 
-// Graphical data of a unit
-struct sUnitUIData
-{
-    // Sprite to be used
-    AutoSurface info;
-    // Additional overlay, like radar dish
-    cSpritePtr overlay;
-    // Directed sprites
-    std::array<cSpritePtr, 8> directed_image;
-    // Directed shadow sprites
-    std::array<cSpritePtr, 8> directed_shadow;
-
-    // Non-directed sprite
-    cSpritePtr image;
-    cSpritePtr shadow;
-
-    // Sprite that will be rendered below the unit, on the ground
-    cSpritePtr undelay;
-
-    //std::array<AutoSurface, 8> img, img_org; // 8 Surfaces of the vehicle
-    //std::array<AutoSurface, 8> shw, shw_org; // 8 Surfaces of shadows
-    //AutoSurface overlay, overlay_org;        // Overlays
-
-    // Die Sounds:
-    cSoundChunk Wait;
-    cSoundChunk WaitWater;
-    cSoundChunk Start;
-    cSoundChunk StartWater;
-    cSoundChunk Stop;
-    cSoundChunk StopWater;
-    cSoundChunk Drive;
-    cSoundChunk DriveWater;
-    cSoundChunk Attack;
-    cSoundChunk Running;
-
-    sUnitUIData();
-    sUnitUIData (sUnitUIData&& other);
-    sUnitUIData& operator= (sUnitUIData && other);
-private:
-    sUnitUIData (const sUnitUIData& other) MAXR_DELETE_FUNCTION;
-    sUnitUIData& operator= (const sUnitUIData& other) MAXR_DELETE_FUNCTION;
-};
-
 //-----------------------------------------------------------------------------
 class cUnit
 {
 protected:
-	cUnit(const cDynamicUnitData* unitData, const cStaticUnitData* staticData, cPlayer* owner, unsigned int ID);
+    cUnit(const cDynamicUnitData* unitData, cStaticUnitDataPtr staticData, cPlayer* owner, unsigned int ID);
 public:
 	virtual ~cUnit();
 
-	unsigned int getId() const { return iID; };
+    unsigned int getId() const { return iID; }
 
 	virtual bool isAVehicle() const = 0;
 	virtual bool isABuilding() const = 0;
@@ -137,6 +94,8 @@ public:
 	void changeName (const std::string& newName);
 
 	void rotateTo (int newDir);
+
+    bool hasStaticFlag(UnitFlag flag) const;
 
 	/** checks if the unit can attack something at the offset.
 	 *  when forceAttack is false, the function only returns true,
@@ -244,7 +203,6 @@ public:
 			//restore pointer to static unit data
 			archive.getPointerLoader()->get(data.getId(), staticData);
 		}
-
 		//TODO: detection?
 	}
 
@@ -269,7 +227,7 @@ public: // TODO: make protected/private and make getters/setters
 
 	//-----------------------------------------------------------------------------
 protected:
-	const cStaticUnitData* staticData;
+    cStaticUnitDataPtr staticData;
 	// Unit size in cells
 	int cellSize;
 

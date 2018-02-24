@@ -390,7 +390,7 @@ void cWindowReports::rebuildDisadvantagesList()
 	{
 		const auto& unitId = unitTypesWithLosses[i];
 
-		const cStaticUnitData& unitData = unitsData->getStaticUnitData (unitId);
+        const cStaticUnitData& unitData = *unitsData->getUnit (unitId);
 
 		if (!checkFilter (unitData)) continue;
 

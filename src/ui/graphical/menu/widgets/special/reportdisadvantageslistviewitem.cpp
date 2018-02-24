@@ -42,16 +42,18 @@ cReportDisadvantagesListViewItem::cReportDisadvantagesListViewItem (const cStati
 	SDL_Rect dest = {0, 0, 0, 0};
 
 	const float zoomFactor = unitImageWidth / (data.cellSize *64.0f);
-	if (unitId.isAVehicle())
-	{
-		const auto& uiData = *UnitsUiData.getVehicleUI (unitId);
-        cVehicle::render_simple (unitSurface.get(), dest, zoomFactor, data, uiData, nullptr);
-        cVehicle::drawOverlayAnimation (unitSurface.get(), dest, zoomFactor, data, uiData);
+
+    auto type = data.getType();
+    if (type == UnitType::Vehicle)
+    {
+        const auto vdata = std::dynamic_pointer_cast<const cVehicleData>(data.shared_from_this());
+        cVehicle::render_simple (unitSurface.get(), dest, zoomFactor, *vdata, nullptr);
+        cVehicle::drawOverlayAnimation (unitSurface.get(), dest, zoomFactor, *vdata);
 	}
-	else if (unitId.isABuilding())
+    else if (type == UnitType::Building)
 	{
-		const auto& uiData = *UnitsUiData.getBuildingUI (unitId);
-		cBuilding::render_simple (unitSurface.get(), dest, zoomFactor, uiData, nullptr);
+        const auto bdata = std::dynamic_pointer_cast<const cBuildingData>(data.shared_from_this());
+        cBuilding::render_simple (unitSurface.get(), dest, zoomFactor, *bdata, nullptr);
 	}
 	auto unitImage = addChild (std::make_unique<cImage> (cPosition (0, (totalHeight - unitImageHeight) / 2), unitSurface.get()));
 

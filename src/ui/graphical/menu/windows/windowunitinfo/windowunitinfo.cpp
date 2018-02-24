@@ -29,7 +29,7 @@
 //------------------------------------------------------------------------------
 cWindowUnitInfo::cWindowUnitInfo (const cDynamicUnitData& currentUnitData, const cPlayer& owner, const cUnitsData& unitsData) :
 	cWindow (LoadPCX (GFXOD_HELP), eWindowBackgrounds::Black),
-	unitData(unitData)
+    unitData(currentUnitData)
 {
 	addChild (std::make_unique<cLabel> (cBox<cPosition> (getPosition() + cPosition (328, 12), getPosition() + cPosition (328 + 157, 12 + 10)), lngPack.i18n ("Text~Title~Unitinfo"), FONT_LATIN_NORMAL, eAlignmentType::CenterHorizontal));
 
@@ -44,20 +44,10 @@ cWindowUnitInfo::cWindowUnitInfo (const cDynamicUnitData& currentUnitData, const
 	okButton->addClickShortcut (cKeySequence (cKeyCombination (eKeyModifierType::None, SDLK_RETURN)));
 	signalConnectionManager.connect (okButton->clicked, [&]() { close(); });
 
-	if (currentUnitData.getId().isAVehicle())
-	{
-		const auto& uiData = *UnitsUiData.getVehicleUI(currentUnitData.getId());
+    auto id = currentUnitData.getId();
 
-		infoImage->setImage (uiData.info.get());
-	}
-	else if (currentUnitData.getId().isABuilding())
-	{
-		const auto& uiData = *UnitsUiData.getBuildingUI(currentUnitData.getId());
-
-		infoImage->setImage (uiData.info.get());
-	}
-
-	infoLabel->setText (unitsData.getStaticUnitData(currentUnitData.getId()).getDescripton());
+    infoImage->setImage(unitsData.getUnit(id)->info.get());
+    infoLabel->setText (unitsData.getUnit(currentUnitData.getId())->getDescripton());
 
 	unitDetails->setUnit(currentUnitData.getId(), owner, unitsData, &currentUnitData);
 }

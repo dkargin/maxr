@@ -116,12 +116,13 @@ void cActionFinishBuild::finishAVehicle(cModel &model, cBuilding& building) cons
         return;
 
 
-	const cStaticUnitData& unitData = model.getUnitsData()->getStaticUnitData(buildingListItem.getType());
+    const cStaticUnitData& unitData = *model.getUnitsData()->getUnit(buildingListItem.getType());
 	if (!map->possiblePlaceVehicle(unitData, escapePosition, building.getOwner()))
 	{
 		//model.sideStepStealthUnit(position, unitData, Building->getOwner());
 	}
-	if (!map->possiblePlaceVehicle(unitData, escapePosition, building.getOwner())) return;
+    if (!map->possiblePlaceVehicle(unitData, escapePosition, building.getOwner()))
+        return;
 
 	model.addVehicle (escapePosition, buildingListItem.getType(), building.getOwner(), false);
 

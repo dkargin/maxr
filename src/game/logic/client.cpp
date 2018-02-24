@@ -704,7 +704,7 @@ void cClient::HandleNetMessage_GAME_EV_RESEARCH_SETTINGS (cNetMessage& message)
 		const int buildingID = message.popInt32();
 		const cResearch::ResearchArea newArea = (cResearch::ResearchArea)message.popChar();
 		cBuilding* building = getBuildingFromID (buildingID);
-		if (building && building->getStaticUnitData().canResearch && 0 <= newArea && newArea <= cResearch::kNrResearchAreas)
+        if (building && building->getStaticUnitData().hasFlag(UnitFlag::CanResearch) && 0 <= newArea && newArea <= cResearch::kNrResearchAreas)
 			building->setResearchArea (newArea);
 	}
 	// now update the research center count for the areas

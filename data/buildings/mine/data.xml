@@ -41,13 +41,17 @@
     <Capacity_Res_Type Const="Metal"/>
   </Storage>
 
+  <!-- refsize means that all sprites mentioned are designed for an object
+    of 128x128 pixels size-->
   <Graphics refsize="128x128">
-    <Layer name="image">
-      <VariantSprite file="img.pcx" frames="9" channel="clan"/>
-    </Layer>
-    <Layer name="shadow">
-      <Sprite file="shw.pcx"/>
-    </Layer>
+    <!-- imp.pcx contains variants for every clan -->
+    <VariantSprite file="img.pcx" frames="9" channel="clan" layer="main"/>
+    <!-- Loading shadow sprite from shw.pcx -->
+    <Sprite file="shw.pcx" layer="shadow"/>
+    <!-- Referencing object from shared sprites -->
+    <RenderableRef name="beton_big" layer="underlay"/>
+    <!-- Referencing object from shared sprites -->
+    <RenderableRef name="rubble_big" layer="rubble"/>
   </Graphics>
 
   <Graphic>

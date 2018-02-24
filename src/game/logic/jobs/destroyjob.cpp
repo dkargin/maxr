@@ -94,7 +94,7 @@ void cDestroyJob::createDestroyFx(cModel& model)
 		counter = fx->getLength() / 2;
 		model.addFx(fx);
 
-		if (vehicle.uiData->hasCorpse)
+		if (vehicle.vehicleData->hasCorpse)
 		{
 			// add corpse
 			model.addFx(std::make_shared<cFxCorpse>(vehicle.getPosition() * 64 + vehicle.getMovementOffset() + 32));
@@ -148,7 +148,7 @@ void cDestroyJob::deleteUnit(cModel& model)
 
 	//delete unit
 	int rubbleValue = 0;
-	if (!unit->getStaticUnitData().isHuman)
+    if (!unit->getStaticUnitData().hasFlag(UnitFlag::IsHuman))
 	{
 		rubbleValue += unit->data.getBuildCost();
 		// stored material is always added completely to the rubble

@@ -28,9 +28,10 @@
 
 #include "utility/signal/signal.h"
 #include "utility/serialization/serialization.h"
+#include "utility/drawing.h"
+#include "sound.h"
 
 class cClanData;
-
 
 struct sID
 {
@@ -70,11 +71,49 @@ public:
 	int secondPart;
 };
 
+/**
+ * Generic unit flags.
+ * They are belonging to static data,
+ * and not supposed to be changed in realtime
+ */
+enum class UnitFlag : int
+{
+    ConnectsToBase,
+    CanClearArea,
+    CanDriveAndFire,
+    CanBuildPath,
+    CanBeCaptured,
+    CanBeDisabled,
+    CanCapture,
+    CanDisable,
+    CanRepair,
+    CanRearm,
+    CanResearch,
+    CanPlaceMines,
+    CanSurvey,
+    DoesSelfRepair,
+    CanSelfDestroy,
+    CanScore,
+    CanBeLandedOn,
+    CanWork,
+    ExplodesOnContact,
+    IsHuman,
+    UnitFlagMax,
+};
+
+enum class UnitType
+{
+    Vehicle,
+    Building,
+};
+
 // class for vehicle properties, that are constant and equal for all instances of a unit type
-class cStaticUnitData
+class cStaticUnitData : public std::enable_shared_from_this<cStaticUnitData>
 {
 public:
 	cStaticUnitData();
+    virtual ~cStaticUnitData();
+
 	std::string getName() const;
 	std::string getDescripton() const;
 	void setName(std::string name_){ name = name_; }
@@ -101,15 +140,52 @@ public:
 	eMuzzleType muzzleType;
 
 	char canAttack;
+public:
+    /**
+     * Local UI data. Not synchronized between the players
+     */
+    // Sprite to be used
+    AutoSurface info;
+    // Additional overlay, like radar dish
+    cSpritePtr overlay;
+    // Directed sprites
+    std::array<cSpritePtr, 8> directed_image;
+    // Directed shadow sprites
+    std::array<cSpritePtr, 8> directed_shadow;
 
-	bool canDriveAndFire;
+    // Non-directed sprite
+    cSpritePtr image;
+    cSpritePtr shadow;
+    // Image for 'dead' state
+    cSpritePtr corpse_image;
+
+    // Sprite that will be rendered below the unit, on the ground
+    cSpritePtr underlay;
+
+    // Some common flags
+    bool hasDamageEffect = false;
+    bool buildUpGraphic = false;
+    bool powerOnGraphic = false;
+    bool hasPlayerColor = false;
+    bool hasCorpse = false;
+    int hasFrames = 0;
+
+    // Die Sounds:
+    cSoundChunk Wait;
+    cSoundChunk WaitWater;
+    cSoundChunk Start;
+    cSoundChunk StartWater;
+    cSoundChunk Stop;
+    cSoundChunk StopWater;
+    cSoundChunk Drive;
+    cSoundChunk DriveWater;
+    cSoundChunk Attack;
+    cSoundChunk Running;
 
 	std::string canBuild;
 	std::string buildAs;
 
 	int maxBuildFactor;
-	bool canBuildPath;
-	bool canBuildRepeat;
 
 	float factorGround;
 	float factorSea;
@@ -119,26 +195,38 @@ public:
 	// Abilities
     float modifiesSpeed;
     int convertsGold;
-	bool connectsToBase;
-	bool canClearArea;
-	bool canBeCaptured;
-	bool canBeDisabled;
-	bool canCapture;
-	bool canDisable;
-	bool canRepair;
-	bool canRearm;
-	bool canResearch;
-	bool canPlaceMines;
-	bool canSurvey;
-	bool doesSelfRepair;
-	bool canSelfDestroy;
-	bool canScore;
-    // Whether we use custom sprite containers or legacy system
-    // TODO: To be removed when all the XML files are ported to the new system
-    bool customGraphics = false;
+
+    // Container for unit flags
+    uint64_t flags = 0;
+
+    // Check if unit has specified flag
+    bool hasFlag(UnitFlag flag) const
+    {
+        return flags & (1 << int(flag));
+    }
+
+    // Enables specified flag
+    // @return if flag value was changed
+    bool enableFlag(UnitFlag flag)
+    {
+        if (hasFlag(flag))
+            return false;
+        flags |= (1 << int(flag));
+        return true;
+    }
+
+    // Disables specified flag
+    bool disableFlag(UnitFlag flag)
+    {
+        if (!hasFlag(flag))
+            return false;
+        flags &= ~(1 << int(flag));
+        return true;
+    }
+
+    virtual UnitType getType() const = 0;
 
 	int canMineMaxRes;
-
 	int needsMetal;
 	int needsOil;
 	int needsEnergy;
@@ -168,12 +256,7 @@ public:
 	};
 	eOverbuildType canBeOverbuild;
 
-	bool canBeLandedOn;
-	bool canWork;
-	bool explodesOnContact;
-	bool isHuman;
 	int cellSize;
-
 	// Storage
 	int storageResMax;
 	eResourceType storeResType;
@@ -196,34 +279,18 @@ public:
 	{
 		archive & NVP(ID);
 		archive & NVP(muzzleType);
-		archive & NVP(canAttack);
-		archive & NVP(canDriveAndFire);
+        archive & NVP(canAttack);
 		archive & NVP(canBuild);
 		archive & NVP(buildAs);
 		archive & NVP(maxBuildFactor);
-		archive & NVP(canBuildPath);
-		archive & NVP(canBuildRepeat);
 		archive & NVP(factorGround);
 		archive & NVP(factorSea);
 		archive & NVP(factorAir);
 		archive & NVP(factorCoast);
-		archive & NVP(connectsToBase);
+        archive & NVP(flags);
 		archive & NVP(modifiesSpeed);
-		archive & NVP(canClearArea);
-		archive & NVP(canBeCaptured);
-		archive & NVP(canBeDisabled);
-		archive & NVP(canCapture);
-		archive & NVP(canDisable);
-		archive & NVP(canRepair);
-		archive & NVP(canRearm);
-		archive & NVP(canResearch);
-		archive & NVP(canPlaceMines);
-		archive & NVP(canSurvey);
-		archive & NVP(doesSelfRepair);
-		archive & NVP(convertsGold);
-		archive & NVP(canSelfDestroy);
-		archive & NVP(canScore);
-		archive & NVP(canMineMaxRes);
+        archive & NVP(convertsGold);
+        archive & NVP(canMineMaxRes);
 		archive & NVP(needsMetal);
 		archive & NVP(needsOil);
 		archive & NVP(needsEnergy);
@@ -234,11 +301,7 @@ public:
 		archive & NVP(canDetectStealthOn);
 		archive & NVP(surfacePosition);
 		archive & NVP(canBeOverbuild);
-		archive & NVP(canBeLandedOn);
-		archive & NVP(canWork);
-		archive & NVP(explodesOnContact);
-		archive & NVP(isHuman);
-		archive & NVP(cellSize);
+        archive & NVP(cellSize);
 		archive & NVP(storageResMax);
 		archive & NVP(storeResType);
 		archive & NVP(storageUnitsMax);
@@ -254,6 +317,8 @@ private:
 	std::string description; //untranslated data from unit xml. Will be used, when translation for the unit is not available
 	std::string name;        //untranslated data from unit xml. Will be used, when translation for the unit is not available
 };
+
+typedef std::shared_ptr<cStaticUnitData> cStaticUnitDataPtr;
 
 //class for vehicle properties, that are individual for each instance of a unit
 class cDynamicUnitData
@@ -352,12 +417,9 @@ public:
 private:
 	// Main
 	sID id;
-
 	// Production
 	int buildCosts;
-
 	int version;
-
 	int speedCur;
 	int speedMax;
 
@@ -378,88 +440,70 @@ private:
 	mutable bool crcValid;
 };
 
+class cBuildingData;
+class cVehicleData;
+
 // Database for all the units
 class cUnitsData
 {
 public:
+    typedef sID UID;
+    typedef std::map<UID, cDynamicUnitData> DynamicUnitDataStorage;
+
 	cUnitsData();
+
+    // TODO: Should get rid of this
+    cBuildingData* rubbleBig;
+    cBuildingData* rubbleSmall;
+
+    // direct pointer on some of the building graphics
+    SDL_Surface* ptr_small_beton;
+    SDL_Surface* ptr_small_beton_org;
+    SDL_Surface* ptr_connector;
+    SDL_Surface* ptr_connector_org;
+    SDL_Surface* ptr_connector_shw;
+    SDL_Surface* ptr_connector_shw_org;
+
 
 	void initializeIDData();
 	void initializeClanUnitData(const cClanData& clanData);
 
-	void addData(const cDynamicUnitData& data) { crcValid = false; dynamicUnitData.push_back(data); }
-	void addData(const cStaticUnitData& data)  { crcValid = false; staticUnitData.push_back(data); }
+    // Generate or obtain dynamic unit data for specified id
+    cDynamicUnitData& getDynamicUnitData(const std::string& id);
+    // Generate or obtain static unit data for specified id
+    cStaticUnitDataPtr getUnit(const std::string& id);
 
-	bool isValidId(const sID& id) const;
+    // Get vehicle data for specified id
+    // Can return empty pointer if no object is found
+    std::shared_ptr<cVehicleData> getVehicle(const UID& id) const;
+
+    // Get vehicle data for specified id
+    // Can return empty pointer if no object is found
+    std::shared_ptr<cBuildingData> getBuilding(const UID& id) const;
+
+    // Get vehicle data for specified id
+    // Can return empty pointer if no object is found
+    cStaticUnitDataPtr getUnit(const UID& id) const;
+
+    bool isValidId(const UID& id) const;
+
 	size_t getNrOfClans() const;
-
 
 	// clan = -1: without clans
 	const cDynamicUnitData& getDynamicUnitData(const sID& id, int clan = -1) const;
-	const cStaticUnitData& getStaticUnitData(const sID& id) const;
-
 	// clan = -1: without clans
-	const std::vector<cDynamicUnitData>& getDynamicUnitsData(int clan = -1) const;
-	const std::vector<cStaticUnitData>& getStaticUnitsData() const;
+    const DynamicUnitDataStorage& getDynamicUnitsData(int clan = -1) const;
+
+    std::vector<cStaticUnitDataPtr> getStaticUnitsData() const;
+
+    std::vector<cStaticUnitDataPtr> getUnitsData(UnitType type) const;
 
 	uint32_t getChecksum(uint32_t crc) const;
 
-	// O RLY?
-	const cStaticUnitData& getConstructorData() const { return getStaticUnitData(constructorID); }
-	const cStaticUnitData& getEngineerData() const { return getStaticUnitData(engineerID); }
-	const cStaticUnitData& getSurveyorData() const { return getStaticUnitData(surveyorID); }
-	const cStaticUnitData& getMineData() const { return getStaticUnitData(specialIDMine); }
-	const cStaticUnitData& getSmallGeneratorData() const { return getStaticUnitData(specialIDSmallGen); }
-	const cStaticUnitData& getLandMineData() const { return getStaticUnitData(specialIDLandMine); }
-	const cStaticUnitData& getSeaMineData() const { return getStaticUnitData(specialIDSeaMine); }
-	const cStaticUnitData& getRubbleSmallData() const { return rubbleSmall; }
-	const cStaticUnitData& getRubbleBigData() const { return rubbleBig; }
+    template <typename T> void serialize(T& archive);
 
-	sID getConstructorID() const { return constructorID; };
-	sID getEngineerID() const { return engineerID; };
-	sID getSurveyorID() const { return surveyorID; };
-	sID getSpecialIDLandMine() const { return specialIDLandMine; };
-	sID getSpecialIDSeaMine() const { return specialIDSeaMine; };
-	sID getSpecialIDMine() const { return specialIDMine; };
-	sID getSpecialIDSmallGen() const { return specialIDSmallGen; };
-	sID getSpecialIDConnector() const { return specialIDConnector; };
-	sID getSpecialIDSmallBeton() const { return specialIDSmallBeton; };
-
-	void setSpecialIDLandMine(sID id) { specialIDLandMine = id; crcValid = false; };
-	void setSpecialIDSeaMine(sID id)  { specialIDSeaMine = id; crcValid = false; };
-	void setSpecialIDMine(sID id) { specialIDMine = id; crcValid = false; };
-	void setSpecialIDSmallGen(sID id) { specialIDSmallGen = id; crcValid = false; };
-	void setSpecialIDConnector(sID id) { specialIDConnector = id; crcValid = false; };
-	void setSpecialIDSmallBeton(sID id) { specialIDSmallBeton = id; crcValid = false; };
-
-	template <typename T>
-	void serialize(T& archive)
-	{
-		if (!archive.isWriter)
-		{
-			staticUnitData.clear();
-			dynamicUnitData.clear();
-			clanDynamicUnitData.clear();
-			crcValid = false;
-		}
-
-		archive & NVP(constructorID);
-		archive & NVP(engineerID);
-		archive & NVP(surveyorID);
-		archive & NVP(specialIDLandMine);
-		archive & NVP(specialIDSeaMine);
-		archive & NVP(specialIDMine);
-		archive & NVP(specialIDSmallGen);
-		archive & NVP(specialIDConnector);
-		archive & NVP(specialIDSmallBeton);
-		archive & NVP(staticUnitData);
-		archive & NVP(dynamicUnitData);
-		archive & NVP(clanDynamicUnitData);
-	}
-
+    friend class cUnitsDataMeta;
 private:
-	int getUnitIndexBy(sID id) const;
-
 	sID constructorID;
 	sID engineerID;
 	sID surveyorID;
@@ -470,22 +514,48 @@ private:
 	sID specialIDConnector;
 	sID specialIDSmallBeton;
 
-	// the static unit data
-	std::vector<cStaticUnitData> staticUnitData;
-
-	// the dynamic unit data. Standard version without clan modifications
-	std::vector<cDynamicUnitData> dynamicUnitData;
-
 	// the dynamic unit data. Contains the modified versions for the clans
-	std::vector<std::vector<cDynamicUnitData> > clanDynamicUnitData;
+    // 'Clan' should be replaced in this context on 'Player'
+    // 'Clan' stuff is relevant during embarcation stage and calculation of final unit stats.
+    // After player has embarked - no need to keep 'clan' stuff
+    std::vector<DynamicUnitDataStorage> clanDynamicUnitData;
 
-	cStaticUnitData rubbleSmall;
-	cStaticUnitData rubbleBig;
+    //cStaticUnitData rubbleSmall;
+    //cStaticUnitData rubbleBig;
+
+    // the static unit data
+    std::map<UID, cStaticUnitDataPtr> staticUnitData;
+    // the dynamic unit data. Standard version without clan modifications
+    DynamicUnitDataStorage dynamicUnitData;
 
 	// unitdata does not change during the game. 
 	// So caching the checksum saves a lot cpu ressources.
 	mutable uint32_t crcCache;
 	mutable bool crcValid;
 };
+
+// This is mega-ugly, but alows to hide serialization from the header
+class cTextArchiveIn;
+class cBinaryArchiveIn;
+class cBinaryArchiveOut;
+class cXmlArchiveOut;
+class cXmlArchiveIn;
+
+class cUnitsDataMeta
+{
+public:
+    static void serialize(cTextArchiveIn& archive, cUnitsData &ud);
+    static void serialize(cBinaryArchiveIn& archive, cUnitsData &ud);
+    static void serialize(cBinaryArchiveOut& archive, cUnitsData &ud);
+    static void serialize(cXmlArchiveOut& archive, cUnitsData &ud);
+    static void serialize(cXmlArchiveIn& archive, cUnitsData &ud);
+
+    template<class T> static void serialize_impl(T& archive, cUnitsData& ud);
+};
+
+template<class T> void cUnitsData::serialize(T& archive)
+{
+    cUnitsDataMeta::serialize(archive, *this);
+}
 
 #endif // game_data_units_unitdataH

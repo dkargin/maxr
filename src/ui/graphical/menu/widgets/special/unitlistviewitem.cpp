@@ -36,27 +36,28 @@ cUnitListViewItem::cUnitListViewItem (unsigned int width, const sID& unitId_, co
 	SDL_FillRect (surface.get(), nullptr, 0x00FF00FF);
 	SDL_Rect dest = {0, 0, 0, 0};
 
-	const auto& data = unitsData.getStaticUnitData(unitId);
-	if (unitId.isAVehicle())
+    const auto& data = unitsData.getUnit(unitId);
+    auto type = data->getType();
+    if (type == UnitType::Vehicle)
 	{
-		const float zoomFactor = unitImageSize / (data.cellSize * 64.0f);
-		const auto& uiData = *UnitsUiData.getVehicleUI (unitId);
-        cVehicle::render_simple (surface.get(), dest, zoomFactor, data, uiData, &owner);
-        cVehicle::drawOverlayAnimation (surface.get(), dest, zoomFactor,data,  uiData);
+        const float zoomFactor = unitImageSize / (data->cellSize * 64.0f);
+        auto vdata = unitsData.getVehicle(unitId);
+        cVehicle::render_simple (surface.get(), dest, zoomFactor, *vdata, &owner);
+        cVehicle::drawOverlayAnimation (surface.get(), dest, zoomFactor, *vdata);
 	}
-	else if (unitId.isABuilding())
+    else if (type == UnitType::Building)
 	{
-		//const float zoomFactor = unitImageSize / (data.isBig ? 128.0f : 64.0f);
-		const float zoomFactor = unitImageSize / (data.cellSize * 64.0f);
-		const auto& uiData = *UnitsUiData.getBuildingUI (unitId);
-		cBuilding::render_simple (surface.get(), dest, zoomFactor, uiData, &owner);
+        auto bdata = unitsData.getBuilding(unitId);
+        const float zoomFactor = unitImageSize / (data->cellSize * 64.0f);
+        cBuilding::render_simple (surface.get(), dest, zoomFactor, *bdata, &owner);
 	}
 	else surface = nullptr;
 
 	unitImage = addChild (std::make_unique<cImage> (cPosition (0, 0), surface.get()));
 	unitImage->setConsumeClick (false);
 
-	nameLabel = addChild (std::make_unique<cLabel> (cBox<cPosition> (cPosition (unitImage->getEndPosition().x() + 3, 0), cPosition (width, unitImage->getEndPosition().y())), data.getName(), FONT_LATIN_SMALL_WHITE, toEnumFlag (eAlignmentType::Left) | eAlignmentType::CenterVerical));
+    cBox<cPosition> box(cPosition (unitImage->getEndPosition().x() + 3, 0), cPosition (width, unitImage->getEndPosition().y()));
+    nameLabel = addChild (std::make_unique<cLabel> (box, data->getName(), FONT_LATIN_SMALL_WHITE, toEnumFlag (eAlignmentType::Left) | eAlignmentType::CenterVerical));
 	nameLabel->setWordWrap (true);
 	nameLabel->setConsumeClick (false);
 

@@ -38,7 +38,7 @@
 using namespace std;
 
 //------------------------------------------------------------------------------
-cUnit::cUnit (const cDynamicUnitData* unitData, const cStaticUnitData* staticData, cPlayer* owner, unsigned int ID)
+cUnit::cUnit (const cDynamicUnitData* unitData, cStaticUnitDataPtr _staticData, cPlayer* owner, unsigned int ID)
 	: iID (ID)
 	, dir (0)
 	, job (nullptr)
@@ -51,7 +51,7 @@ cUnit::cUnit (const cDynamicUnitData* unitData, const cStaticUnitData* staticDat
 	, attacking (false)
 	, beeingAttacked (false)
 	, beenAttacked (false)
-	, staticData(staticData)
+    , staticData(_staticData)
 	, storageResCur(0)
 {
 	if (unitData != nullptr)
@@ -214,6 +214,11 @@ uint32_t cUnit::getChecksum(uint32_t crc) const
 	crc = calcCheckSum(storageResCur, crc);
 
 	return crc;
+}
+
+bool cUnit::hasStaticFlag(UnitFlag flag) const
+{
+    return getStaticUnitData().hasFlag(flag);
 }
 
 //------------------------------------------------------------------------------

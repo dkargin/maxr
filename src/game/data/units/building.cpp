@@ -123,12 +123,21 @@ uint32_t cBuildListItem::getChecksum(uint32_t crc) const
 }
 
 //--------------------------------------------------------------------------
+// Get vehicle data for specified id
+// Can return empty pointer if no object is found
+std::shared_ptr<cBuildingData> cUnitsData::getBuilding(const UID& id) const
+{
+    auto unit = this->getUnit(id);
+    return std::dynamic_pointer_cast<cBuildingData>(unit);
+}
+
+//--------------------------------------------------------------------------
 // cBuilding Implementation
 //--------------------------------------------------------------------------
 
 //--------------------------------------------------------------------------
-cBuilding::cBuilding (const cStaticUnitData* staticData, const cDynamicUnitData* data, cPlayer* owner, unsigned int ID) :
-	cUnit(data, staticData, owner, ID),
+cBuilding::cBuilding (sBuildingUIDataPtr data, const cDynamicUnitData* ddata, cPlayer* owner, unsigned int ID) :
+    cUnit(ddata, staticData, owner, ID),
 	isWorking (false),
 	wasWorking(false),
 	metalPerRound(0),
@@ -139,20 +148,9 @@ cBuilding::cBuilding (const cStaticUnitData* staticData, const cDynamicUnitData*
 	rubbleTyp = 0;
 	rubbleValue = 0;
 	researchArea = cResearch::kAttackResearch;
-	uiData = staticData ? UnitsUiData.getBuildingUI(staticData->ID) : nullptr;
+    uiData = data;
 	points = 0;
 
-	/*
-	// Let the connectors deal with connections
-	BaseN = false;
-	BaseBN = false;
-	BaseE = false;
-	BaseBE = false;
-	BaseS = false;
-	BaseBS = false;
-	BaseW = false;
-	BaseBW = false;
-	*/
 	repeatBuild = false;
 
 	maxMetalProd = 0;
@@ -214,7 +212,7 @@ string cBuilding::getStatusStr (const cPlayer* whoWantsToKnow, const cUnitsData&
 		if (!staticData->canBuild.empty() && !buildList.empty() && getOwner() == whoWantsToKnow)
 		{
 			const cBuildListItem& buildListItem = buildList[0];
-			const string& unitName = unitsData.getStaticUnitData(buildListItem.getType()).getName();
+            const string& unitName = unitsData.getUnit(buildListItem.getType())->getName();
 			string sText;
 
 			if (buildListItem.getRemainingMetal() > 0)
@@ -252,7 +250,7 @@ string cBuilding::getStatusStr (const cPlayer* whoWantsToKnow, const cUnitsData&
 		}
 
 		// Research Center
-		if (staticData->canResearch && getOwner() == whoWantsToKnow)
+        if (staticData->hasFlag(UnitFlag::CanResearch) && getOwner() == whoWantsToKnow)
 		{
 			string sText = lngPack.i18n ("Text~Comp~Working") + "\n";
 			for (int area = 0; area < cResearch::kNrResearchAreas; area++)
@@ -309,7 +307,7 @@ string cBuilding::getStatusStr (const cPlayer* whoWantsToKnow, const cUnitsData&
 
 	//Research centre idle + projects
 	// Research Center
-	if (staticData->canResearch && getOwner() == whoWantsToKnow && !isUnitWorking())
+    if (staticData->hasFlag(UnitFlag::CanResearch) && getOwner() == whoWantsToKnow && !isUnitWorking())
 	{
 		string sText = lngPack.i18n("Text~Comp~Waits") + "\n";
 		for (int area = 0; area < cResearch::kNrResearchAreas; area++)
@@ -341,7 +339,7 @@ string cBuilding::getStatusStr (const cPlayer* whoWantsToKnow, const cUnitsData&
 //--------------------------------------------------------------------------
 void cBuilding::makeReport (cSoundManager& soundManager) const
 {
-	if (staticData && staticData->canResearch && isUnitWorking() && getOwner() && getOwner()->isCurrentTurnResearchAreaFinished (getResearchArea()))
+    if (hasStaticFlag(UnitFlag::CanResearch) && isUnitWorking() && getOwner() && getOwner()->isCurrentTurnResearchAreaFinished (getResearchArea()))
 	{
 		soundManager.playSound (std::make_shared<cSoundEffectVoice> (eSoundEffectType::VoiceUnitStatus, VoiceData.VOIResearchComplete));
 	}
@@ -426,6 +424,7 @@ void cBuilding::render_beton (SDL_Surface* surface, const SDL_Rect& dest, float 
     /* TODO: Properly fill in the whole area
      * This place is likely a good reason to implement proper tiling templates
      */
+#ifdef FIX_BUILDING_UNDERLAY
 	int size = cellSize;
     SDL_Surface* underlay_surface = nullptr;
     int step = 0;
@@ -463,6 +462,7 @@ void cBuilding::render_beton (SDL_Surface* surface, const SDL_Rect& dest, float 
 
             SDL_BlitSurface(underlay_surface, nullptr, surface, &tmp);
         }
+#endif
 }
 
 //------------------------------------------------------------------------------
@@ -480,7 +480,7 @@ void cBuilding::connectFirstBuildListItem()
 void cBuilding::render_simple (SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, unsigned long long animationTime, int alpha) const
 {
 	int frameNr = dir;
-	if (uiData->hasFrames && uiData->isAnimated && cSettings::getInstance().isAnimations() &&
+    if (uiData->hasFrames && cSettings::getInstance().isAnimations() &&
 		isDisabled() == false)
 	{
 		frameNr = (animationTime % uiData->hasFrames);
@@ -489,7 +489,7 @@ void cBuilding::render_simple (SDL_Surface* surface, const SDL_Rect& dest, float
 	render_simple (surface, dest, zoomFactor, *uiData, getOwner(), frameNr, alpha);
 }
 
-/*static*/ void cBuilding::render_simple (SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, const sBuildingUIData& uiData, const cPlayer* owner, int frameNr, int alpha)
+/*static*/ void cBuilding::render_simple (SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, const cBuildingData& uiData, const cPlayer* owner, int frameNr, int alpha)
 {
 	// read the size:
     SDL_Surface* sprite_dest = GraphicsData.gfx_tmp.get();
@@ -648,7 +648,7 @@ void cBuilding::CheckNeighbours (const cMap& map)
 		if (map.isValidPosition (pos))
 		{
 			const cBuilding* b = map.getField(pos).getTopBuilding();
-			bool val = b && b->getOwner() == getOwner() && b->staticData->connectsToBase;
+            bool val = b && b->getOwner() == getOwner() && b->hasStaticFlag(UnitFlag::ConnectsToBase);
 			// TODO: Connectors can deal with virtual ports themselves
 			switch(side)
 			{
@@ -828,12 +828,12 @@ void cBuilding::startWork ()
 		return;
 
 	// research building
-	if (staticData->canResearch)
+    if (hasStaticFlag(UnitFlag::CanResearch))
 	{
 		getOwner()->startAResearch (researchArea);
 	}
 
-	if (staticData->canScore)
+    if (hasStaticFlag(UnitFlag::CanScore))
 	{
 		//sendNumEcos (server, *getOwner());
 	}
@@ -849,12 +849,12 @@ void cBuilding::stopWork (bool forced)
 	if (!subBase->stopBuilding(this, forced))
 		return;
 	
-	if (staticData->canResearch)
+    if (hasStaticFlag(UnitFlag::CanResearch))
 	{
 		getOwner()->stopAResearch (researchArea);
 	}
 
-	if (staticData->canScore)
+    if (hasStaticFlag(UnitFlag::CanScore))
 	{
 		//sendNumEcos (server, *getOwner());
 	}
@@ -1322,67 +1322,6 @@ void cBuilding::makeDetection (cServer& server)
 	}
 }
 
-//--------------------------------------------------------------------------
-sBuildingUIData::sBuildingUIData():
-	hasClanLogos(false),
-	hasDamageEffect(false),
-	hasBetonUnderground(false),
-	hasPlayerColor(false),
-	hasOverlay(false),
-	buildUpGraphic(false),
-	powerOnGraphic(false),
-	isAnimated(false),
-	isConnectorGraphic(false),
-	hasFrames(0)
-{}
-
-//--------------------------------------------------------------------------
-sBuildingUIData::sBuildingUIData (sBuildingUIData&& other) :
-    sUnitUIData(std::move(other)),
-    img_effect (std::move (other.img_effect)),
-    img_effect_original (std::move (other.img_effect_original)),
-	video (std::move (other.video)),
-    hasClanLogos(other.hasClanLogos),
-	hasDamageEffect(other.hasDamageEffect),
-	hasBetonUnderground(other.hasBetonUnderground),
-	hasPlayerColor(other.hasPlayerColor),
-	hasOverlay(other.hasOverlay),
-	buildUpGraphic(other.buildUpGraphic),
-	powerOnGraphic(other.powerOnGraphic),
-	isAnimated(isAnimated),
-	isConnectorGraphic(isConnectorGraphic),
-	hasFrames(other.hasFrames)
-{}
-
-//--------------------------------------------------------------------------
-sBuildingUIData& sBuildingUIData::operator= (sBuildingUIData && other)
-{
-    img_effect = std::move (other.img_effect);
-    img_effect_original = std::move (other.img_effect_original);
-	video = std::move (other.video);
-
-	hasClanLogos = other.hasClanLogos;
-	hasDamageEffect = other.hasDamageEffect;
-	hasBetonUnderground = other.hasBetonUnderground;
-	hasPlayerColor = other.hasPlayerColor;
-	hasOverlay = other.hasOverlay;
-	buildUpGraphic = other.buildUpGraphic;
-	powerOnGraphic = other.powerOnGraphic;
-	isAnimated = isAnimated;
-	isConnectorGraphic = isConnectorGraphic;
-	hasFrames = other.hasFrames;
-
-	return *this;
-}
-
-//--------------------------------------------------------------------------
-/*
-void sBuildingUIData::scaleSurfaces (float factor)
-{
-	scaleSurface (img_org.get(), img.get(), (int) (img_org->w * factor), (int) (img_org->h * factor));
-    scaleSurface (img_shadow_original.get(), img_shadow.get(), (int) (img_shadow_original->w * factor), (int) (img_shadow_original->h * factor));
-    if (img_effect_original) scaleSurface (img_effect_original.get(), img_effect.get(), (int) (img_effect_original->w * factor), (int) (img_effect_original->h * factor));
-}*/
 
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
@@ -1405,7 +1344,7 @@ void cBuilding::executeUpdateBuildingCommmand (const cClient& client, bool updat
 //-----------------------------------------------------------------------------
 bool cBuilding::buildingCanBeStarted() const
 {
-	return (staticData->canWork && isUnitWorking() == false
+    return (staticData->hasFlag(UnitFlag::CanWork) && isUnitWorking() == false
 		&& (!buildList.empty() || staticData->canBuild.empty()));
 }
 
@@ -1620,7 +1559,7 @@ void cBuilding::registerOwnerEvents()
 		ownerSignalConnectionManager.connect (getOwner()->creditsChanged, [&]() { statusChanged(); });
 	}
 
-	if (staticData->canResearch)
+    if (staticData->hasFlag(UnitFlag::CanResearch))
 	{
 		ownerSignalConnectionManager.connect (getOwner()->researchCentersWorkingOnAreaChanged, [&] (cResearch::ResearchArea) { statusChanged(); });
 		ownerSignalConnectionManager.connect (getOwner()->getResearchState().neededResearchPointsChanged, [&] (cResearch::ResearchArea) { statusChanged(); });

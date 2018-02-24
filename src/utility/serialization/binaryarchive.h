@@ -326,6 +326,7 @@ void cBinaryArchiveOut::readFromBuffer(T1& value)
 
 	readPosition += SIZE;
 }
+
 //------------------------------------------------------------------------------
 template<typename T>
 void cBinaryArchiveOut::popValue(T& value)

@@ -107,7 +107,7 @@ void cUnitDetailsHud::reset()
 
 	if (data.getSpeedMax() > 0) drawRow (2, eUnitDataSymbolType::Speed, data.getSpeed() / 4, data.getSpeedMax() / 4, lngPack.i18n ("Text~Others~Speed_7"));
 
-	if (staticData.canScore)
+    if (staticData.hasFlag(UnitFlag::CanScore))
 	{
 		assert (unit->isABuilding());  // currently only buildings can score
 		const auto unitScore = static_cast<const cBuilding*> (unit)->points;
@@ -177,7 +177,7 @@ void cUnitDetailsHud::reset()
 			drawRow (1, symbolType, unit->storedUnits.size(), staticData.storageUnitsMax, lngPack.i18n ("Text~Others~Cargo_7"));
 		}
 	}
-	else if (staticData.canAttack && !staticData.explodesOnContact)
+    else if (staticData.canAttack && !staticData.hasFlag(UnitFlag::ExplodesOnContact))
 	{
 		if (unit->getOwner() == player) drawRow (1, eUnitDataSymbolType::Ammo, data.getAmmo(), data.getAmmoMax(), lngPack.i18n ("Text~Others~Ammo_7"));
 

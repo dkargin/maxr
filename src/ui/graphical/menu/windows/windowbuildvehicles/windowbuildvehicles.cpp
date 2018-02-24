@@ -117,9 +117,11 @@ void cWindowBuildVehicles::setActiveUnit (const sID& unitId)
 void cWindowBuildVehicles::generateSelectionList (const cBuilding& building, const cMapView& map, const cUnitsData& unitsData)
 {
 	bool select = true;
-	for (const auto& unitData : unitsData.getStaticUnitsData())
+    for (const auto& ptr : unitsData.getStaticUnitsData())
 	{
-		if (unitData.ID.isABuilding()) continue;
+        const auto& unitData = *ptr;
+        if (unitData.getType() == UnitType::Building)
+            continue;
 
 		bool land = false;
 		bool water = false;
@@ -156,8 +158,10 @@ void cWindowBuildVehicles::generateSelectionList (const cBuilding& building, con
 			else if (map.isWaterOrCoast (cPosition (x, y))) water = true;
 		}
 
-		if (unitData.factorSea > 0 && unitData.factorGround == 0 && !water) continue;
-		else if (unitData.factorGround > 0 && unitData.factorSea == 0 && !land) continue;
+        if (unitData.factorSea > 0 && unitData.factorGround == 0 && !water)
+            continue;
+        else if (unitData.factorGround > 0 && unitData.factorSea == 0 && !land)
+            continue;
 
 		if (building.getStaticUnitData().canBuild != unitData.buildAs) continue;
 

@@ -13,6 +13,7 @@ void createInitial(sLandingConfig& config, const cGameSettings& gameSettings, co
 
     int clan = config.clan;
 
+#ifdef FIX_THIS
     const auto& constructorID = unitsData.getConstructorData().ID;
     const auto& engineerID = unitsData.getEngineerData().ID;
     const auto& surveyorID = unitsData.getSurveyorData().ID;
@@ -68,5 +69,6 @@ void createInitial(sLandingConfig& config, const cGameSettings& gameSettings, co
             config.landingUnits.push_back (sLandingUnit::make(engineerID, 0, true));
         }
     }
+#endif
     config.state = 1;
 }

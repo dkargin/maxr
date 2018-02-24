@@ -232,7 +232,7 @@ void cAttackJob::fire(cModel& model)
 	//update data
 	aggressor->data.setShots (aggressor->data.getShots() - 1);
 	aggressor->data.setAmmo (aggressor->data.getAmmo() - 1);
-	if (aggressor->isAVehicle() && aggressor->getStaticUnitData().canDriveAndFire == false)
+    if (aggressor->isAVehicle() && aggressor->getStaticUnitData().hasFlag(UnitFlag::CanDriveAndFire) == false)
 		aggressor->data.setSpeed (aggressor->data.getSpeed() - (int) (((float) aggressor->data.getSpeedMax()) / aggressor->data.getShotsMax()));
 
 	auto muzzle = createMuzzleFx ();
@@ -248,7 +248,7 @@ void cAttackJob::fire(cModel& model)
 
 	//make explosive mines explode
     // TODO: Mine could decide itself whether it should explode on death
-	if (aggressor->getStaticUnitData().explodesOnContact && aggressor->getPosition() == targetPosition)
+    if (aggressor->getStaticUnitData().hasFlag(UnitFlag::ExplodesOnContact) && aggressor->getPosition() == targetPosition)
 	{
 		const cMap& map = *model.getMap();
 		if (map.isWaterOrCoast (aggressor->getPosition()))
@@ -480,7 +480,7 @@ void cAttackJob::impactSingle (const cPosition& position, int attackPoints, cMod
 		}
 	}
 
-	if (aggressor->getStaticUnitData().explodesOnContact)
+    if (aggressor->getStaticUnitData().hasFlag(UnitFlag::ExplodesOnContact))
 	{
 		model.deleteUnit(aggressor);
 		aggressor = nullptr;

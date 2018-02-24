@@ -223,7 +223,7 @@ bool cActionInitNewGame::isValidLandingPosition(cPosition position, const cStati
 
     for (const auto& unit : config.landingUnits)
 	{
-        const cStaticUnitData& unitData = unitsData.getStaticUnitData(unit.unitID);
+        const cStaticUnitData& unitData = *unitsData.getUnit(unit.unitID);
 		bool placed = false;
 		int landingRadius = 1;
 
@@ -304,7 +304,7 @@ void cActionInitNewGame::makeLanding(cPlayer& player, const sLandingConfig& land
 cVehicle* cActionInitNewGame::landVehicle(const cPosition& landingPosition, int radius, const sID& id, cPlayer& player, cModel& model) const
 {
 	const cMap& map = *model.getMap();
-	const cStaticUnitData& unitData = model.getUnitsData()->getStaticUnitData(id);
+    const cStaticUnitData& unitData = *model.getUnitsData()->getUnit(id);
 
 	for (int offY = -radius; offY < radius; ++offY)
 	{

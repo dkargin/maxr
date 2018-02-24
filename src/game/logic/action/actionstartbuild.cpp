@@ -80,7 +80,7 @@ void cActionStartBuild::execute(cModel& model) const
 	if (vehicle->isDisabled())
 		return;
 
-	const cStaticUnitData& data = model.getUnitsData()->getStaticUnitData(buildingTypeID);
+    const cStaticUnitData& data = *model.getUnitsData()->getUnit(buildingTypeID);
 
 	if (vehicle->getStaticUnitData().canBuild != data.buildAs)
 		return;

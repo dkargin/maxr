@@ -240,15 +240,18 @@ const cPlayer* cModel::getActiveTurnPlayer() const
 //------------------------------------------------------------------------------
 cVehicle& cModel::addVehicle(const cPosition& position, const sID& id, cPlayer* player, bool init, bool addToMap)
 {
+    // TODO: This one is risky. Should do some checks
+    const auto data = unitsData->getVehicle(id);
 	// generate the vehicle:
-	cVehicle& addedVehicle = player->addNewVehicle(position, unitsData->getStaticUnitData(id), nextUnitId);
+    cVehicle& addedVehicle = player->addNewVehicle(position,data, nextUnitId);
 	nextUnitId++;
 
 	// place the vehicle:
 	if (addToMap) map->addVehicle(addedVehicle, position);
 
-	// scan with surveyor:
-	if (addedVehicle.getStaticUnitData().canSurvey)
+    // TODO: Make this action inside surveyior
+    // scan with surveyor:
+    if (addedVehicle.getStaticUnitData().hasFlag(UnitFlag::CanSurvey))
 	{
 		addedVehicle.doSurvey();
 	}
@@ -269,8 +272,10 @@ cVehicle& cModel::addVehicle(const cPosition& position, const sID& id, cPlayer* 
 //------------------------------------------------------------------------------
 cBuilding& cModel::addBuilding(const cPosition& position, const sID& id, cPlayer* player, bool init)
 {
-	// generate the building:
-	cBuilding& addedBuilding = player->addNewBuilding(position, unitsData->getStaticUnitData(id), nextUnitId);
+    // TODO: This one is risky. Should do some checks
+    auto data = unitsData->getBuilding(id);
+    // Generate the building:
+    cBuilding& addedBuilding = player->addNewBuilding(position, data, nextUnitId);
 	nextUnitId++;
 
 	addedBuilding.initMineRessourceProd(*map);
@@ -417,25 +422,34 @@ void cModel::addRubble(const cPosition& position, int value, int size)
 	}
 
 	std::shared_ptr<cBuilding> rubble;
+
+    sBuildingUIDataPtr data;
+
+#ifdef FIX_RUBBLE
 	if (big)
 	{
-		rubble = std::make_shared<cBuilding>(&unitsData->getRubbleBigData(), nullptr, nullptr, nextUnitId);
+        data = std::dynamic_pointer_cast<sBuildingUIData>(unitsData->getRubbleBigData()->shared_from_this());
 	}
 	else
 	{
-		rubble = std::make_shared<cBuilding>(&unitsData->getRubbleSmallData(), nullptr, nullptr, nextUnitId);
+        data = std::dynamic_pointer_cast<sBuildingUIData>(unitsData->getRubbleBigData()->shared_from_this());
 	}
+#endif
+    if(data)
+    {
+        rubble = std::make_shared<cBuilding>(data, nullptr, nullptr, nextUnitId);
 
-	nextUnitId++;
+        nextUnitId++;
 
-	rubble->setPosition(position);
+        rubble->setPosition(position);
 
-	rubble->setRubbleValue(value, randomGenerator);
+        rubble->setRubbleValue(value, randomGenerator);
 
-	map->addBuilding(*rubble, position);
+        map->addBuilding(*rubble, position);
 
 
-	neutralBuildings.insert(std::move(rubble));
+        neutralBuildings.insert(std::move(rubble));
+    }
 }
 
 //------------------------------------------------------------------------------

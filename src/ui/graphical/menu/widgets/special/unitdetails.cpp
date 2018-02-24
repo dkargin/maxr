@@ -76,7 +76,7 @@ void cUnitDetails::setUnit (const sID& unitId_, const cPlayer& owner, const cUni
 {
 	unitId = unitId_;
 
-	staticUnitData = &unitsData.getStaticUnitData(unitId);
+    staticUnitData = unitsData.getUnit(unitId).get();
 	playerOriginalData = &unitsData.getDynamicUnitData(unitId, owner.getClan());
 	playerCurrentData = owner.getUnitDataCurrentVersion (unitId);
 
@@ -135,7 +135,7 @@ void cUnitDetails::reset()
 		upgrade = upgrades ? upgrades->getUpgrade (sUnitUpgrade::UPGRADE_TYPE_DAMAGE) : nullptr;
 		drawRow (rowIndex++, eUnitDataSymbolType::Attack, upgrade ? upgrade->getCurValue() : unitObjectCurrentData->getDamage(), lngPack.i18n ("Text~Others~Attack_7"), upgrade ? upgrade->getCurValue() : unitObjectCurrentData->getDamage(), playerOriginalData->getDamage());
 
-		if (!staticUnitData->explodesOnContact)
+        if (!staticUnitData->hasFlag(UnitFlag::ExplodesOnContact))
 		{
 			// Shots:
 			upgrade = upgrades ? upgrades->getUpgrade (sUnitUpgrade::UPGRADE_TYPE_SHOTS) : nullptr;

@@ -26,7 +26,6 @@
 #include "utility/language.h"
 #include "utility/crc.h"
 
-
 //------------------------------------------------------------------------------
 // ----------- sID Implementation ----------------------------------------------
 //------------------------------------------------------------------------------
@@ -87,31 +86,25 @@ cUnitsData::cUnitsData() :
 }
 
 //------------------------------------------------------------------------------
-int cUnitsData::getUnitIndexBy(sID id) const
-{
-	for (unsigned int i = 0; i != staticUnitData.size(); ++i)
-	{
-		if (staticUnitData[i].ID == id) return i;
-	}
-	Log.write("Unitdata with id (" + iToStr(id.firstPart) + ", " + iToStr(id.secondPart) + ") not found", cLog::eLOG_TYPE_ERROR);
-	return -1;
-}
-
-//------------------------------------------------------------------------------
 void cUnitsData::initializeIDData()
 {
 	for (const auto& data : staticUnitData)
 	{
-		if (data.canBuild == "BigBuilding")	  
-			constructorID = data.ID;
-		if (data.canBuild == "SmallBuilding") 
-			engineerID = data.ID;
-		if (data.canSurvey)                   
-			surveyorID = data.ID;
+        auto ID = data.second->ID;
+        if (data.second->canBuild == "BigBuilding")
+            constructorID = ID;
+        if (data.second->canBuild == "SmallBuilding")
+            engineerID = ID;
+        if (data.second->hasFlag(UnitFlag::CanSurvey))
+            surveyorID = ID;
 	}
-	if (constructorID == sID(0, 0)) Log.write("Constructor index not found. Constructor needs to have the property \"Can_Build = BigBuilding\"", cLog::eLOG_TYPE_ERROR);
-	if (engineerID    == sID(0, 0)) Log.write("Engineer index not found. Engineer needs to have the property \"Can_Build = SmallBuilding\"", cLog::eLOG_TYPE_ERROR);
-	if (surveyorID    == sID(0, 0)) Log.write("Surveyor index not found. Surveyor needs to have the property \"Can_Survey = Yes\"", cLog::eLOG_TYPE_ERROR);
+
+    if (constructorID == sID(0, 0))
+        Log.write("Constructor index not found. Constructor needs to have the property \"Can_Build = BigBuilding\"", cLog::eLOG_TYPE_ERROR);
+    if (engineerID    == sID(0, 0))
+        Log.write("Engineer index not found. Engineer needs to have the property \"Can_Build = SmallBuilding\"", cLog::eLOG_TYPE_ERROR);
+    if (surveyorID    == sID(0, 0))
+        Log.write("Surveyor index not found. Surveyor needs to have the property \"Can_Survey = Yes\"", cLog::eLOG_TYPE_ERROR);
 
 	crcValid = false;
 }
@@ -129,13 +122,15 @@ void cUnitsData::initializeClanUnitData(const cClanData& clanData)
 		if (clan == nullptr)
 			continue;
 
-		std::vector<cDynamicUnitData>& clanListVehicles = clanDynamicUnitData[i];
+        DynamicUnitDataStorage& clanListVehicles = clanDynamicUnitData[i];
 
 		// make a copy of the vehicle's stats
-		clanListVehicles = dynamicUnitData;
-		for (size_t j = 0; j != dynamicUnitData.size(); ++j)
+        clanListVehicles = dynamicUnitData;
+
+        for (auto &pairs: dynamicUnitData)
 		{
-			cDynamicUnitData& clanVehicle = clanListVehicles[j];
+            cDynamicUnitData& clanVehicle = pairs.second;
+
 			const cClanUnitStat* changedStat = clan->getUnitStat(clanVehicle.getId());
 			if (changedStat == nullptr) continue;
 			
@@ -160,7 +155,7 @@ void cUnitsData::initializeClanUnitData(const cClanData& clanData)
 //------------------------------------------------------------------------------
 bool cUnitsData::isValidId(const sID& id) const
 {
-	return getUnitIndexBy(id) != -1;
+    return staticUnitData.find(id) != staticUnitData.end();
 }
 
 //------------------------------------------------------------------------------
@@ -176,7 +171,8 @@ const cDynamicUnitData& cUnitsData::getDynamicUnitData(const sID& id, int clan /
 	{
 		for (const auto& data : dynamicUnitData)
 		{
-			if (data.getId() == id) return data;
+            if (data.second.getId() == id)
+                return data.second;
 		}
 		throw std::runtime_error("Unitdata not found" + id.getText());
 	}
@@ -184,24 +180,26 @@ const cDynamicUnitData& cUnitsData::getDynamicUnitData(const sID& id, int clan /
 	{
 		for (const auto& data : clanDynamicUnitData[clan])
 		{
-			if (data.getId() == id) return data;
+            if (data.second.getId() == id)
+                return data.second;
 		}
 		throw std::runtime_error("Unitdata not found" + id.getText());
 	}
 }
 
 //------------------------------------------------------------------------------
-const cStaticUnitData& cUnitsData::getStaticUnitData(const sID& id) const
+cStaticUnitDataPtr cUnitsData::getUnit(const sID& id) const
 {
 	for (const auto& data : staticUnitData)
 	{
-		if (data.ID == id) return data;
+        if (data.second->ID == id)
+            return data.second;
 	}
 	throw std::runtime_error("Unitdata not found" + id.getText());
 }
 
 //------------------------------------------------------------------------------
-const std::vector<cDynamicUnitData>& cUnitsData::getDynamicUnitsData(int clan /*= -1*/) const
+const cUnitsData::DynamicUnitDataStorage& cUnitsData::getDynamicUnitsData(int clan /*= -1*/) const
 {
 	if (clan < 0 || static_cast<unsigned>(clan) >= clanDynamicUnitData.size())
 	{
@@ -213,10 +211,26 @@ const std::vector<cDynamicUnitData>& cUnitsData::getDynamicUnitsData(int clan /*
 	}
 }
 
-//------------------------------------------------------------------------------
-const std::vector<cStaticUnitData>& cUnitsData::getStaticUnitsData() const
+std::vector<cStaticUnitDataPtr> cUnitsData::getUnitsData(UnitType type) const
 {
-	return staticUnitData;
+    std::vector<cStaticUnitDataPtr> result;
+    for(auto pairs: staticUnitData)
+    {
+        if(pairs.second->getType() == type)
+            result.push_back(pairs.second);
+    }
+    return result;
+}
+
+//------------------------------------------------------------------------------
+std::vector<cStaticUnitDataPtr> cUnitsData::getStaticUnitsData() const
+{
+    std::vector<cStaticUnitDataPtr> result;
+    for(auto pairs: staticUnitData)
+    {
+        result.push_back(pairs.second);
+    }
+    return result;
 }
 
 //------------------------------------------------------------------------------
@@ -251,12 +265,8 @@ cStaticUnitData::cStaticUnitData()
 	muzzleType = MUZZLE_TYPE_NONE;
 
 	canAttack = 0;
-	canDriveAndFire = false;
 
 	maxBuildFactor = 0;
-
-	canBuildPath = false;
-	canBuildRepeat = false;
 
 	// Movement
 	factorGround = 0.0f;
@@ -265,22 +275,8 @@ cStaticUnitData::cStaticUnitData()
 	factorCoast = 0.0f;
 
 	// Abilities
-	connectsToBase = false;
-	modifiesSpeed = 0.0f;
-	canClearArea = false;
-	canBeCaptured = false;
-	canBeDisabled = false;
-	canCapture = false;
-	canDisable = false;
-	canRepair = false;
-	canRearm = false;
-	canResearch = false;
-	canPlaceMines = false;
-	canSurvey = false;
-	doesSelfRepair = false;
-	convertsGold = 0;
-	canSelfDestroy = false;
-	canScore = false;
+    modifiesSpeed = 0.0f;
+    convertsGold = 0;
 
 	canMineMaxRes = 0;
 	needsMetal = 0;
@@ -295,11 +291,6 @@ cStaticUnitData::cStaticUnitData()
 
 	surfacePosition = SURFACE_POS_BENEATH_SEA;
 	canBeOverbuild = OVERBUILD_TYPE_NO;
-
-	canBeLandedOn = false;
-	canWork = false;
-	explodesOnContact = false;
-	isHuman = false;
 	cellSize = 1;
 
 	// Storage
@@ -307,6 +298,10 @@ cStaticUnitData::cStaticUnitData()
 	storeResType = eResourceType::None;
 	storageUnitsMax = 0;
 	storeUnitsImageType = STORE_UNIT_IMG_NONE;
+}
+
+cStaticUnitData::~cStaticUnitData()
+{
 }
 
 //------------------------------------------------------------------------------
@@ -335,33 +330,16 @@ uint32_t cStaticUnitData::getChecksum(uint32_t crc) const
 	crc = calcCheckSum(ID, crc);
 	crc = calcCheckSum(muzzleType, crc);
 	crc = calcCheckSum(canAttack, crc);
-	crc = calcCheckSum(canDriveAndFire, crc);
 	crc = calcCheckSum(canBuild, crc);
 	crc = calcCheckSum(buildAs, crc);
 	crc = calcCheckSum(maxBuildFactor, crc);
-	crc = calcCheckSum(canBuildPath, crc);
-	crc = calcCheckSum(canBuildRepeat, crc);
 	crc = calcCheckSum(factorGround, crc);
 	crc = calcCheckSum(factorSea, crc);
 	crc = calcCheckSum(factorAir, crc);
 	crc = calcCheckSum(factorCoast, crc);
-	crc = calcCheckSum(connectsToBase, crc);
 	crc = calcCheckSum(modifiesSpeed, crc);
-	crc = calcCheckSum(canClearArea, crc);
-	crc = calcCheckSum(canBeCaptured, crc);
-	crc = calcCheckSum(canBeDisabled, crc);
-	crc = calcCheckSum(canCapture, crc);
-	crc = calcCheckSum(canDisable, crc);
-	crc = calcCheckSum(canRepair, crc);
-	crc = calcCheckSum(canRearm, crc);
-	crc = calcCheckSum(canResearch, crc);
-	crc = calcCheckSum(canPlaceMines, crc);
-	crc = calcCheckSum(canSurvey, crc);
-	crc = calcCheckSum(doesSelfRepair, crc);
 	crc = calcCheckSum(convertsGold, crc);
-	crc = calcCheckSum(canSelfDestroy, crc);
-	crc = calcCheckSum(canScore, crc);
-	crc = calcCheckSum(canMineMaxRes, crc);
+    crc = calcCheckSum(canMineMaxRes, crc);
 	crc = calcCheckSum(needsMetal, crc);
 	crc = calcCheckSum(needsOil, crc);
 	crc = calcCheckSum(needsEnergy, crc);
@@ -372,11 +350,7 @@ uint32_t cStaticUnitData::getChecksum(uint32_t crc) const
 	crc = calcCheckSum(canDetectStealthOn, crc);
 	crc = calcCheckSum(surfacePosition, crc);
 	crc = calcCheckSum(canBeOverbuild, crc);
-	crc = calcCheckSum(canBeLandedOn, crc);
-	crc = calcCheckSum(canWork, crc);
-	crc = calcCheckSum(explodesOnContact, crc);
-	crc = calcCheckSum(isHuman, crc);
-	crc = calcCheckSum(cellSize, crc);
+    crc = calcCheckSum(cellSize, crc);
 	crc = calcCheckSum(storageResMax, crc);
 	crc = calcCheckSum(storeResType, crc);
 	crc = calcCheckSum(storageUnitsMax, crc);
@@ -385,7 +359,7 @@ uint32_t cStaticUnitData::getChecksum(uint32_t crc) const
 	crc = calcCheckSum(isStorageType, crc);
 	crc = calcCheckSum(description, crc);
 	crc = calcCheckSum(name, crc);
-
+    crc = calcCheckSum(flags, crc);
 	return crc;
 }
 
@@ -701,4 +675,55 @@ void cDynamicUnitData::setMaximumCurrentValues()
 	hitpointsCur = hitpointsMax;
 
 	crcValid = false;
+}
+
+//------------------------------------------------------------------------------
+template<class T> void cUnitsDataMeta::serialize_impl(T& archive, cUnitsData& ud)
+{
+    if (!archive.isWriter)
+    {
+        ud.staticUnitData.clear();
+        ud.dynamicUnitData.clear();
+        ud.clanDynamicUnitData.clear();
+        ud.crcValid = false;
+    }
+
+    if(archive.isWriter)
+    {
+        //std::vector<cBuildingDataPtr> buildings;
+        //std::vector<cVehicleDataPtr> vehicles;
+        //archive & NVP(staticUnitData);
+    }
+    else
+    {
+
+    }
+
+    archive & NVP_MEMBER(ud, dynamicUnitData);
+    archive & NVP_MEMBER(ud, clanDynamicUnitData);
+}
+
+void cUnitsDataMeta::serialize(cTextArchiveIn& archive, cUnitsData &ud)
+{
+    cUnitsDataMeta::serialize_impl(archive, ud);
+}
+
+void cUnitsDataMeta::serialize(cBinaryArchiveIn& archive, cUnitsData &ud)
+{
+    cUnitsDataMeta::serialize_impl(archive, ud);
+}
+
+void cUnitsDataMeta::serialize(cBinaryArchiveOut& archive, cUnitsData &ud)
+{
+    cUnitsDataMeta::serialize_impl(archive, ud);
+}
+
+void cUnitsDataMeta::serialize(cXmlArchiveOut& archive, cUnitsData &ud)
+{
+    cUnitsDataMeta::serialize_impl(archive, ud);
+}
+
+void cUnitsDataMeta::serialize(cXmlArchiveIn& archive, cUnitsData &ud)
+{
+    cUnitsDataMeta::serialize_impl(archive, ud);
 }

@@ -49,20 +49,20 @@ cReportMessageListViewItem::cReportMessageListViewItem (const cSavedReport& repo
 		SDL_FillRect (unitSurface.get(), nullptr, 0x00FF00FF);
 		SDL_Rect dest = {0, 0, 0, 0};
 
-		const cStaticUnitData& data = unitsData.getStaticUnitData(unitId);
+        const cStaticUnitData& data = *unitsData.getUnit(unitId);
 
 		const float zoomFactor = unitImageSize / (data.cellSize*64.0f);
-		if (unitId.isAVehicle())
+        auto type = data.getType();
+        if (type == UnitType::Vehicle)
 		{
-
-			const auto& uiData = *UnitsUiData.getVehicleUI (unitId);
-            cVehicle::render_simple (unitSurface.get(), dest, zoomFactor, data, uiData, nullptr);
-            cVehicle::drawOverlayAnimation (unitSurface.get(), dest, zoomFactor, data, uiData);
+            auto vdata = unitsData.getVehicle(unitId);
+            cVehicle::render_simple (unitSurface.get(), dest, zoomFactor, *vdata, nullptr);
+            cVehicle::drawOverlayAnimation (unitSurface.get(), dest, zoomFactor, *vdata);
 		}
-		else if (unitId.isABuilding())
+        else if (type == UnitType::Building)
 		{
-			const auto& uiData = *UnitsUiData.getBuildingUI (unitId);
-			cBuilding::render_simple (unitSurface.get(), dest, zoomFactor, uiData, nullptr);
+            auto bdata = unitsData.getBuilding(unitId);
+            cBuilding::render_simple (unitSurface.get(), dest, zoomFactor, *bdata, nullptr);
 		}
 		addChild (std::make_unique<cImage> (cPosition (0, (totalHeight - unitImageSize) / 2), unitSurface.get()));
 	}

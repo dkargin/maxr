@@ -25,6 +25,7 @@
 #include <chrono>
 #include <array>
 #include <map>
+#include <memory>       // for shared_ptr
 #include <assert.h>
 #include <sstream>
 #include <forward_list>
@@ -98,6 +99,12 @@ namespace serialization
 		typedef typename std::conditional<std::is_enum<T>::value, detail::sSerializeEnum, detail::sSerializeMember>::type serializeWrapper;
 		serializeWrapper::serialize(archive, value);
 	}
+
+    template<typename A, typename T>
+    void serialize(A& archive, std::shared_ptr<T>& value)
+    {
+        serialization::detail::splitFree(archive, value);
+    }
 
 	//
 	// free serialization functions (for e. g. STL types, pointers)
@@ -296,10 +303,10 @@ namespace serialization
 		void get(int id, cBuilding*& value) const;
 		void get(int id, cVehicle*& value) const;
 		void get(int id, cUnit*& value) const;
-		void get(sID id, const cStaticUnitData*& value) const;
+        void get(sID id, std::shared_ptr<cStaticUnitData>& value) const;
 
-		const cStaticUnitData* getBigRubbleData() const;
-		const cStaticUnitData* getSmallRubbleData() const;
+        //const cStaticUnitData* getBigRubbleData() const;
+        //const cStaticUnitData* getSmallRubbleData() const;
 
 	private:
 		cModel& model;

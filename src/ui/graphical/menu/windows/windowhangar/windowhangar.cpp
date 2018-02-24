@@ -114,20 +114,13 @@ void cWindowHangar::infoCheckBoxToggled()
 //------------------------------------------------------------------------------
 void cWindowHangar::setActiveUnit (const sID& unitId)
 {
-	if (unitId.isAVehicle())
-	{
-		const auto& uiData = *UnitsUiData.getVehicleUI (unitId);
+    const auto& data = unitsData->getUnit(unitId);
 
-		infoImage->setImage (uiData.info.get());
-	}
-	else if (unitId.isABuilding())
-	{
-		const auto& uiData = *UnitsUiData.getBuildingUI (unitId);
-
-		infoImage->setImage (uiData.info.get());
-	}
-
-	infoLabel->setText (unitsData->getStaticUnitData(unitId).getDescripton());
+    if(data)
+    {
+        infoImage->setImage (data->info.get());
+        infoLabel->setText (data->getDescripton());
+    }
 
 	unitDetails->setUnit (unitId, getPlayer(), *unitsData);
 }

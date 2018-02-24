@@ -61,29 +61,32 @@ SDL_Surface* cWindowMain::getRandomInfoImage()
 	int unitShow = -1;
 	SDL_Surface* surface = nullptr;
 
-	if (showBuilding == 1 && UnitsUiData.buildingUIs.size() > 0)
+    const auto& buildings = UnitsDataGlobal.getUnitsData(UnitType::Building);
+    const auto& vehicles = UnitsDataGlobal.getUnitsData(UnitType::Vehicle);
+
+    if (showBuilding == 1 && buildings.size() > 0)
 	{
 		// that's a 33% chance that we show a building on 1
 		do
 		{
-			unitShow = random (UnitsUiData.buildingUIs.size() - 1);
+            unitShow = random (buildings.size() - 1);
 			// make sure we don't show same unit twice
-		}
-		while (unitShow == lastUnitShow && UnitsUiData.buildingUIs.size() > 1);
-		surface = UnitsUiData.buildingUIs[unitShow].info.get();
+        }while (unitShow == lastUnitShow && buildings.size() > 1);
+
+        surface = buildings[unitShow]->info.get();
 	}
-	else if (UnitsUiData.vehicleUIs.size() > 0)
+    else if (vehicles.size() > 0)
 	{
 		// and a 66% chance to show a vehicle on 0 or 2
 		do
 		{
-			unitShow = random(UnitsUiData.vehicleUIs.size() - 1);
+            unitShow = random(vehicles.size() - 1);
 			// make sure we don't show same unit twice
-		}
-		while (unitShow == lastUnitShow && UnitsUiData.vehicleUIs.size() > 1);
-		surface = UnitsUiData.vehicleUIs[unitShow].info.get();
+        }while (unitShow == lastUnitShow && vehicles.size() > 1);
+
+        surface = vehicles[unitShow]->info.get();
 	}
-	else surface = nullptr;
-	lastUnitShow = unitShow; //store shown unit
+
+    lastUnitShow = unitShow; //store shown unit
 	return surface;
 }

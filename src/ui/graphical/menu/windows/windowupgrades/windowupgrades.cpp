@@ -113,7 +113,7 @@ void cWindowUpgrades::setActiveUnit (const sID& unitId)
 	if (iter == unitUpgrades.end())
 	{
 		unitUpgrade = &unitUpgrades[unitId];
-		unitUpgrade->init(unitsData->getDynamicUnitData(unitId, getPlayer().getClan()), *getPlayer().getUnitDataCurrentVersion(unitId), unitsData->getStaticUnitData(unitId), getPlayer().getResearchState());
+        unitUpgrade->init(unitsData->getDynamicUnitData(unitId, getPlayer().getClan()), *getPlayer().getUnitDataCurrentVersion(unitId), *unitsData->getUnit(unitId), getPlayer().getResearchState());
 	}
 	else
 	{
@@ -204,18 +204,24 @@ void cWindowUpgrades::generateSelectionList (bool select)
 
 	for (const auto& data : unitsData->getStaticUnitsData())
 	{
-		if (data.ID.isABuilding() && !build) continue;
-		if (!data.canAttack && tnt) continue;
-		if (!data.ID.isABuilding())
+        auto type = data->getType();
+        if (type==UnitType::Building && !build)
+            continue;
+        if (!data->canAttack && tnt)
+            continue;
+        if (type!=UnitType::Building)
 		{
-			if (data.factorAir > 0 && !plane) continue;
-			if (data.factorSea > 0 && data.factorGround == 0 && !ship) continue;
-			if (data.factorGround > 0 && !tank) continue;
+            if (data->factorAir > 0 && !plane)
+                continue;
+            if (data->factorSea > 0 && data->factorGround == 0 && !ship)
+                continue;
+            if (data->factorGround > 0 && !tank)
+                continue;
 		}
 
-		const auto& item = addSelectionUnit(data.ID);
 		if (select)
 		{
+            const auto& item = addSelectionUnit(data->ID);
 			setSelectedSelectionItem(item);
 			select = false;
 		}

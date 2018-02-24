@@ -29,7 +29,6 @@
 #include "maxrconfig.h"
 #include "main.h" // for sUnitData, sID
 #include "game/data/units/unit.h"
-#include "sound.h"
 #include "utility/signal/signal.h"
 #include "utility/signal/signalconnectionmanager.h"
 #include "game/logic/upgradecalculator.h" // cResearch::ResearchArea
@@ -46,41 +45,22 @@ class cCrossPlattformRandom;
 //--------------------------------------------------------------------------
 /** struct for the images and sounds */
 //--------------------------------------------------------------------------
-struct sBuildingUIData : public sUnitUIData
+struct cBuildingData : public cStaticUnitData
 {
-	sID id;
-
-	bool hasClanLogos;
-	bool hasDamageEffect;
 	bool hasBetonUnderground;
-	bool hasPlayerColor;
-	bool hasOverlay;
-
-	bool buildUpGraphic;
-	bool powerOnGraphic;
-	bool isAnimated;
-
 	bool isConnectorGraphic;
-	int hasFrames;
 
-    // Surface of the building
-    //AutoSurface img, img_org;
-    // Surfaces of the shadow
-    //AutoSurface img_shadow, img_shadow_original;
     // Surfaces of the effects
     AutoSurface img_effect, img_effect_original;
-
 	AutoSurface video;  // video
 
-	sBuildingUIData();
-	sBuildingUIData (sBuildingUIData&& other);
-	sBuildingUIData& operator= (sBuildingUIData && other);
-	void scaleSurfaces (float faktor);
-
-private:
-	sBuildingUIData (const sBuildingUIData& other) MAXR_DELETE_FUNCTION;
-	sBuildingUIData& operator= (const sBuildingUIData& other) MAXR_DELETE_FUNCTION;
+    virtual UnitType getType() const
+    {
+        return UnitType::Building;
+    }
 };
+
+typedef std::shared_ptr<cBuildingData> sBuildingUIDataPtr;
 
 // enum for the upgrade symbols
 #ifndef D_eSymbols
@@ -141,21 +121,16 @@ class cBuilding : public cUnit
 public:
 	friend class cDebugOutputWidget;
 
-	cBuilding(const cStaticUnitData* staticData, const cDynamicUnitData* data, cPlayer* Owner, unsigned int ID);
+    cBuilding(sBuildingUIDataPtr data, const cDynamicUnitData* ddata, cPlayer* Owner, unsigned int ID);
 	virtual ~cBuilding();
 
 	virtual bool isAVehicle() const { return false; }
 	virtual bool isABuilding() const { return true; }
 	bool isRubble() const { return rubbleValue > 0; }
 
-	const sBuildingUIData* uiData;
+    sBuildingUIDataPtr uiData;
 	mutable int effectAlpha; // alpha value for the effect
 
-#ifdef FUCK_THIS
-	// We will replace it with a better logic
-	bool BaseN, BaseE, BaseS, BaseW; // is the building connected in this direction?
-	bool BaseBN, BaseBE, BaseBS, BaseBW; // is the building connected in this direction (only for big buildings)
-#endif
 	cSubBase* subBase;     // the subbase to which this building belongs
 	int metalProd, oilProd, goldProd;          // production settings (from mine allocation menu)
 
@@ -222,7 +197,7 @@ public:
 	*/
 	void render (unsigned long long animationTime, SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, bool drawShadow, bool drawConcrete) const;
 	void render_simple(SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, unsigned long long animationTime = 0, int alpha = 254) const;
-	static void render_simple (SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, const sBuildingUIData& uiData, const cPlayer* owner, int frameNr = 0, int alpha = 254);
+    static void render_simple (SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, const cBuildingData& uiData, const cPlayer* owner, int frameNr = 0, int alpha = 254);
 
 	void executeUpdateBuildingCommmand (const cClient& client, bool updateAllOfSameType) const;
 
@@ -274,17 +249,6 @@ public:
 
 		archive & NVP(rubbleTyp);
 		archive & NVP(rubbleValue);
-		/*
-		// This values are completely dynamic. No reason to save or send it anywhere
-		archive & NVP(BaseN);
-		archive & NVP(BaseE);
-		archive & NVP(BaseS);
-		archive & NVP(BaseW);
-		archive & NVP(BaseBN);
-		archive & NVP(BaseBE);
-		archive & NVP(BaseBS);
-		archive & NVP(BaseBW);
-		*/
 		archive & NVP(maxMetalProd);
 		archive & NVP(maxOilProd);
 		archive & NVP(maxGoldProd);
@@ -302,6 +266,7 @@ public:
 
 		if (!archive.isWriter)
 		{
+            /*
 			if (isRubble())
 			{
 				if (cellSize > 1)
@@ -317,8 +282,9 @@ public:
 			}
 			else
 			{
-				uiData = UnitsUiData.getBuildingUI(data.getId());
-			}
+
+            }
+            uiData = UnitsUiData.getBuildingUI(data.getId());*/
 			registerOwnerEvents();
 			connectFirstBuildListItem();
 		}

@@ -643,7 +643,7 @@ void cServer::handleNetMessage_GAME_EV_WANT_EXIT (cNetMessage& message)
 			StoringVehicle->exitVehicleTo (*StoredVehicle, position, *Map);
 			// vehicle is added to enemy clients by cServer::checkPlayerUnits()
 			sendActivateVehicle (*this, StoringVehicle->iID, true, StoredVehicle->iID, position, *StoringVehicle->getOwner());
-			if (StoredVehicle->getStaticUnitData().canSurvey)
+            if (StoredVehicle->getStaticUnitData().hasFlag(UnitFlag::CanSurvey))
 			{
 				sendVehicleResources (*this, *StoredVehicle);
 				StoredVehicle->doSurvey ();
@@ -680,7 +680,7 @@ void cServer::handleNetMessage_GAME_EV_WANT_EXIT (cNetMessage& message)
 			// vehicle is added to enemy clients by cServer::checkPlayerUnits()
 			sendActivateVehicle (*this, StoringBuilding->iID, false, StoredVehicle->iID, position, *StoringBuilding->getOwner());
             // TODO: Surveyer can do this itself
-			if (StoredVehicle->getStaticUnitData().canSurvey)
+            if (StoredVehicle->getStaticUnitData().hasFlag(UnitFlag::CanSurvey))
 			{
 				sendVehicleResources (*this, *StoredVehicle);
 				StoredVehicle->doSurvey ();
@@ -852,7 +852,7 @@ void cServer::handleNetMessage_GAME_EV_WANT_RESEARCH_CHANGE (cNetMessage& messag
 		for (; currentBuildingIter != buildings.end() && centersToAssign > 0; ++currentBuildingIter)
 		{
 			auto& building = *currentBuildingIter;
-			if (building->getStaticUnitData().canResearch && building->isUnitWorking())
+            if (building->getStaticUnitData().hasFlag(UnitFlag::CanResearch) && building->isUnitWorking())
 			{
 				researchCentersToChangeArea.push_back (building.get());
 				newAreasForResearchCenters.push_back ((cResearch::ResearchArea)newArea);
@@ -869,7 +869,7 @@ void cServer::handleNetMessage_GAME_EV_WANT_RESEARCH_CHANGE (cNetMessage& messag
 	for (; currentBuildingIter != buildings.end(); ++currentBuildingIter)
 	{
 		auto& building = *currentBuildingIter;
-		if (building->getStaticUnitData().canResearch && building->isUnitWorking())
+        if (building->getStaticUnitData().hasFlag(UnitFlag::CanResearch) && building->isUnitWorking())
 			researchCentersToStop.push_back (building.get());
 	}
 	if (error)
@@ -1592,7 +1592,7 @@ void cServer::changeUnitOwner (cVehicle& vehicle, cPlayer& newOwner)
 	checkPlayerUnits();
 
 	// let the unit work for his new owner
-	if (vehicle.getStaticUnitData().canSurvey)
+    if (vehicle.getStaticUnitData().hasFlag(UnitFlag::CanSurvey))
 	{
 		sendVehicleResources (*this, vehicle);
 		vehicle.doSurvey ();

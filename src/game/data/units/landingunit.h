@@ -64,7 +64,7 @@ struct cBaseLayoutItem
     sID ID;
 
     // This mutable one is bad
-    mutable const cStaticUnitData* data = nullptr;
+    mutable cStaticUnitDataPtr data = nullptr;
 
 
 	template<typename T>

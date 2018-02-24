@@ -379,47 +379,6 @@ int Round (float dValueToRound)
 }
 
 //------------------------------------------------------------------------------
-cUnitsUiData::cUnitsUiData() :
-	ptr_small_beton(0),
-	ptr_small_beton_org(0),
-	ptr_connector(0),
-	ptr_connector_org(0),
-	ptr_connector_shw(0),
-	ptr_connector_shw_org(0),
-	rubbleBig(new sBuildingUIData()),
-	rubbleSmall(new sBuildingUIData())
-{}
-
-//------------------------------------------------------------------------------
-cUnitsUiData::~cUnitsUiData()
-{
-	delete rubbleBig;
-	delete rubbleSmall;
-}
-
-//------------------------------------------------------------------------------
-const sBuildingUIData* cUnitsUiData::getBuildingUI(sID id) const
-{
-	for (unsigned int i = 0; i < buildingUIs.size(); ++i)
-	{
-		if (buildingUIs[i].id == id)
-			return &buildingUIs[i];
-	}
-	return nullptr;
-}
-
-//------------------------------------------------------------------------------
-const sVehicleUIData* cUnitsUiData::getVehicleUI(sID id) const
-{
-	for (unsigned int i = 0; i < vehicleUIs.size(); ++i)
-	{
-		if (vehicleUIs[i].id == id)
-			return &vehicleUIs[i];
-	}
-	return nullptr;
-}
-
-//------------------------------------------------------------------------------
 std::string enumToString(ePlayerConnectionState value)
 {
 	switch (value)

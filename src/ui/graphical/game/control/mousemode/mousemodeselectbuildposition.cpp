@@ -66,7 +66,7 @@ std::pair<bool, cPosition> cMouseModeSelectBuildPosition::findNextBuildPosition(
 	bool pos[4] = {false, false, false, false};
 
 	//check, which positions are available
-	const auto& unitData = unitsData.getStaticUnitData(buildId);
+    const auto& unitData = *unitsData.getUnit(buildId);
 	if (map->possiblePlaceBuilding (unitData, cPosition (sourcePosition.x() - 1, sourcePosition.y() - 1))
 		&& map->possiblePlaceBuilding (unitData, cPosition (sourcePosition.x(), sourcePosition.y() - 1))
 		&& map->possiblePlaceBuilding (unitData, cPosition (sourcePosition.x() - 1, sourcePosition.y())))

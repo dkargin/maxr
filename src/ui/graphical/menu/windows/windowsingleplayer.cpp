@@ -69,7 +69,7 @@ void sLandingConfig::loadUnitsData(const cUnitsData &unitsData) const
 {
     for(auto& item: this->baseLayout)
     {
-        item.data = &unitsData.getStaticUnitData(item.ID);
+        item.data = unitsData.getUnit(item.ID);
     }
 }
 

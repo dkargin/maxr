@@ -63,7 +63,7 @@ string cClanUnitStat::getClanStatsDescription(const cUnitsData& originalData) co
 
 	if (data == nullptr) return "Unknown";
 
-	string result = originalData.getStaticUnitData(unitId).getName() + lngPack.i18n ("Text~Punctuation~Colon");
+    string result = originalData.getUnit(unitId)->getName() + lngPack.i18n ("Text~Punctuation~Colon");
 	const char* const commaSep = ", ";
 	const char* sep = "";
 
@@ -95,7 +95,8 @@ string cClanUnitStat::getClanStatsDescription(const cUnitsData& originalData) co
 	{
 		result += sep;
 		int nrTurns = getModificationValue ("Built_Costs");
-		if (originalData.getStaticUnitData(data->getId()).isHuman == false) nrTurns /= unitId.isAVehicle() == 0 ? 2 : 3;
+        if (!originalData.getUnit(data->getId())->hasFlag(UnitFlag::IsHuman))
+            nrTurns /= unitId.isAVehicle() == 0 ? 2 : 3;
 
 		result += iToStr (nrTurns) + " " + lngPack.i18n ("Text~Comp~Turns");
 	}

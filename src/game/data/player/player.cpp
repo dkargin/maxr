@@ -102,7 +102,7 @@ const cDynamicUnitData* cPlayer::getUnitDataCurrentVersion(const sID& id) const
 {
 	for (const auto &data : dynamicUnitsData)
 	{
-		if (data.getId() == id) return &data;
+        if (data.second.getId() == id) return &data.second;
 	}
 	return nullptr;
 }
@@ -135,9 +135,9 @@ const cPosition& cPlayer::getMapSize() const
 }
 
 //------------------------------------------------------------------------------
-cVehicle& cPlayer::addNewVehicle (const cPosition& position, const cStaticUnitData& unitData, unsigned int uid)
+cVehicle& cPlayer::addNewVehicle (const cPosition& position, const sVehicleDataPtr& unitData, unsigned int uid)
 {
-	auto vehicle = std::make_shared<cVehicle> (unitData, *getUnitDataCurrentVersion(unitData.ID), this, uid);
+    auto vehicle = std::make_shared<cVehicle> (unitData, *getUnitDataCurrentVersion(unitData->ID), this, uid);
 	vehicle->setPosition (position);
 
 	drawSpecialCircle (*vehicle, vehicle->data.getScan(), ScanMap, mapSize);
@@ -163,9 +163,9 @@ cVehicle& cPlayer::addNewVehicle (const cPosition& position, const cStaticUnitDa
 }
 
 //------------------------------------------------------------------------------
-cBuilding& cPlayer::addNewBuilding (const cPosition& position, const cStaticUnitData& unitData, unsigned int uid)
+cBuilding& cPlayer::addNewBuilding (const cPosition& position, const sBuildingUIDataPtr& unitData, unsigned int uid)
 {
-	auto building = std::make_shared<cBuilding>(&unitData, getUnitDataCurrentVersion(unitData.ID), this, uid);
+    auto building = std::make_shared<cBuilding>(unitData, getUnitDataCurrentVersion(unitData->ID), this, uid);
 
 	building->setPosition (position);
 
@@ -538,7 +538,7 @@ void cPlayer::accumulateScore (cServer& server)
 	for (auto i = buildings.begin(); i != buildings.end(); ++i)
 	{
 		const auto& bp = *i;
-		if (bp->getStaticUnitData().canScore && bp->isUnitWorking())
+        if (bp->getStaticUnitData().hasFlag(UnitFlag::CanScore) && bp->isUnitWorking())
 		{
 			bp->points++;
 			deltaScore++;
@@ -557,7 +557,7 @@ void cPlayer::countEcoSpheres()
 	for (auto i = buildings.begin(); i != buildings.end(); ++i)
 	{
 		const auto& bp = *i;
-		if (bp->getStaticUnitData().canScore && bp->isUnitWorking())
+        if (bp->getStaticUnitData().hasFlag(UnitFlag::CanScore) && bp->isUnitWorking())
 			++numEcos;
 	}
 }
@@ -594,13 +594,15 @@ int cPlayer::getScore() const
 //------------------------------------------------------------------------------
 void cPlayer::upgradeUnitTypes (const std::vector<int>& areasReachingNextLevel, const cUnitsData& originalUnitsData)
 {
-	for (auto& unitData : dynamicUnitsData)
+    for (auto& pairs : dynamicUnitsData)
 	{
+        auto& unitData = pairs.second;
 		const cDynamicUnitData& originalData = originalUnitsData.getDynamicUnitData(unitData.getId(), getClan());
 		bool incrementVersion = false;
 		for (auto researchArea : areasReachingNextLevel)
 		{
-			if (unitData.getId().isABuilding() && researchArea == cResearch::kSpeedResearch) continue;
+            if (unitData.getId().isABuilding() && researchArea == cResearch::kSpeedResearch)
+                continue;
 
 			const int newResearchLevel = researchState.getCurResearchLevel (researchArea);
 			int startValue = 0;
@@ -617,8 +619,12 @@ void cPlayer::upgradeUnitTypes (const std::vector<int>& areasReachingNextLevel, 
 			}
 
 			cUpgradeCalculator::UnitTypes unitType = cUpgradeCalculator::kStandardUnit;
-			if (unitData.getId().isABuilding()) unitType = cUpgradeCalculator::kBuilding;
-			if (originalUnitsData.getStaticUnitData(unitData.getId()).isHuman) unitType = cUpgradeCalculator::kInfantry;
+
+            if (unitData.getId().isABuilding())
+                unitType = cUpgradeCalculator::kBuilding;
+
+            if (originalUnitsData.getUnit(unitData.getId())->hasFlag(UnitFlag::IsHuman))
+                unitType = cUpgradeCalculator::kInfantry;
 
 			int oldResearchBonus = cUpgradeCalculator::instance().calcChangeByResearch (startValue, newResearchLevel - 10,
 								   researchArea == cResearch::kCostResearch ? cUpgradeCalculator::kCost : -1, unitType);
@@ -662,7 +668,7 @@ void cPlayer::refreshResearchCentersWorkingOnArea()
 	for (auto i = buildings.begin(); i != buildings.end(); ++i)
 	{
 		const auto& building = *i;
-		if (building->getStaticUnitData().canResearch && building->isUnitWorking())
+        if (building->getStaticUnitData().hasFlag(UnitFlag::CanResearch) && building->isUnitWorking())
 		{
 			researchCentersWorkingOnArea[building->getResearchArea()] += 1;
 			newResearchCount++;

@@ -1305,17 +1305,29 @@ void cGameGuiController::connectClient (cClient& client)
 
 	clientSignalConnectionManager.connect (mapView->unitAppeared, [&] (const cUnit & unit)
 	{
-		if (getActivePlayer().get() != unit.getOwner()) return;
+        if (getActivePlayer().get() != unit.getOwner())
+            return;
+#ifdef MOVE_IT_TO_XML
+        // I am getting rid of direct unit IDS in all parts of the code
+        // This sounds should be moved to XML
+        if (unit.data.getId() == client.getModel().getUnitsData()->getSpecialIDSeaMine())
+            soundManager->playSound(std::make_shared<cSoundEffectUnit>(eSoundEffectType::EffectPlaceMine, SoundData.SNDSeaMinePlace, unit));
 
-		if (unit.data.getId() == client.getModel().getUnitsData()->getSpecialIDSeaMine()) soundManager->playSound(std::make_shared<cSoundEffectUnit>(eSoundEffectType::EffectPlaceMine, SoundData.SNDSeaMinePlace, unit));
-		else if (unit.data.getId() == client.getModel().getUnitsData()->getSpecialIDLandMine()) soundManager->playSound(std::make_shared<cSoundEffectUnit>(eSoundEffectType::EffectPlaceMine, SoundData.SNDLandMinePlace, unit));
+        else if (unit.data.getId() == client.getModel().getUnitsData()->getSpecialIDLandMine())
+            soundManager->playSound(std::make_shared<cSoundEffectUnit>(eSoundEffectType::EffectPlaceMine, SoundData.SNDLandMinePlace, unit));
+#endif
 	});
+
 	clientSignalConnectionManager.connect(mapView->unitDissappeared, [&] (const cUnit & unit)
 	{
 		if (getActivePlayer().get() != unit.getOwner()) return;
+#ifdef MOVE_IT_TO_XML
+        if (unit.data.getId() == client.getModel().getUnitsData()->getSpecialIDLandMine())
+            soundManager->playSound(std::make_shared<cSoundEffectUnit>(eSoundEffectType::EffectClearMine, SoundData.SNDLandMineClear, unit));
 
-		if (unit.data.getId() == client.getModel().getUnitsData()->getSpecialIDLandMine()) soundManager->playSound(std::make_shared<cSoundEffectUnit>(eSoundEffectType::EffectClearMine, SoundData.SNDLandMineClear, unit));
-		else if (unit.data.getId() == client.getModel().getUnitsData()->getSpecialIDSeaMine()) soundManager->playSound(std::make_shared<cSoundEffectUnit>(eSoundEffectType::EffectClearMine, SoundData.SNDSeaMineClear, unit));
+        else if (unit.data.getId() == client.getModel().getUnitsData()->getSpecialIDSeaMine())
+            soundManager->playSound(std::make_shared<cSoundEffectUnit>(eSoundEffectType::EffectClearMine, SoundData.SNDSeaMineClear, unit));
+#endif
 	});
 
 }
@@ -1535,8 +1547,8 @@ void cGameGuiController::showBuildBuildingsWindow (const cVehicle& vehicle)
 		{
 			const sID buildingId = *buildWindow->getSelectedUnitId();
 			const auto& model = activeClient->getModel();
-			const auto& buildingData = model.getUnitsData()->getStaticUnitData(buildingId);
-			if (buildingData.cellSize > 1)
+            const auto& buildingData = model.getUnitsData()->getUnit(buildingId);
+            if (buildingData->cellSize > 1)
 			{
 				const auto& map = model.getMap();
 				if (!gameGui->getGameMap().startFindBuildPosition(buildingId))
@@ -1769,7 +1781,7 @@ void cGameGuiController::showStorageWindow (const cUnit& unit)
 //------------------------------------------------------------------------------
 void cGameGuiController::showSelfDestroyDialog (const cUnit& unit)
 {
-	if (unit.getStaticUnitData().canSelfDestroy)
+    if (unit.getStaticUnitData().hasFlag(UnitFlag::CanSelfDestroy))
 	{
 		auto selfDestroyDialog = application.show (std::make_shared<cDialogSelfDestruction> (unit, animationTimer));
 		signalConnectionManager.connect (selfDestroyDialog->triggeredDestruction, [this, selfDestroyDialog, &unit]()

@@ -1559,7 +1559,7 @@ void cUnitUpgrade::init (const cDynamicUnitData& origData, const cDynamicUnitDat
 		upgrades[i].nextPrice = cUpgradeCalculator::instance().calcPrice (curData.getDamage(), origData.getDamage(), cUpgradeCalculator::kAttack, researchLevel);
 		upgrades[i].type = sUnitUpgrade::UPGRADE_TYPE_DAMAGE;
 		i++;
-		if (!staticData.explodesOnContact)
+        if (!staticData.hasFlag(UnitFlag::ExplodesOnContact))
 		{
 			// Shots:
 			upgrades[i].startValue = origData.getShotsMax();

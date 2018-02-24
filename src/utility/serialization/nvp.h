@@ -50,6 +50,8 @@ namespace serialization
 
 	#define NVP_QUOTE(x) #x
 	#define NVP(value) serialization::makeNvp(NVP_QUOTE(value), value)
+
+    #define NVP_MEMBER(obj, value) serialization::makeNvp(NVP_QUOTE(value), obj.value)
 }
 
 #endif

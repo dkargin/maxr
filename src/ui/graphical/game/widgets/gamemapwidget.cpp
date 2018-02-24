@@ -618,7 +618,7 @@ void cGameMapWidget::draw (SDL_Surface& destination, const cBox<cPosition>& clip
 
     auto selectedVehicle = unitSelection.getSelectedVehicle();
     bool shouldDrawResourceGrid = shouldDrawSurvey ||
-            (selectedVehicle && selectedVehicle->getOwner() == player.get() && selectedVehicle->getStaticUnitData().canSurvey);
+            (selectedVehicle && selectedVehicle->getOwner() == player.get() && selectedVehicle->getStaticUnitData().hasFlag(UnitFlag::CanSurvey));
 
     if(mapView)
     {
@@ -1470,7 +1470,7 @@ void cGameMapWidget::drawUnitCircles(sRenderContext& rc)
 				screenPosition.y() + cellSize*zoomedTileSize.y()*0.5,
 				selectedBuilding->data.getScan() * zoomedTileSize.x(), SCAN_COLOR, *cVideo::buffer);
 		}
-		if (shouldDrawRange && (selectedBuilding->getStaticUnitData().canAttack & TERRAIN_GROUND) && !selectedBuilding->getStaticUnitData().explodesOnContact)
+        if (shouldDrawRange && (selectedBuilding->getStaticUnitData().canAttack & TERRAIN_GROUND) && !selectedBuilding->getStaticUnitData().hasFlag(UnitFlag::ExplodesOnContact))
 		{
 			drawCircle (
 				screenPosition. x() + cellSize*zoomedTileSize.x()*0.5,
@@ -1508,7 +1508,7 @@ void cGameMapWidget::drawExitPoints()
 		if (mouseMode->getType() == eMouseModeType::Activate && selectedVehicle->getOwner() == player.get())
 		{
 			auto activateMouseMode = static_cast<cMouseModeActivateLoaded*> (mouseMode.get());
-			auto unitToExit = selectedVehicle->storedUnits[activateMouseMode->getVehicleToActivateIndex()]->getStaticUnitData();
+            const auto& unitToExit = selectedVehicle->storedUnits[activateMouseMode->getVehicleToActivateIndex()]->getStaticUnitData();
 			drawExitPointsIf (*selectedVehicle, [&] (const cPosition & position) { return selectedVehicle->canExitTo (position, *mapView, unitToExit); });
 		}
 	}
@@ -1519,13 +1519,13 @@ void cGameMapWidget::drawExitPoints()
 			selectedBuilding->getBuildListItem (0).getRemainingMetal() <= 0 &&
 			selectedBuilding->getOwner() == player.get())
 		{
-			auto unitToExit = unitsData->getStaticUnitData(selectedBuilding->getBuildListItem (0).getType());
-			drawExitPointsIf (*selectedBuilding, [&] (const cPosition & position) { return selectedBuilding->canExitTo (position, *mapView, unitToExit); });
+            const auto& unitToExit = unitsData->getUnit(selectedBuilding->getBuildListItem (0).getType());
+            drawExitPointsIf (*selectedBuilding, [&] (const cPosition & position) { return selectedBuilding->canExitTo (position, *mapView, *unitToExit); });
 		}
 		if (mouseMode->getType() == eMouseModeType::Activate && selectedBuilding->getOwner() == player.get())
 		{
 			auto activateMouseMode = static_cast<cMouseModeActivateLoaded*> (mouseMode.get());
-			auto unitToExit = selectedBuilding->storedUnits[activateMouseMode->getVehicleToActivateIndex ()]->getStaticUnitData ();
+            const auto& unitToExit = selectedBuilding->storedUnits[activateMouseMode->getVehicleToActivateIndex ()]->getStaticUnitData ();
 			drawExitPointsIf (*selectedBuilding, [&] (const cPosition & position) { return selectedBuilding->canExitTo (position, *mapView, unitToExit); });
 		}
 	}
@@ -2103,7 +2103,7 @@ void cGameMapWidget::addAnimationsForUnit (const cUnit& unit)
 		const cBuilding& building = static_cast<const cBuilding&>(unit);
 		if (building.isRubble()) return;
 
-		if (building.uiData->powerOnGraphic || unit.getStaticUnitData().canWork)
+        if (building.uiData->powerOnGraphic || unit.getStaticUnitData().hasFlag(UnitFlag::CanWork))
 		{
 			assert(unit.isABuilding());
 			auto& building = static_cast<const cBuilding&> (unit);

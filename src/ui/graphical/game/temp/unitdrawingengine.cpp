@@ -112,7 +112,7 @@ void cUnitDrawingEngine::drawBuilding(const cBuilding& building, SDL_Rect destin
 	if (building.isRubble()) return;
 
 	// draw the effect if necessary
-	if (building.uiData->powerOnGraphic && cSettings::getInstance().isAnimations() && (building.isUnitWorking() || !building.getStaticUnitData().canWork))
+    if (building.uiData->powerOnGraphic && cSettings::getInstance().isAnimations() && (building.isUnitWorking() || !building.getStaticUnitData().hasFlag(UnitFlag::CanWork)))
 	{
 		SDL_Rect tmp = dest;
         SDL_SetSurfaceAlphaMod (building.uiData->img_effect.get(), building.effectAlpha);
@@ -123,7 +123,7 @@ void cUnitDrawingEngine::drawBuilding(const cBuilding& building, SDL_Rect destin
 
 	// draw the mark, when a build order is finished
 	if (building.getOwner() == player && ((!building.isBuildListEmpty() && !building.isUnitWorking() && building.getBuildListItem (0).getRemainingMetal() <= 0) ||
-		(building.getStaticUnitData().canResearch && building.getOwner()->isCurrentTurnResearchAreaFinished(building.getResearchArea()))))
+        (building.getStaticUnitData().hasFlag(UnitFlag::CanResearch) && building.getOwner()->isCurrentTurnResearchAreaFinished(building.getResearchArea()))))
 	{
 		const cRgbColor finishedMarkColor = cRgbColor::green();
 		cPosition minCorner(dest.x + 2, dest.y + 2);

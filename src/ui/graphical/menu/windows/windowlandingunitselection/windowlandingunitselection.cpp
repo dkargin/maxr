@@ -184,8 +184,9 @@ void cWindowLandingUnitSelection::setActiveUnit (const sID& unitId)
 	if (iter == unitUpgrades.end())
 	{
 		unitUpgrade = &unitUpgrades[unitId];
-
-		unitUpgrade->init(unitsData->getDynamicUnitData(unitId, getPlayer().getClan()), *getPlayer().getUnitDataCurrentVersion(unitId), unitsData->getStaticUnitData(unitId), getPlayer().getResearchState());
+        const auto& dynamicData = unitsData->getDynamicUnitData(unitId, getPlayer().getClan());
+        const auto& currentVersion = *getPlayer().getUnitDataCurrentVersion(unitId);
+        unitUpgrade->init(dynamicData, currentVersion, *unitsData->getUnit(unitId), getPlayer().getResearchState());
 	}
 	else
 	{
@@ -260,17 +261,22 @@ void cWindowLandingUnitSelection::updateUpgradeButtons()
 bool cWindowLandingUnitSelection::tryAddSelectedUnit (const cUnitListViewItemBuy& unitItem) const
 {
 	const auto& unitId = unitItem.getUnitId();
-	if (!unitsData->isValidId(unitId)) return false;
+    if (!unitsData->isValidId(unitId))
+        return false;
 
-	const auto unitData = unitsData->getStaticUnitData(unitId);
+    const auto& unitData = unitsData->getUnit(unitId);
 
 	// is this unit type allowed to be bought for landing?
-	if (!unitId.isAVehicle()) return false;
-	if (unitData.factorGround == 0) return false;
-	if (unitData.isHuman) return false;
+    if (!unitId.isAVehicle())
+        return false;
+    if (unitData->factorGround == 0)
+        return false;
+    if (unitData->hasFlag(UnitFlag::IsHuman))
+        return false;
 
 	int buildCosts = unitsData->getDynamicUnitData(unitId, getPlayer().getClan()).getBuildCost();
-	if (buildCosts > goldBar->getValue()) return false;
+    if (buildCosts > goldBar->getValue())
+            return false;
 
 	goldBar->decrease (buildCosts);
 
@@ -308,17 +314,23 @@ void cWindowLandingUnitSelection::generateSelectionList (bool select)
 
 	for (const auto& data : unitsData->getStaticUnitsData())
 	{
-		if (data.ID.isABuilding() && !build) continue;
-		if (data.isHuman && buy) continue;
-		if (!data.canAttack && tnt) continue;
-		if (!data.ID.isABuilding())
+        if (data->ID.isABuilding() && !build)
+            continue;
+        if (data->hasFlag(UnitFlag::IsHuman) && buy)
+            continue;
+        if (!data->canAttack && tnt)
+            continue;
+        if (!data->ID.isABuilding())
 		{
-			if (data.factorAir > 0 && !plane) continue;
-			if (data.factorSea > 0 && data.factorGround == 0 && !ship) continue;
-			if (data.factorGround > 0 && !tank) continue;
+            if (data->factorAir > 0 && !plane)
+                continue;
+            if (data->factorSea > 0 && data->factorGround == 0 && !ship)
+                continue;
+            if (data->factorGround > 0 && !tank)
+                continue;
 		}
 
-		const auto& item = addSelectionUnit(data.ID);
+        const auto& item = addSelectionUnit(data->ID);
 		if (select)
 		{
 			setSelectedSelectionItem(item);
@@ -421,8 +433,10 @@ void cWindowLandingUnitSelection::upgradeDecreaseClicked (size_t index)
 //------------------------------------------------------------------------------
 void cWindowLandingUnitSelection::handleSelectedUnitSelectionChanged (cUnitListViewItemCargo* unitItem)
 {
-	if (unitItem == nullptr || ! (unitsData->getStaticUnitData(unitItem->getUnitId()).storeResType == eResourceType::Metal ||
-								  unitsData->getStaticUnitData(unitItem->getUnitId()).storeResType == eResourceType::Oil))
+    const auto& unit = unitsData->getUnit(unitItem->getUnitId());
+
+    if (unitItem == nullptr || ! (unit->storeResType == eResourceType::Metal ||
+                                  unit->storeResType == eResourceType::Oil))
 	{
 		selectedCargoUnit = nullptr;
 		metalBar->setValue (0);
@@ -434,8 +448,8 @@ void cWindowLandingUnitSelection::handleSelectedUnitSelectionChanged (cUnitListV
 	else
 	{
 		selectedCargoUnit = nullptr;
-		const auto& data = unitsData->getStaticUnitData(unitItem->getUnitId());
-		if (data.storeResType == eResourceType::Oil)
+
+        if (unit->storeResType == eResourceType::Oil)
 		{
 			metalBar->setType (eResourceBarType::Oil);
 		}
@@ -444,7 +458,7 @@ void cWindowLandingUnitSelection::handleSelectedUnitSelectionChanged (cUnitListV
 			metalBar->setType (eResourceBarType::Metal);
 		}
 		metalBar->setMinValue (0);
-		metalBar->setMaxValue (data.storageResMax);
+        metalBar->setMaxValue (unit->storageResMax);
 		metalBar->setValue (unitItem->getCargo());
 		metalBar->enable();
 		metalBarAmountLabel->show();

@@ -198,6 +198,7 @@ bool getXMLAttributeBoolFromElement(const tinyxml2::XMLElement* element, const c
 	Log.write((string)"Error reading boolen attribute of element \"" + element->Name() + "\": Illegal value \"" + value + "\"", cLog::eLOG_TYPE_WARNING);
 	return false;
 }
+
 //------------------------------------------------------------------------------
 bool getXMLAttributeBool (tinyxml2::XMLDocument& document, const char* first, ...)
 {

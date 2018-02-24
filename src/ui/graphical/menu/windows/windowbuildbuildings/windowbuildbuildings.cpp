@@ -52,7 +52,7 @@ cWindowBuildBuildings::cWindowBuildBuildings (const cVehicle& vehicle_, std::sha
 	backButton->moveTo (getPosition() + cPosition (300, 452));
 	okButton->moveTo (getPosition() + cPosition (387, 452));
 
-	if (vehicle.getStaticUnitData().canBuildPath)
+    if (vehicle.hasStaticFlag(UnitFlag::CanBuildPath))
 	{
 		auto pathButton = addChild (std::make_unique<cPushButton> (getPosition() + cPosition (338, 428), ePushButtonType::Angular, lngPack.i18n ("Text~Others~Path"), FONT_LATIN_NORMAL));
 		signalConnectionManager.connect (pathButton->clicked, [&]() { donePath(); });
@@ -96,12 +96,15 @@ void cWindowBuildBuildings::generateSelectionList (const cVehicle& vehicle, cons
 	bool select = true;
 	for (const auto& data : unitsData.getStaticUnitsData())
 	{
-		if (data.explodesOnContact) continue;
-		if (data.ID.isAVehicle()) continue;
+        if (data->hasFlag(UnitFlag::ExplodesOnContact))
+            continue;
+        if (data->getType() == UnitType::Vehicle)
+            continue;
 
-		if (vehicle.getStaticUnitData().canBuild != data.buildAs) continue;
+        if (vehicle.getStaticUnitData().canBuild != data->buildAs)
+            continue;
 
-		auto& item = addSelectionUnit (data.ID);
+        auto& item = addSelectionUnit (data->ID);
 
 		if (select)
 		{
@@ -109,7 +112,8 @@ void cWindowBuildBuildings::generateSelectionList (const cVehicle& vehicle, cons
 			select = false;
 		}
 
-		if (vehicle.getStoredResources() < vehicle.getOwner()->getUnitDataCurrentVersion(data.ID)->getBuildCost()) item.markAsInsufficient();
+        if (vehicle.getStoredResources() < vehicle.getOwner()->getUnitDataCurrentVersion(data->ID)->getBuildCost())
+            item.markAsInsufficient();
 	}
 }
 

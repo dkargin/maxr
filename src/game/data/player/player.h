@@ -118,8 +118,8 @@ public:
 	*/
 	bool canSeeAt(const cPosition& position) const;
 
-	cVehicle& addNewVehicle (const cPosition& position, const cStaticUnitData& unitData, unsigned int uid);
-	cBuilding& addNewBuilding (const cPosition& position, const cStaticUnitData& unitData, unsigned int uid);
+    cVehicle& addNewVehicle (const cPosition& position, const sVehicleDataPtr& unitData, unsigned int uid);
+    cBuilding& addNewBuilding (const cPosition& position, const sBuildingUIDataPtr& unitData, unsigned int uid);
 
 	void addUnit (std::shared_ptr<cVehicle> vehicle);
 	void addUnit (std::shared_ptr<cBuilding> building);
@@ -253,9 +253,9 @@ public:
 		{
 			unsigned int vehicleID;
 			archive & NVP(vehicleID);
-			cStaticUnitData dummy1;
 			cDynamicUnitData dummy2;
-			auto vehicle = std::make_shared<cVehicle>(dummy1, dummy2, this, vehicleID);
+            std::shared_ptr<cVehicleData> dummy1(new cVehicleData());
+            auto vehicle = std::make_shared<cVehicle>(dummy1, dummy2, this, vehicleID);
 			archive & serialization::makeNvp("vehicle", *vehicle);
 			vehicles.insert(std::move(vehicle));
 		}
@@ -322,7 +322,7 @@ private:
 private:
 	cPlayerBasicData splayer;
 public:
-	std::vector<cDynamicUnitData> dynamicUnitsData; // Current version of vehicles.
+    cUnitsData::DynamicUnitDataStorage dynamicUnitsData; // Current version of vehicles.
 	cBase base;               // the base (groups of connected buildings) of the player
 private:
 	cFlatSet<std::shared_ptr<cVehicle>, sUnitLess<cVehicle>> vehicles;

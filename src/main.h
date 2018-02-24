@@ -45,8 +45,8 @@
 // Predeclarations
 class cPlayer;
 class cLanguage;
-struct sBuildingUIData;
-struct sVehicleUIData;
+struct cBuildingData;
+struct cVehicleData;
 class cClanData;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -186,31 +186,6 @@ public:
 // UnitsData - Class containing all building/vehicle surfaces & data ///////////////
 EX cUnitsData UnitsDataGlobal;
 EX cClanData  ClanDataGlobal;
-
-class cUnitsUiData
-{
-public:
-	cUnitsUiData();
-	~cUnitsUiData();
-
-	const sBuildingUIData* getBuildingUI(sID id) const;
-	const sVehicleUIData* getVehicleUI(sID id) const;
-
-
-	std::vector<sVehicleUIData> vehicleUIs;
-	std::vector<sBuildingUIData> buildingUIs;
-
-	sBuildingUIData* rubbleBig;
-	sBuildingUIData* rubbleSmall;
-
-	// direct pointer on some of the building graphics
-	SDL_Surface* ptr_small_beton;
-	SDL_Surface* ptr_small_beton_org;
-	SDL_Surface* ptr_connector;
-	SDL_Surface* ptr_connector_org;
-	SDL_Surface* ptr_connector_shw;
-	SDL_Surface* ptr_connector_shw_org;
-} EX UnitsUiData;
 
 enum class ePlayerConnectionState
 {

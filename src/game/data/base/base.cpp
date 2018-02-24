@@ -1291,7 +1291,8 @@ uint32_t cBase::getChecksum(uint32_t crc) const
 
 void cBase::addBuilding (cBuilding* building, const cMap& map)
 {
-	if (!building->getStaticUnitData().connectsToBase) return;
+    if (!building->getStaticUnitData().hasFlag(UnitFlag::ConnectsToBase))
+        return;
 	std::vector<cSubBase*> NeighbourList;
 
 	auto adjacent = generateAdjacentBorder(building->getPosition(), building->getCellSize());
@@ -1335,7 +1336,8 @@ void cBase::addBuilding (cBuilding* building, const cMap& map)
 
 void cBase::deleteBuilding (cBuilding* building, const cMap& map)
 {
-	if (!building->getStaticUnitData().connectsToBase) return;
+    if (!building->getStaticUnitData().hasFlag(UnitFlag::ConnectsToBase))
+        return;
 	cSubBase* sb = building->subBase;
 
 	// remove the current subbase
@@ -1352,7 +1354,7 @@ void cBase::deleteBuilding (cBuilding* building, const cMap& map)
 		addBuilding (b, map);
 	}
 
-	if (building->isUnitWorking() && building->getStaticUnitData().canResearch)
+    if (building->isUnitWorking() && building->getStaticUnitData().hasFlag(UnitFlag::CanResearch))
 		building->getOwner()->stopAResearch (building->getResearchArea());
 
 	delete sb;
