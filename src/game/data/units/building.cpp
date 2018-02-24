@@ -123,15 +123,6 @@ uint32_t cBuildListItem::getChecksum(uint32_t crc) const
 }
 
 //--------------------------------------------------------------------------
-// Get vehicle data for specified id
-// Can return empty pointer if no object is found
-std::shared_ptr<cBuildingData> cUnitsData::getBuilding(const UID& id) const
-{
-    auto unit = this->getUnit(id);
-    return std::dynamic_pointer_cast<cBuildingData>(unit);
-}
-
-//--------------------------------------------------------------------------
 // cBuilding Implementation
 //--------------------------------------------------------------------------
 

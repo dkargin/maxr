@@ -57,14 +57,6 @@ cVehicleData::cVehicleData()
 
 }
 
-// Get vehicle data for specified id
-// Can return empty pointer if no object is found
-std::shared_ptr<cVehicleData> cUnitsData::getVehicle(const UID& id) const
-{
-    auto unit = this->getUnit(id);
-    return std::dynamic_pointer_cast<cVehicleData>(unit);
-}
-
 //-----------------------------------------------------------------------------
 // cVehicle Class Implementation
 //-----------------------------------------------------------------------------

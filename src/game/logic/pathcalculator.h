@@ -27,6 +27,7 @@
 #include "utility/log.h"
 #include "game/data/units/building.h"
 #include "game/data/units/vehicle.h"
+#include "main.h"   // for i2str
 
 class cVehicle;
 class cUnit;
@@ -163,7 +164,9 @@ int cPathCalculator::calcNextCost(const cPosition& source, const cPosition& dest
 		costs = (int)(4 * vehicle->getStaticUnitData().factorGround);
 	else
 	{
-		Log.write("Where can this unit move? " + iToStr(vehicle->iID), cLog::eLOG_TYPE_NET_WARNING);
+        std::stringstream ss;
+        ss << "Where can this unit move? " << vehicle->iID;
+        Log.write(ss.str(), cLog::eLOG_TYPE_NET_WARNING);
 		costs = 4;
 	}
 	// moving on a road is cheaper

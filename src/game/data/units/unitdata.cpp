@@ -198,6 +198,70 @@ cStaticUnitDataPtr cUnitsData::getUnit(const sID& id) const
 	throw std::runtime_error("Unitdata not found" + id.getText());
 }
 
+//--------------------------------------------------------------------------
+// Get vehicle data for specified id
+// Can return empty pointer if no object is found
+std::shared_ptr<cVehicleData> cUnitsData::getVehicle(const UID& id) const
+{
+    auto unit = this->getUnit(id);
+    return std::dynamic_pointer_cast<cVehicleData>(unit);
+}
+
+//--------------------------------------------------------------------------
+// Get vehicle data for specified id
+// Can return empty pointer if no object is found
+std::shared_ptr<cBuildingData> cUnitsData::getBuilding(const UID& id) const
+{
+    auto unit = this->getUnit(id);
+    return std::dynamic_pointer_cast<cBuildingData>(unit);
+}
+
+//--------------------------------------------------------------------------
+std::shared_ptr<cVehicleData> cUnitsData::makeVehicle(const UID& id)
+{
+    std::shared_ptr<cVehicleData> result;
+
+    auto unit = this->getUnit(id);
+
+    if(!unit)
+    {
+        // Create new vehicle
+        result.reset(new cVehicleData());
+        result->ID = id;
+        staticUnitData[id] = result;
+        return result;
+    }
+
+    if(unit->getType() != UnitType::Vehicle)
+    {
+        throw std::runtime_error("cUnitsData::getVehicle() - specified ID is not a vehicle" + id.getText());
+    }
+    return std::dynamic_pointer_cast<cVehicleData>(unit);
+}
+
+//--------------------------------------------------------------------------
+std::shared_ptr<cBuildingData> cUnitsData::makeBuilding(const UID& id)
+{
+    std::shared_ptr<cBuildingData> result;
+
+    auto unit = this->getUnit(id);
+
+    if(!unit)
+    {
+        // Create new building
+        result.reset(new cBuildingData());
+        result->ID = id;
+        staticUnitData[id] = result;
+        return result;
+    }
+
+    if(unit->getType() != UnitType::Building)
+    {
+        throw std::runtime_error("cUnitsData::getBuilding() - specified ID is not a building " + id.getText());
+    }
+    return std::dynamic_pointer_cast<cBuildingData>(unit);
+}
+
 //------------------------------------------------------------------------------
 const cUnitsData::DynamicUnitDataStorage& cUnitsData::getDynamicUnitsData(int clan /*= -1*/) const
 {
@@ -229,6 +293,36 @@ std::vector<cStaticUnitDataPtr> cUnitsData::getStaticUnitsData() const
     for(auto pairs: staticUnitData)
     {
         result.push_back(pairs.second);
+    }
+    return result;
+}
+
+std::vector<std::shared_ptr<cBuildingData>> cUnitsData::getAllBuildings()
+{
+    std::vector<std::shared_ptr<cBuildingData>> result;
+    for(auto pairs: staticUnitData)
+    {
+        if(pairs.second->getType() == UnitType::Building)
+        {
+            auto object = std::dynamic_pointer_cast<cBuildingData>(pairs.second);
+            if(object)
+                result.push_back(object);
+        }
+    }
+    return result;
+}
+
+std::vector<std::shared_ptr<cVehicleData>> cUnitsData::getAllVehicles()
+{
+    std::vector<std::shared_ptr<cVehicleData>> result;
+    for(auto pairs: staticUnitData)
+    {
+        if(pairs.second->getType() == UnitType::Vehicle)
+        {
+            auto object = std::dynamic_pointer_cast<cVehicleData>(pairs.second);
+            if(object)
+                result.push_back(object);
+        }
     }
     return result;
 }
@@ -675,55 +769,4 @@ void cDynamicUnitData::setMaximumCurrentValues()
 	hitpointsCur = hitpointsMax;
 
 	crcValid = false;
-}
-
-//------------------------------------------------------------------------------
-template<class T> void cUnitsDataMeta::serialize_impl(T& archive, cUnitsData& ud)
-{
-    if (!archive.isWriter)
-    {
-        ud.staticUnitData.clear();
-        ud.dynamicUnitData.clear();
-        ud.clanDynamicUnitData.clear();
-        ud.crcValid = false;
-    }
-
-    if(archive.isWriter)
-    {
-        //std::vector<cBuildingDataPtr> buildings;
-        //std::vector<cVehicleDataPtr> vehicles;
-        //archive & NVP(staticUnitData);
-    }
-    else
-    {
-
-    }
-
-    archive & NVP_MEMBER(ud, dynamicUnitData);
-    archive & NVP_MEMBER(ud, clanDynamicUnitData);
-}
-
-void cUnitsDataMeta::serialize(cTextArchiveIn& archive, cUnitsData &ud)
-{
-    cUnitsDataMeta::serialize_impl(archive, ud);
-}
-
-void cUnitsDataMeta::serialize(cBinaryArchiveIn& archive, cUnitsData &ud)
-{
-    cUnitsDataMeta::serialize_impl(archive, ud);
-}
-
-void cUnitsDataMeta::serialize(cBinaryArchiveOut& archive, cUnitsData &ud)
-{
-    cUnitsDataMeta::serialize_impl(archive, ud);
-}
-
-void cUnitsDataMeta::serialize(cXmlArchiveOut& archive, cUnitsData &ud)
-{
-    cUnitsDataMeta::serialize_impl(archive, ud);
-}
-
-void cUnitsDataMeta::serialize(cXmlArchiveIn& archive, cUnitsData &ud)
-{
-    cUnitsDataMeta::serialize_impl(archive, ud);
 }

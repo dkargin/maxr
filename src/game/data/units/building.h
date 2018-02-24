@@ -27,7 +27,6 @@
 
 #include "defines.h"
 #include "maxrconfig.h"
-#include "main.h" // for sUnitData, sID
 #include "game/data/units/unit.h"
 #include "utility/signal/signal.h"
 #include "utility/signal/signalconnectionmanager.h"
@@ -39,6 +38,7 @@ class cVehicle;
 class cMap;
 class cMapField;
 class cServer;
+class cClient;
 class cSubBase;
 class cCrossPlattformRandom;
 

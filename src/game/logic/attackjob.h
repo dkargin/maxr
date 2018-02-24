@@ -22,6 +22,7 @@
 
 #include <vector>
 
+#include "main.h"
 #include "utility/position.h"
 #include "game/data/map/mapview.h"
 #include "game/data/map/mapfieldview.h"

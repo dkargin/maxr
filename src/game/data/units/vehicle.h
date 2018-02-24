@@ -27,9 +27,6 @@
 
 #include "defines.h"
 #include "maxrconfig.h"
-
-
-#include "main.h" // for sUnitData
 #include "game/data/units/unit.h"
 #include "sound.h"
 
@@ -41,6 +38,7 @@ class cStaticMap;
 class cMapField;
 class cPlayer;
 class cServer;
+class cClient;
 class cServerMoveJob;
 class cApplication;
 class cSoundManager;

@@ -39,7 +39,6 @@
 
 #include "utility/autosurface.h"
 #include "utility/files.h"
-// TODO: remove direct PCX references
 #include "utility/pcx.h"
 #include "utility/unifonts.h"
 #include "utility/log.h"
