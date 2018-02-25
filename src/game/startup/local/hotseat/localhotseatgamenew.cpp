@@ -28,9 +28,6 @@
 #include "game/data/units/landingunit.h"
 #include "game/logic/clientevents.h"
 
-// TODO: remove
-void applyUnitUpgrades (cPlayer& player, const std::vector<std::pair<sID, cUnitUpgrade>>& unitUpgrades);
-
 //------------------------------------------------------------------------------
 cLocalHotSeatGameNew::cLocalHotSeatGameNew()
 {}
@@ -39,8 +36,6 @@ cLocalHotSeatGameNew::cLocalHotSeatGameNew()
 void cLocalHotSeatGameNew::start (cApplication& application)
 {
 	assert (gameSettings != nullptr);
-
-	//server = std::make_unique<cServer> (nullptr);
 
 	server->setMap (staticMap);
 
@@ -51,22 +46,7 @@ void cLocalHotSeatGameNew::start (cApplication& application)
 	std::vector<cPlayerBasicData> players;
 	for (size_t i = 0; i < playersData.size(); ++i)
 	{
-		//clients[i] = std::make_shared<cClient> (server.get(), nullptr); //TODO: use new server
-//		clients[i]->setMap (staticMap);
 		clients[i]->setGameSettings (*gameSettings);
-
-	/*	players.push_back (playersData[i].basicData);
-
-		auto serverPlayer = std::make_unique<cPlayer>(playersData[i].basicData);
-		auto& playerRef = *serverPlayer;
-
-		serverPlayer->setLocal();
-		server->addPlayer (std::move (serverPlayer));
-
-		if (i == 0)
-		{
-			server->setActiveTurnPlayer (playerRef);
-		}*/
 	}
 
 	server->start();
@@ -78,17 +58,6 @@ void cLocalHotSeatGameNew::start (cApplication& application)
 		clients[i]->setPlayers (players, i);
 
 		auto& clientPlayer = clients[i]->getActivePlayer();
-//		if (gameSettings->getClansEnabled()) clientPlayer.setClan (playersData[i].clan);
-
-//		applyUnitUpgrades (clientPlayer, playersData[i].unitUpgrades);
-
-//		sendClan (*clients[i]);
-//		sendLandingUnits (*clients[i], playersData[i].landingUnits);
-//		sendUnitUpgrades (*clients[i]);
-
-//		sendLandingCoords (*clients[i], playersData[i].landingPosition);
-
-//		sendReadyToStart (*clients[i]);
 
 		cGameGuiState gameGuiState;
         gameGuiState.setMapPosition (playersData[i].config->landingPosition);
@@ -107,8 +76,6 @@ void cLocalHotSeatGameNew::start (cApplication& application)
 //	terminate = false;
 
 	application.addRunnable (shared_from_this());
-
-//	signalConnectionManager.connect (gameGuiController->terminated, [&]() { terminate = true; });
 }
 
 //------------------------------------------------------------------------------
@@ -138,15 +105,8 @@ void cLocalHotSeatGameNew::setPlayers (const std::vector<cPlayerBasicData>& play
 //------------------------------------------------------------------------------
 void cLocalHotSeatGameNew::setPlayerClan (size_t playerIndex, int clan)
 {
-    playersData[playerIndex].config->clan = clan;
+    playersData[playerIndex].clan = clan;
 }
-
-
-/*
-void cLocalHotSeatGameNew::setLandingConfig(size_t playerIndex, std::shared_ptr<sLandingConfig> config)
-{
-    playersData[playerIndex].config = config;
-}*/
 
 //------------------------------------------------------------------------------
 void cLocalHotSeatGameNew::setLandingPosition (size_t playerIndex, const cPosition& landingPosition_)
@@ -192,5 +152,5 @@ const cPlayerBasicData& cLocalHotSeatGameNew::getPlayer (size_t playerIndex) con
 //------------------------------------------------------------------------------
 int cLocalHotSeatGameNew::getPlayerClan (size_t playerIndex) const
 {
-    return playersData[playerIndex].config->clan;
+    return playersData[playerIndex].clan;
 }

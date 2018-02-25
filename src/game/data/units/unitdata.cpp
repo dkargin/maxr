@@ -214,6 +214,8 @@ cStaticUnitDataPtr cUnitsData::getUnit(const sID& id) const
 {
 	for (const auto& data : staticUnitData)
 	{
+        if (!data.second)
+            continue;
         if (data.second->ID == id)
             return data.second;
 	}

@@ -111,7 +111,7 @@ cWindowLandingUnitSelection::cWindowLandingUnitSelection (cPlayerColor playerCol
 	// Initialization
 	//
 
-    for (const auto& item : landingConfig.landingUnits)
+  for (const auto& item : landingConfig.landingUnits)
 	{
         auto& addedItem = addSelectedUnit (item.unitID);
         addedItem.setCargo (item.cargo);
@@ -433,10 +433,19 @@ void cWindowLandingUnitSelection::upgradeDecreaseClicked (size_t index)
 //------------------------------------------------------------------------------
 void cWindowLandingUnitSelection::handleSelectedUnitSelectionChanged (cUnitListViewItemCargo* unitItem)
 {
-    const auto& unit = unitsData->getUnit(unitItem->getUnitId());
+	cStaticUnitDataPtr unit;
 
-    if (unitItem == nullptr || ! (unit->storeResType == eResourceType::Metal ||
-                                  unit->storeResType == eResourceType::Oil))
+	eResourceType resType = eResourceType::None;
+
+	if(unitItem)
+	{
+		unit = unitsData->getUnit(unitItem->getUnitId());
+		if(unit)
+			resType = unit->storeResType;
+	}
+
+  if (unitItem == nullptr || ! (resType == eResourceType::Metal ||
+                                 resType == eResourceType::Oil))
 	{
 		selectedCargoUnit = nullptr;
 		metalBar->setValue (0);
@@ -445,11 +454,11 @@ void cWindowLandingUnitSelection::handleSelectedUnitSelectionChanged (cUnitListV
 		metalBarUpButton->lock();
 		metalBarDownButton->lock();
 	}
-	else
+	else if(unitItem)
 	{
 		selectedCargoUnit = nullptr;
 
-        if (unit->storeResType == eResourceType::Oil)
+		if (resType == eResourceType::Oil)
 		{
 			metalBar->setType (eResourceBarType::Oil);
 		}

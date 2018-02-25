@@ -104,7 +104,7 @@ void cLog::write (const std::string& msg, eLogType type)
 	{
 		writeToFile(tmp, logfile);
 	}
-    printf("%s\n", tmp.c_str());
+    printf("%s", tmp.c_str());
 }
 
 //------------------------------------------------------------------------------

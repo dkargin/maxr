@@ -56,8 +56,7 @@ void cActionInitNewGame::execute(cModel& model) const
 	player.removeAllUnits();
 	Log.write(" GameId: " + toString(model.getGameId()), cLog::eLOG_TYPE_NET_DEBUG);
 
-    int clan = landingConfig.clan;
-	// init clan
+    // init clan
 	if (model.getGameSettings()->getClansEnabled())
 	{
 		if (clan < 0 || static_cast<size_t>(clan) >= unitsdata.getNrOfClans())

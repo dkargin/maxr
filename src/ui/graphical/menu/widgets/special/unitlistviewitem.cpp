@@ -34,7 +34,7 @@ cUnitListViewItem::cUnitListViewItem (unsigned int width, const sID& unitId_, co
 	AutoSurface surface (SDL_CreateRGBSurface (0, unitImageSize, unitImageSize, Video.getColDepth(), 0, 0, 0, 0));
 	SDL_SetColorKey (surface.get(), SDL_TRUE, 0x00FF00FF);
 	SDL_FillRect (surface.get(), nullptr, 0x00FF00FF);
-	SDL_Rect dest = {0, 0, 0, 0};
+    SDL_Rect dest = {0, 0, unitImageSize, unitImageSize};
 
     const auto& data = unitsData.getUnit(unitId);
     auto type = data->getType();

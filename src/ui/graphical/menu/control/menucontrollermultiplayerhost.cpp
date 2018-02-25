@@ -504,7 +504,19 @@ void cMenuControllerMultiplayerHost::startLandingUnitSelection(bool isFirstWindo
 	if (!newGame || !newGame->getGameSettings()) return;
 
     auto config = newGame->getLandingConfig();
-    createInitial(*config, *newGame->getGameSettings(), *newGame->getUnitsData());
+
+    int clanIndex = newGame->getLocalPlayerClan();
+    if(clanIndex >= 0)
+    {
+        cClan* clan = newGame->getClanData()->getClan(clanIndex);
+        clan->createLanding(*config, *newGame->getGameSettings(), *newGame->getUnitsData());
+    }
+    else
+    {
+        // We should select a clan!
+        assert(false);
+    }
+    //createInitial(*config, *newGame->getGameSettings(), *newGame->getUnitsData());
 
     auto windowLandingUnitSelection = std::make_shared<cWindowLandingUnitSelection> (
                 cPlayerColor(), newGame->getLocalPlayerClan(), *config, newGame->getGameSettings()->getStartCredits(), newGame->getUnitsData());

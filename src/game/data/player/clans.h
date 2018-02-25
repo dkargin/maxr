@@ -24,15 +24,19 @@
 #include <string>
 #include <vector>
 
-#include "main.h"
 #include "utility/serialization/serialization.h"
+#include "game/data/units/landingunit.h"
+#include "main.h"
+
+struct sBaseLayoutItem;
+struct sLandingUnit;
 
 //-------------------------------------------------------------------------
 class cClanUnitStat
 {
 public:
-	cClanUnitStat (sID unitId_) : unitId (unitId_) {};
-	cClanUnitStat () {};
+    cClanUnitStat (sID unitId_) : unitId (unitId_) {}
+    cClanUnitStat () {}
 
 	void addModification (const std::string& area, int value);
 
@@ -79,17 +83,26 @@ public:
 	cClanUnitStat* addUnitStat (sID id);
 	int getNrUnitStats() const { return static_cast<int> (stats.size()); }
 
+    void addEmbarkUnit(const sLandingUnit& item);
+    void addEmbarkBuilding(const cBaseLayoutItem& item);
+
+    // Creates initial landing config
+    void createLanding(sLandingConfig& config, const cGameSettings& gameSettings, const cUnitsData& unitsData);
+
 	template <typename T>
 	void save(T& archive)
 	{
 		archive << num;
 		archive << description;
 		archive << name;
-
 		archive << static_cast<uint32_t>(stats.size());
 		for (const auto& stat : stats)
 			archive << *stat;
+
+        archive << landingUnits;
+        archive <<  baseLayout;
 	}
+
 	template <typename T>
 	void load(T& archive)
 	{
@@ -106,15 +119,23 @@ public:
 			archive >> stat;
 			stats.push_back(std::make_unique<cClanUnitStat>(stat));
 		}
+
+        archive >> landingUnits;
+        archive >>  baseLayout;
 	}
 	SERIALIZATION_SPLIT_MEMBER();
 
 	//-------------------------------------------------------------------------
-private:
+protected:
 	int num;
 	std::string description;
 	std::string name;
 	std::vector<std::unique_ptr<cClanUnitStat>> stats;
+
+    // Default units to be embarked
+    std::vector<sLandingUnit> landingUnits;
+    // Initial layout of the base.
+    std::vector<cBaseLayoutItem> baseLayout;
 };
 
 //-------------------------------------------------------------------------

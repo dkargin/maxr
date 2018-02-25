@@ -28,6 +28,8 @@ class cVehicle;
 class cBuilding;
 class cStaticMap;
 
+// This message is sent across all clients
+// It contains all necessary information to about initial position
 class cActionInitNewGame : public cAction
 {
 public:
@@ -42,11 +44,13 @@ public:
 	static bool isValidLandingPosition(cPosition position, const cStaticMap& map, bool fixedBridgeHead, const sLandingConfig& landingConfig, const cUnitsData& unitsData);
 
     sLandingConfig landingConfig;
+    int clan = -1;
 private:
 	template<typename T>
 	void serializeThis(T& archive)
 	{
 		archive & landingConfig;
+        archive & clan;
 	}
 
 	void makeLanding(cPlayer& player, const sLandingConfig& landingConfig, cModel& model) const;

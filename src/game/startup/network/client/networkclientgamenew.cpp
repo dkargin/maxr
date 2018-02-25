@@ -49,7 +49,7 @@ void cNetworkClientGameNew::start (cApplication& application)
 	localClient->setUnitsData(unitsData);
 
 	cActionInitNewGame action;
-    action.landingConfig.clan = localPlayerClan;
+    action.clan = localPlayerClan;
     action.landingConfig.landingUnits = landingConfig->landingUnits;
     action.landingConfig.landingPosition = landingConfig->landingPosition;
     action.landingConfig.unitUpgrades = landingConfig->unitUpgrades;

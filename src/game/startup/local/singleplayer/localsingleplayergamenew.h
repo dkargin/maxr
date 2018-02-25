@@ -53,12 +53,9 @@ public:
 	void setStaticMap (std::shared_ptr<cStaticMap> staticMap);
     std::shared_ptr<cStaticMap> getStaticMap();
 
-	void setPlayerClan (int clan);
-
-    //void setLandingConfig(std::shared_ptr<sLandingConfig> config);
+    void setPlayerClan(int clan);
+    int getPlayerClan() const;
     std::shared_ptr<sLandingConfig> getLandingConfig();
-
-    //void setLandingPosition (const cPosition& landingPosition);
 
 	cPlayerBasicData createPlayer();
 private:
@@ -67,10 +64,8 @@ private:
 	std::shared_ptr<cStaticMap> staticMap;
 	std::shared_ptr<cGameSettings> gameSettings;
 
-    //std::vector<sLandingUnit> landingUnits;
-    //std::vector<std::pair<sID, cUnitUpgrade>> unitUpgrades;
     std::shared_ptr<sLandingConfig> landingConfig;
-    //cPosition landingPosition;
+    int clan = -1;
 };
 
 #endif // game_startup_local_singleplayer_localsingleplayergamenewH

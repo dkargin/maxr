@@ -21,6 +21,14 @@
     <ChangedUnitStat UnitID="1 9">
       <Built_Costs Num="30"/>
     </ChangedUnitStat>
+
+    <Embark>
+      <Building ID="1 22" name="mine" pos="0;0"/>
+      <Building ID="1 8" name="generator" pos="0;-3"/>
+      <Vehicle ID="0 19" name="konstrukt" metal="40"/>
+      <Vehicle ID="0 24" name="pionier" metal="20"/>
+      <Vehicle ID="0 31" name="surveyor" />
+    </Embark>
   </Clan>
 
   <Clan Name="Crimson Path">
@@ -58,6 +66,14 @@
     <ChangedUnitStat UnitID="1 12">
       <Built_Costs Num="30"/>
     </ChangedUnitStat>
+
+    <Embark>
+      <Building ID="1 22" name="mine" pos="0;0"/>
+      <Building ID="1 8" name="generator" pos="0;-3"/>
+      <Vehicle ID="0 19" name="konstrukt" metal="40"/>
+      <Vehicle ID="0 24" name="pionier" metal="20"/>
+      <Vehicle ID="0 31" name="surveyor" />
+    </Embark>
   </Clan>
 
   <Clan Name="Von Griffin">
@@ -95,6 +111,14 @@
     <ChangedUnitStat UnitID="1 26">
       <Scan Num="24"/>
     </ChangedUnitStat>
+
+    <Embark>
+      <Building ID="1 22" name="mine" pos="0;0"/>
+      <Building ID="1 8" name="generator" pos="0;-3"/>
+      <Vehicle ID="0 19" name="konstrukt" metal="40"/>
+      <Vehicle ID="0 24" name="pionier" metal="20"/>
+      <Vehicle ID="0 31" name="surveyor" />
+    </Embark>
   </Clan>
 
   <Clan Name="Ayer's Hand">
@@ -121,6 +145,14 @@
       <Damage Num="30"/>
       <Built_Costs Num="20"/>
     </ChangedUnitStat>
+
+    <Embark>
+      <Building ID="1 22" name="mine" pos="0;0"/>
+      <Building ID="1 8" name="generator" pos="0;-3"/>
+      <Vehicle ID="0 19" name="konstrukt" metal="40"/>
+      <Vehicle ID="0 24" name="pionier" metal="20"/>
+      <Vehicle ID="0 31" name="surveyor" />
+    </Embark>
   </Clan>
 
   <Clan Name="Musashi">
@@ -149,6 +181,14 @@
       <Hitpoints Num="28"/>
       <Speed Num="11"/>
     </ChangedUnitStat>
+
+    <Embark>
+      <Building ID="1 22" name="mine" pos="0;0"/>
+      <Building ID="1 8" name="generator" pos="0;-3"/>
+      <Vehicle ID="0 19" name="konstrukt" metal="40"/>
+      <Vehicle ID="0 24" name="pionier" metal="20"/>
+      <Vehicle ID="0 31" name="surveyor" />
+    </Embark>
   </Clan>
 
   <Clan Name="Sacred Eights">
@@ -181,6 +221,14 @@
       <Damage Num="16"/>
       <Speed Num="11"/>
     </ChangedUnitStat>
+
+    <Embark>
+      <Building ID="1 22" name="mine" pos="0;0"/>
+      <Building ID="1 8" name="generator" pos="0;-3"/>
+      <Vehicle ID="0 19" name="konstrukt" metal="40"/>
+      <Vehicle ID="0 24" name="pionier" metal="20"/>
+      <Vehicle ID="0 31" name="surveyor" />
+    </Embark>
   </Clan>
 
   <Clan Name="7 Knights">
@@ -214,6 +262,14 @@
     <ChangedUnitStat UnitID="1 21">
       <Damage Num="36"/>
     </ChangedUnitStat>
+
+    <Embark>
+      <Building ID="1 22" name="mine" pos="0;0"/>
+      <Building ID="1 8" name="generator" pos="0;-3"/>
+      <Vehicle ID="0 19" name="konstrukt" metal="40"/>
+      <Vehicle ID="0 24" name="pionier" metal="20"/>
+      <Vehicle ID="0 31" name="surveyor" />
+    </Embark>
   </Clan>
 
   <Clan Name="Axis Inc.">
@@ -226,6 +282,26 @@
     <ChangedUnitStat UnitID="1 13">
       <Built_Costs Num="16"/>
     </ChangedUnitStat>
+
+    <Embark>
+      <Building ID="1 22" name="mine" pos="0;0"/>
+      <!-- generator is 3x3 tiles, so we offset it to -3 -->
+      <Building ID="1 8" name="generator" pos="0;-3"/>
+
+      <Vehicle ID="0 19" name="konstrukt" metal="40"/>
+      <Vehicle ID="0 24" name="pionier" metal="20"/>
+      <Vehicle ID="0 31" name="surveyor" />
+      <!-- credits=[0-100) -->
+      <Vehicle ID="0 24" name="pionier" metal="0"/>
+      <!-- credits=[100-150) -->
+      <Vehicle ID="0 19" name="konstrukt" metal="0" mincredits="100"/>
+      <!-- credits=[150-200) -->
+      <Vehicle ID="0 24" name="pionier" metal="0" mincredits="150"/>
+      <!-- credits=[200-300) -->
+      <Vehicle ID="0 19" name="konstrukt" metal="0" mincredits="200"/>
+      <!-- credits=[300-max) -->
+      <Vehicle ID="0 24" name="pionier" metal="0" mincredits="300"/>
+    </Embark>
   </Clan>
 
 </Clans>

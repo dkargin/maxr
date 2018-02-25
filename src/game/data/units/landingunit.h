@@ -23,7 +23,7 @@
 #include <list>
 #include <vector>
 
-#include "main.h" // sID
+#include "unit.h" // sID
 #include "game/logic/upgradecalculator.h"
 #include "utility/position.h"
 
@@ -31,8 +31,10 @@
 struct sLandingUnit
 {
 	sID unitID;
-	unsigned cargo;
+    unsigned cargo = 0;
 	cPosition position;
+
+    int minCredits = 0;
 
     // If unit is provided by default settings, and can not be removed from unit selection
     bool isDefault = false;
@@ -53,6 +55,7 @@ struct sLandingUnit
 		archive & unitID;
 		archive & cargo;
 		archive & position;
+        archive & minCredits;
         archive & isDefault;
 	}
 };
@@ -82,8 +85,6 @@ struct sLandingConfig
     int state = 0;
 	// Units that player have picked
 	std::vector<sLandingUnit> landingUnits;
-	// Selected clan
-    int clan = -1;
     // Upgrades that player has picked
     // TODO: should it be here?
 	std::vector<std::pair<sID, cUnitUpgrade>> unitUpgrades;
@@ -100,13 +101,10 @@ struct sLandingConfig
 		archive & landingUnits;
 		archive & landingPosition;
 		archive & unitUpgrades;
-        archive & clan;
         archive & baseLayout;
 	}
 };
 
 class cGameSettings;
-// Creates initial landing config
-void createInitial(sLandingConfig& config, const cGameSettings& gameSettings, const cUnitsData& unitsData);
 
 #endif // game_data_units_landingunitH

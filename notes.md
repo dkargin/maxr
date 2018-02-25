@@ -36,6 +36,7 @@ My plan so far:
  - Pathfinder ignores cells, that are occupied by another units. Seems like regular units do not block the map properly
  - Pathfinder tries to cross the angles
  - Rendering pipeline hopes that size of unit's graphics is consistent with actual unit's size. In fact - it is not consistent, and should not.
+ - Icon rendering is broken. Look at unit selection dialog
 
 Broken functions. Should be fixed:
 
@@ -109,53 +110,11 @@ size.x() *= float(refSize.x()) / float(srcRect.x())
 size.y() *= float(refSize.y()) / float(srcRect.y())
 ```
 
-
-TODO right now:
-
-1. Fix image for mine
-	Add xml tag for selectable sprite sheet
-2. Fix oversized and undersized images (ifder FIX_SHADOW)
-	Add xml tag
-
-// Wrapper for drawing sprites from world coordinates
-struct cSprite: public cRenderable
-{
-    // Shared pointer to SDL surface
-    SurfacePtr surface;
-    // Area of source surface. We copy data from that area
-    SDL_Rect srcRect;
-    // Rendering mode. That's static data from XML
-    FitMode mode;
-public:
-    cSprite();
-
-    virtual cBox<cVector2> getRect() const override;
-    // @param scale - multiplier between world coordinates and screen coordinates
-    // usually it is like tileSize*zoom
-    virtual void updateScale(float scale) override;
-
-    operator SDL_Surface*();
-
-    void setColorKey(int key);
-    void setAlphaKey(int alpha = -1);
-    // Blit this sprite to output surface
-    // Will do rescaling, if necessary
-    void blit_and_cache(SDL_Surface* surface, SDL_Rect rect) override;
-protected:
-    // Cached surface. Will be updated at 'updateScale' invocation
-    SurfaceUPtr cache;
-    // Last used scale
-    cVector2 lastSize;
-};
-
-hasFlag(UnitFlag::C
-
 #ifdef FIX_THIS
 #ifdef OVERLAYS_TO_BE_FIXED
 #ifdef FIX_BUILD_ANIMATION
 #ifdef FIX_MINE_LAYER
 #ifdef FIX_BUILDING_UNDERLAY
-
 
 #ifdef VERY_BROKEN
             // TODO: Get rid of this shit. Leave all data references to XML or scripts
@@ -176,4 +135,5 @@ hasFlag(UnitFlag::C
 
 Tag "Graphic" has block "Animations" with: "Build_Up", "Power_On"
 
-<Capacity_Res_Type Const="Metal"/>
+- SubBase is broken
+- Embark is broken 

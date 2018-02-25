@@ -128,7 +128,8 @@ uint32_t cBuildListItem::getChecksum(uint32_t crc) const
 
 //--------------------------------------------------------------------------
 cBuilding::cBuilding (sBuildingUIDataPtr data, const cDynamicUnitData* ddata, cPlayer* owner, unsigned int ID) :
-    cUnit(ddata, staticData, owner, ID),
+    cUnit(ddata, data, owner, ID),
+    uiData(data),
 	isWorking (false),
 	wasWorking(false),
 	metalPerRound(0),
@@ -139,7 +140,6 @@ cBuilding::cBuilding (sBuildingUIDataPtr data, const cDynamicUnitData* ddata, cP
 	rubbleTyp = 0;
 	rubbleValue = 0;
 	researchArea = cResearch::kAttackResearch;
-    uiData = data;
 	points = 0;
 
 	repeatBuild = false;
@@ -815,7 +815,7 @@ void cBuilding::startWork ()
 		return;
 	}
 
-	if (!subBase->startBuilding(this))
+	if (subBase && !subBase->startBuilding(this))
 		return;
 
 	// research building
@@ -837,7 +837,7 @@ void cBuilding::stopWork (bool forced)
 {
 	if (!isUnitWorking()) return;
 
-	if (!subBase->stopBuilding(this, forced))
+	if (subBase && !subBase->stopBuilding(this, forced))
 		return;
 	
     if (hasStaticFlag(UnitFlag::CanResearch))
@@ -884,18 +884,20 @@ bool cBuilding::canTransferTo (const cUnit& unit) const
 	{
 		const cVehicle* v = static_cast<const cVehicle*>(&unit);
 
-
 		if (v->getStaticUnitData().storeResType != staticData->storeResType)
 			return false;
 
 		if (v->isUnitBuildingABuilding() || v->isUnitClearing())
 			return false;
 
-		for (const auto b : subBase->getBuildings())
+		if(subBase)
 		{
-            if (b->isNextTo (*v)) return true;
+			for (const auto b : subBase->getBuildings())
+			{
+				if (b->isNextTo (*v))
+					return true;
+			}
 		}
-
 		return false;
 	}
 	else if (unit.isABuilding())

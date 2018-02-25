@@ -63,7 +63,7 @@ void cNetworkHostGameNew::start (cApplication& application)
 
 	cActionInitNewGame action;
     action.landingConfig = *this->landingConfig;
-    action.landingConfig.clan = localPlayerClan;
+    action.clan = localPlayerClan;
     localClient->sendNetMessage(action);
 
 	gameGuiController = std::make_unique<cGameGuiController> (application, staticMap);

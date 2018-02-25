@@ -180,7 +180,20 @@ void cWindowSinglePlayer::stateSetupUnits()
 {
     auto gameSettings = game->getGameSettings();
     auto config = game->getLandingConfig();
-    createInitial(*config, *gameSettings, *game->getUnitsData());
+
+
+    int clanIndex = game->getPlayerClan();
+    if(clanIndex >= 0)
+    {
+        cClan* clan = game->getClanData()->getClan(clanIndex);
+        clan->createLanding(*config, *gameSettings, *game->getUnitsData());
+    }
+    else
+    {
+        // We should select a clan!
+        assert(false);
+    }
+    //createInitial(*config, *gameSettings, *game->getUnitsData());
 
     windowLandingUnitSelection.reset(
             new cWindowLandingUnitSelection(

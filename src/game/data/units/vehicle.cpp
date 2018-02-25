@@ -62,8 +62,9 @@ cVehicleData::cVehicleData()
 //-----------------------------------------------------------------------------
 
 //-----------------------------------------------------------------------------
-cVehicle::cVehicle (sVehicleDataPtr staticData, const cDynamicUnitData& dynamicData, cPlayer* owner, unsigned int ID) :
-    cUnit (&dynamicData, staticData, owner, ID),
+cVehicle::cVehicle (sVehicleDataPtr sdata, const cDynamicUnitData& dynamicData, cPlayer* owner, unsigned int ID) :
+    cUnit (&dynamicData, sdata, owner, ID),
+		vehicleData(sdata),
 	loaded (false),
 	isBuilding (false),
 	buildingTyp(),

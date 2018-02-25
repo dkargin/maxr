@@ -140,13 +140,12 @@ protected:
     void LoadVehicleGraphicProperties (XMLElement* source, cVehicleData& data);
     void LoadBuildingGraphicProperties (XMLElement* source, cBuildingData& data);
 
-    static bool parseID(string idString, sID& id)
-    {
-        id.firstPart = atoi (idString.substr (0, idString.find (" ", 0)).c_str());
-        id.secondPart = atoi (idString.substr (idString.find (" ", 0), idString.length()).c_str());
-    }
+    // Try to obain ID by unique string name
+    sID getVehicleId(const std::string& sid);
 
     // Get attribute value from specified xml block
+    static sID getAttribSID(tinyxml2::XMLElement* element, const char* name, sID default_ = sID());
+    static cPosition getAttribPos(tinyxml2::XMLElement* element, const char* name, cPosition default_ = cPosition(0,0));
     static int getValueInt (tinyxml2::XMLElement* block, const char* name, int default_ = 0);
     static float getValueFloat (tinyxml2::XMLElement* block, const char* name, float default_ = 0);
     static std::string getValueString (tinyxml2::XMLElement* block, const char* name, const char* attrib, const char* default_ = "");
@@ -1163,6 +1162,8 @@ void ModData::parseDataFile(const char* path, const char* directory)
         const char *attrName = element->Attribute("name");
         const char *attrID = element->Attribute("ID");
 
+        sID id;
+
         if(!attrName)
         {
             Log.write (" - root entity should have a \'name\' attribute. Skipping", cLog::eLOG_TYPE_WARNING);
@@ -1174,11 +1175,13 @@ void ModData::parseDataFile(const char* path, const char* directory)
             errors++;
             Log.write (" - root entity should have a \'name\' attribute. Skipping", cLog::eLOG_TYPE_WARNING);
         }
+        else
+        {
+            id = this->getAttribSID(element, "ID");
+        }
 
         std::string name = attrName;
 
-        sID id;
-        parseID(attrID, id);
         Log.write (" - found object name=" + name, cLog::eLOG_TYPE_INFO);
 
         std::string type = value;
@@ -1879,10 +1882,86 @@ int ModData::LoadClans()
 				}
 			}
 		}
+
+        // Find all embarcation blocks
+        for (XMLElement* block = clanElement->FirstChildElement("Embark"); block; block = block->NextSiblingElement ("Embark"))
+        {
+            // Iterate through all embark items
+            for(XMLElement* item = block->FirstChildElement(); item; item = item->NextSiblingElement())
+            {
+                if(!item->Name())
+                    continue;
+
+                std::string name = item->Name();
+                if(name == "Building")
+                {
+                    if(item->Attribute("ID"))
+                    {
+                        cBaseLayoutItem building;
+                        building.pos = getAttribPos(item, "pos");
+                        building.ID = getAttribSID(item, "ID");
+                        newClan->addEmbarkBuilding(building);
+                    }
+                    else
+                    {
+                        Log.write ("Embarcation rule for Building must contain valid 'ID'!", cLog::eLOG_TYPE_ERROR);
+                    }
+
+                }
+                else if(name == "Vehicle")
+                {
+                    sLandingUnit unit;
+                    unit.unitID = getAttribSID(item, "ID");
+                    unit.cargo = item->FloatAttribute("metal");
+                    unit.minCredits = item->IntAttribute("mincredits");
+                    unit.isDefault = true;
+                    newClan->addEmbarkUnit(unit);
+                }
+            }
+        }
 	}
-    unitsData->initializeClanUnitData(ClanDataGlobal);
+
+	unitsData->initializeClanUnitData(ClanDataGlobal);
 
 	return 1;
+}
+
+sID ModData::getAttribSID(tinyxml2::XMLElement* element, const char* name, sID default_)
+{
+    // TODO: implement or remove this method
+    if (auto attrib = element->Attribute(name))
+    {
+        std::string value = attrib;
+        sID id;
+        auto delim = " ";
+        auto delim_pos = value.find (delim, 0);
+        if(delim_pos != std::string::npos)
+        {
+            id.firstPart = atoi (value.substr (0, delim_pos).c_str());
+            id.secondPart = atoi (value.substr(delim_pos, value.length()).c_str());
+        }
+        return id;
+    }
+    return default_;
+}
+
+cPosition ModData::getAttribPos(tinyxml2::XMLElement* element, const char* name, cPosition default_)
+{
+    if (element->Attribute(name))
+    {
+        cPosition result;
+        std::string value = element->Attribute(name);
+        char delim = ';';
+        //pos="0;-3"
+        auto delim_pos = value.find (delim, 0);
+        if(delim_pos != std::string::npos)
+        {
+            result.x() = atoi (value.substr(0, delim_pos).c_str());
+            result.y() = atoi (value.substr(delim_pos, value.length()).c_str());
+        }
+        return result;
+    }
+    return default_;
 }
 
 int ModData::getValueInt(tinyxml2::XMLElement* block, const char* name, int default_)

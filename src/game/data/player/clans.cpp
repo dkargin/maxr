@@ -19,6 +19,7 @@
 
 #include "game/data/player/clans.h"
 #include "game/data/units/unitdata.h"
+#include "game/data/gamesettings.h"
 
 using namespace std;
 
@@ -137,6 +138,9 @@ cClan::cClan(const cClan& other) :
 	{
 		stats.push_back(std::make_unique<cClanUnitStat>(*stat));
 	}
+
+	landingUnits = other.landingUnits;
+	baseLayout = other.baseLayout;
 }
 
 //--------------------------------------------------
@@ -182,6 +186,44 @@ vector<string> cClan::getClanStatsDescription(const cUnitsData& originalData) co
 	}
 	return result;
 }
+
+void cClan::addEmbarkUnit(const sLandingUnit& item)
+{
+    landingUnits.push_back(item);
+}
+
+void cClan::addEmbarkBuilding(const cBaseLayoutItem& item)
+{
+    baseLayout.push_back(item);
+}
+
+//------------------------------------------------------------------------------
+void cClan::createLanding(sLandingConfig& config, const cGameSettings& gameSettings, const cUnitsData& unitsData)
+{
+    if (gameSettings.getBridgeheadType() == eGameSettingsBridgeheadType::Mobile)
+        return;
+
+    if(config.state != 0)
+        return;
+
+    //Add initial buildings
+    for(const auto& item: this->baseLayout)
+    {
+        config.baseLayout.push_back(item);
+    }
+
+    // Add initial vehicles.
+    // This vehicles can depend in starting credits
+    const int startCredits = gameSettings.getStartCredits();
+    for(const auto& item: landingUnits)
+    {
+        if(startCredits >= item.minCredits)
+            config.landingUnits.push_back(item);
+    }
+
+    config.state = 1;
+}
+
 
 //---------------------------------------------------
 cClanData::cClanData(const cClanData& other)

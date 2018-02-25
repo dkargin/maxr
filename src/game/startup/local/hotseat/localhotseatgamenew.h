@@ -48,6 +48,7 @@ class cLocalHotSeatGameNew : public cLocalHotSeatGame
 	{
         cPlayerBasicData basicData;
         std::shared_ptr<sLandingConfig> config;
+        int clan = -1;
 	};
 public:
 	cLocalHotSeatGameNew();
@@ -62,11 +63,7 @@ public:
 
 	void setPlayerClan (size_t playerIndex, int clan);
 
-    //void setLandingConfig(size_t playerIndex, std::shared_ptr<sLandingConfig> config);
-    //void setLandingUnits (size_t playerIndex, std::vector<sLandingUnit> landingUnits);
-    //void setUnitUpgrades (size_t playerIndex, std::vector<std::pair<sID, cUnitUpgrade>> unitUpgrades);
-
-	void setLandingPosition (size_t playerIndex, const cPosition& landingPosition);
+    void setLandingPosition (size_t playerIndex, const cPosition& landingPosition);
 
 	const std::shared_ptr<cStaticMap>& getStaticMap();
 	const std::shared_ptr<cGameSettings>& getGameSettings();
