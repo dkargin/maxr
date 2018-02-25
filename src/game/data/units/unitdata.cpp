@@ -165,7 +165,7 @@ size_t cUnitsData::getNrOfClans() const
 }
 
 //------------------------------------------------------------------------------
-const cDynamicUnitData& cUnitsData::getDynamicUnitData(const sID& id, int clan /*= -1*/) const
+const cDynamicUnitData& cUnitsData::getDynamicData(const sID& id, int clan /*= -1*/) const
 {
 	if (clan < 0 || static_cast<unsigned>(clan) >= clanDynamicUnitData.size())
 	{
@@ -187,6 +187,28 @@ const cDynamicUnitData& cUnitsData::getDynamicUnitData(const sID& id, int clan /
 	}
 }
 
+cDynamicUnitData& cUnitsData::getDynamicData(const sID& id, int clan /*= -1*/)
+{
+    if (clan < 0 || static_cast<unsigned>(clan) >= clanDynamicUnitData.size())
+    {
+        for (auto& data : dynamicUnitData)
+        {
+            if (data.second.getId() == id)
+                return data.second;
+        }
+        throw std::runtime_error("Unitdata not found" + id.getText());
+    }
+    else
+    {
+        for (auto& data : clanDynamicUnitData[clan])
+        {
+            if (data.second.getId() == id)
+                return data.second;
+        }
+        throw std::runtime_error("Unitdata not found" + id.getText());
+    }
+}
+
 //------------------------------------------------------------------------------
 cStaticUnitDataPtr cUnitsData::getUnit(const sID& id) const
 {
@@ -195,7 +217,7 @@ cStaticUnitDataPtr cUnitsData::getUnit(const sID& id) const
         if (data.second->ID == id)
             return data.second;
 	}
-	throw std::runtime_error("Unitdata not found" + id.getText());
+    return nullptr;//throw std::runtime_error("Unitdata not found" + id.getText());
 }
 
 //--------------------------------------------------------------------------
@@ -229,6 +251,14 @@ std::shared_ptr<cVehicleData> cUnitsData::makeVehicle(const UID& id)
         result.reset(new cVehicleData());
         result->ID = id;
         staticUnitData[id] = result;
+
+        // Ensure that dynamic data exists
+        if (dynamicUnitData.find(id) == dynamicUnitData.end())
+        {
+            cDynamicUnitData ddata;
+            ddata.setId(id);
+            dynamicUnitData[id] = ddata;
+        }
         return result;
     }
 
@@ -252,6 +282,14 @@ std::shared_ptr<cBuildingData> cUnitsData::makeBuilding(const UID& id)
         result.reset(new cBuildingData());
         result->ID = id;
         staticUnitData[id] = result;
+
+        // Ensure that dynamic data exists
+        if (dynamicUnitData.find(id) == dynamicUnitData.end())
+        {
+            cDynamicUnitData ddata;
+            ddata.setId(id);
+            dynamicUnitData[id] = ddata;
+        }
         return result;
     }
 
@@ -263,7 +301,7 @@ std::shared_ptr<cBuildingData> cUnitsData::makeBuilding(const UID& id)
 }
 
 //------------------------------------------------------------------------------
-const cUnitsData::DynamicUnitDataStorage& cUnitsData::getDynamicUnitsData(int clan /*= -1*/) const
+const cUnitsData::DynamicUnitDataStorage& cUnitsData::getAllDynamicData(int clan /*= -1*/) const
 {
 	if (clan < 0 || static_cast<unsigned>(clan) >= clanDynamicUnitData.size())
 	{
@@ -275,7 +313,7 @@ const cUnitsData::DynamicUnitDataStorage& cUnitsData::getDynamicUnitsData(int cl
 	}
 }
 
-std::vector<cStaticUnitDataPtr> cUnitsData::getUnitsData(UnitType type) const
+std::vector<cStaticUnitDataPtr> cUnitsData::getUnitsOfType(UnitType type) const
 {
     std::vector<cStaticUnitDataPtr> result;
     for(auto pairs: staticUnitData)
@@ -287,7 +325,7 @@ std::vector<cStaticUnitDataPtr> cUnitsData::getUnitsData(UnitType type) const
 }
 
 //------------------------------------------------------------------------------
-std::vector<cStaticUnitDataPtr> cUnitsData::getStaticUnitsData() const
+std::vector<cStaticUnitDataPtr> cUnitsData::getAllUnits() const
 {
     std::vector<cStaticUnitDataPtr> result;
     for(auto pairs: staticUnitData)
@@ -297,7 +335,7 @@ std::vector<cStaticUnitDataPtr> cUnitsData::getStaticUnitsData() const
     return result;
 }
 
-std::vector<std::shared_ptr<cBuildingData>> cUnitsData::getAllBuildings()
+std::vector<std::shared_ptr<cBuildingData>> cUnitsData::getAllBuildings() const
 {
     std::vector<std::shared_ptr<cBuildingData>> result;
     for(auto pairs: staticUnitData)
@@ -312,7 +350,7 @@ std::vector<std::shared_ptr<cBuildingData>> cUnitsData::getAllBuildings()
     return result;
 }
 
-std::vector<std::shared_ptr<cVehicleData>> cUnitsData::getAllVehicles()
+std::vector<std::shared_ptr<cVehicleData>> cUnitsData::getAllVehicles() const
 {
     std::vector<std::shared_ptr<cVehicleData>> result;
     for(auto pairs: staticUnitData)

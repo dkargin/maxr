@@ -998,7 +998,7 @@ bool cVehicle::isOtherUnitOffendedByThis(const cModel& model, const cUnit& other
 {
 	// don't treat the cheap buildings
 	// (connectors, roads, beton blocks) as offendable
-	if (otherUnit.isABuilding() && model.getUnitsData()->getDynamicUnitData(otherUnit.data.getId()).getBuildCost() <= 2)
+    if (otherUnit.isABuilding() && model.getUnitsData()->getDynamicData(otherUnit.data.getId()).getBuildCost() <= 2)
 		return false;
 
 	cMapView mapView(model.getMap(), nullptr);

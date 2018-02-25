@@ -61,8 +61,8 @@ SDL_Surface* cWindowMain::getRandomInfoImage()
 	int unitShow = -1;
 	SDL_Surface* surface = nullptr;
 
-    const auto& buildings = UnitsDataGlobal.getUnitsData(UnitType::Building);
-    const auto& vehicles = UnitsDataGlobal.getUnitsData(UnitType::Vehicle);
+    const auto& buildings = UnitsDataGlobal.getUnitsOfType(UnitType::Building);
+    const auto& vehicles = UnitsDataGlobal.getUnitsOfType(UnitType::Vehicle);
 
     if (showBuilding == 1 && buildings.size() > 0)
 	{

@@ -26,7 +26,7 @@
 
 
 tinyxml2::XMLElement* XmlGetFirstElement (tinyxml2::XMLDocument& xmlDoc, const char* first, ...);
-
+tinyxml2::XMLElement* XmlGetFirstElement (tinyxml2::XMLElement* block, const char* first, ...);
 /**
  * Tries to find a element from a path in a xml file.
  * If the element does not exist, it will be generated

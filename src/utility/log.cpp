@@ -103,8 +103,8 @@ void cLog::write (const std::string& msg, eLogType type)
 	else
 	{
 		writeToFile(tmp, logfile);
-
 	}
+    printf("%s\n", tmp.c_str());
 }
 
 //------------------------------------------------------------------------------

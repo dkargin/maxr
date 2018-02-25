@@ -113,7 +113,7 @@ void cWindowUpgrades::setActiveUnit (const sID& unitId)
 	if (iter == unitUpgrades.end())
 	{
 		unitUpgrade = &unitUpgrades[unitId];
-        unitUpgrade->init(unitsData->getDynamicUnitData(unitId, getPlayer().getClan()), *getPlayer().getUnitDataCurrentVersion(unitId), *unitsData->getUnit(unitId), getPlayer().getResearchState());
+        unitUpgrade->init(unitsData->getDynamicData(unitId, getPlayer().getClan()), *getPlayer().getUnitDataCurrentVersion(unitId), *unitsData->getUnit(unitId), getPlayer().getResearchState());
 	}
 	else
 	{
@@ -202,7 +202,7 @@ void cWindowUpgrades::generateSelectionList (bool select)
 
 	clearSelectionUnits();
 
-	for (const auto& data : unitsData->getStaticUnitsData())
+    for (const auto& data : unitsData->getAllUnits())
 	{
         auto type = data->getType();
         if (type==UnitType::Building && !build)

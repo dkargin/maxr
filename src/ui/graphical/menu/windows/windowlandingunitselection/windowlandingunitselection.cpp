@@ -184,7 +184,7 @@ void cWindowLandingUnitSelection::setActiveUnit (const sID& unitId)
 	if (iter == unitUpgrades.end())
 	{
 		unitUpgrade = &unitUpgrades[unitId];
-        const auto& dynamicData = unitsData->getDynamicUnitData(unitId, getPlayer().getClan());
+        const auto& dynamicData = unitsData->getDynamicData(unitId, getPlayer().getClan());
         const auto& currentVersion = *getPlayer().getUnitDataCurrentVersion(unitId);
         unitUpgrade->init(dynamicData, currentVersion, *unitsData->getUnit(unitId), getPlayer().getResearchState());
 	}
@@ -274,7 +274,7 @@ bool cWindowLandingUnitSelection::tryAddSelectedUnit (const cUnitListViewItemBuy
     if (unitData->hasFlag(UnitFlag::IsHuman))
         return false;
 
-	int buildCosts = unitsData->getDynamicUnitData(unitId, getPlayer().getClan()).getBuildCost();
+    int buildCosts = unitsData->getDynamicData(unitId, getPlayer().getClan()).getBuildCost();
     if (buildCosts > goldBar->getValue())
             return false;
 
@@ -289,7 +289,7 @@ bool cWindowLandingUnitSelection::tryRemoveSelectedUnit (const cUnitListViewItem
 	if (std::find (fixedSelectedUnits.begin(), fixedSelectedUnits.end(), &unitItem) != fixedSelectedUnits.end()) return false;
 
 	const auto& unitId = unitItem.getUnitId();
-	int buildCosts = unitsData->getDynamicUnitData(unitId, getPlayer().getClan()).getBuildCost();
+    int buildCosts = unitsData->getDynamicData(unitId, getPlayer().getClan()).getBuildCost();
 
 	const auto value = buildCosts + (unitItem.getCargo() / singleCreditResourceAmount);
 
@@ -312,7 +312,7 @@ void cWindowLandingUnitSelection::generateSelectionList (bool select)
 
 	clearSelectionUnits();
 
-	for (const auto& data : unitsData->getStaticUnitsData())
+    for (const auto& data : unitsData->getAllUnits())
 	{
         if (data->ID.isABuilding() && !build)
             continue;

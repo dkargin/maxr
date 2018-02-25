@@ -47,7 +47,7 @@ cPlayer::cPlayer (const cPlayerBasicData& splayer_, const cUnitsData& unitsData)
 	base(*this)
 {
 	// get the default (no clan) unit data
-	dynamicUnitsData = unitsData.getDynamicUnitsData(-1);
+    dynamicUnitsData = unitsData.getAllDynamicData(-1);
 
 	researchCentersWorkingTotal = 0;
 	for (int i = 0; i < cResearch::kNrResearchAreas; i++)
@@ -74,7 +74,7 @@ void cPlayer::setClan (int newClan, const cUnitsData& unitsData)
 
 	clan = newClan;
 
-	dynamicUnitsData = unitsData.getDynamicUnitsData(clan);
+    dynamicUnitsData = unitsData.getAllDynamicData(clan);
 }
 
 //------------------------------------------------------------------------------
@@ -597,7 +597,7 @@ void cPlayer::upgradeUnitTypes (const std::vector<int>& areasReachingNextLevel, 
     for (auto& pairs : dynamicUnitsData)
 	{
         auto& unitData = pairs.second;
-		const cDynamicUnitData& originalData = originalUnitsData.getDynamicUnitData(unitData.getId(), getClan());
+        const cDynamicUnitData& originalData = originalUnitsData.getDynamicData(unitData.getId(), getClan());
 		bool incrementVersion = false;
 		for (auto researchArea : areasReachingNextLevel)
 		{

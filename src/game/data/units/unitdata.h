@@ -63,8 +63,7 @@ public:
 	void initializeClanUnitData(const cClanData& clanData);
 
     // Generate or obtain dynamic unit data for specified id
-    cDynamicUnitData& getDynamicUnitData(const std::string& id);
-
+    cDynamicUnitData& getDynamicData(const std::string& id);
     // Generate or obtain static unit data for specified id
     cStaticUnitDataPtr getUnit(const std::string& id);
 
@@ -93,16 +92,15 @@ public:
 	size_t getNrOfClans() const;
 
 	// clan = -1: without clans
-	const cDynamicUnitData& getDynamicUnitData(const sID& id, int clan = -1) const;
+    const cDynamicUnitData& getDynamicData(const sID& id, int clan = -1) const;
+    cDynamicUnitData& getDynamicData(const sID& id, int clan = -1);
 	// clan = -1: without clans
-    const DynamicUnitDataStorage& getDynamicUnitsData(int clan = -1) const;
+    const DynamicUnitDataStorage& getAllDynamicData(int clan = -1) const;
 
-    std::vector<cStaticUnitDataPtr> getStaticUnitsData() const;
-
-    std::vector<cStaticUnitDataPtr> getUnitsData(UnitType type) const;
-
-    std::vector<std::shared_ptr<cVehicleData>> getAllVehicles();
-    std::vector<std::shared_ptr<cBuildingData>> getAllBuildings();
+    std::vector<cStaticUnitDataPtr> getAllUnits() const;
+    std::vector<cStaticUnitDataPtr> getUnitsOfType(UnitType type) const;
+    std::vector<std::shared_ptr<cVehicleData>> getAllVehicles() const;
+    std::vector<std::shared_ptr<cBuildingData>> getAllBuildings() const;
 
 	uint32_t getChecksum(uint32_t crc) const;
 

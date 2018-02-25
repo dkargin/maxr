@@ -117,7 +117,7 @@ void cWindowBuildVehicles::setActiveUnit (const sID& unitId)
 void cWindowBuildVehicles::generateSelectionList (const cBuilding& building, const cMapView& map, const cUnitsData& unitsData)
 {
 	bool select = true;
-    for (const auto& ptr : unitsData.getStaticUnitsData())
+    for (const auto& ptr : unitsData.getAllUnits())
 	{
         const auto& unitData = *ptr;
         if (unitData.getType() == UnitType::Building)

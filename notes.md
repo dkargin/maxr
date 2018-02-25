@@ -155,3 +155,25 @@ hasFlag(UnitFlag::C
 #ifdef FIX_BUILD_ANIMATION
 #ifdef FIX_MINE_LAYER
 #ifdef FIX_BUILDING_UNDERLAY
+
+
+#ifdef VERY_BROKEN
+            // TODO: Get rid of this shit. Leave all data references to XML or scripts
+            // C++ should not keep so specific data. Really.
+            if (specialString == "mine")
+                UnitsDataGlobal.setSpecialIDMine(sID(1, IDList.back()));
+            else if (specialString == "energy")
+                UnitsDataGlobal.setSpecialIDSmallGen(sID(1, IDList.back()));
+            else if (specialString == "connector")
+                UnitsDataGlobal.setSpecialIDConnector(sID(1, IDList.back()));
+            else if (specialString == "landmine")
+                UnitsDataGlobal.setSpecialIDLandMine(sID(1, IDList.back()));
+            else if (specialString == "seamine")
+                UnitsDataGlobal.setSpecialIDSeaMine(sID(1, IDList.back()));
+            else if (specialString == "smallBeton") // Especially this one
+                UnitsDataGlobal.setSpecialIDSmallBeton(sID(1, IDList.back()));
+#endif
+
+Tag "Graphic" has block "Animations" with: "Build_Up", "Power_On"
+
+<Capacity_Res_Type Const="Metal"/>

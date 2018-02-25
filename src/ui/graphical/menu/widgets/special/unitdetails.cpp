@@ -77,7 +77,7 @@ void cUnitDetails::setUnit (const sID& unitId_, const cPlayer& owner, const cUni
 	unitId = unitId_;
 
     staticUnitData = unitsData.getUnit(unitId).get();
-	playerOriginalData = &unitsData.getDynamicUnitData(unitId, owner.getClan());
+    playerOriginalData = &unitsData.getDynamicData(unitId, owner.getClan());
 	playerCurrentData = owner.getUnitDataCurrentVersion (unitId);
 
 	if (unitObjectCurrentData_ == nullptr)

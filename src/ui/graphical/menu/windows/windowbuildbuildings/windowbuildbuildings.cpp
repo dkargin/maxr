@@ -94,7 +94,7 @@ void cWindowBuildBuildings::setActiveUnit (const sID& unitId)
 void cWindowBuildBuildings::generateSelectionList (const cVehicle& vehicle, const cUnitsData& unitsData)
 {
 	bool select = true;
-	for (const auto& data : unitsData.getStaticUnitsData())
+	for (const auto& data : unitsData.getAllUnits())
 	{
         if (data->hasFlag(UnitFlag::ExplodesOnContact))
             continue;

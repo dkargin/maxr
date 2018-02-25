@@ -87,6 +87,7 @@ enum class UnitFlag : int
     CanClearArea,
     CanDriveAndFire,
     CanBuildPath,
+    CanBuildRepeat,
     CanBeCaptured,
     CanBeDisabled,
     CanCapture,
@@ -227,6 +228,12 @@ public:
             return false;
         flags &= ~(1 << int(flag));
         return true;
+    }
+
+    // Set flag to value
+    bool setFlag(UnitFlag flag, bool value)
+    {
+        return (value) ? enableFlag(flag) : disableFlag(flag);
     }
 
     virtual UnitType getType() const = 0;

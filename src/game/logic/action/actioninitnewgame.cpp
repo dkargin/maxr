@@ -107,7 +107,7 @@ void cActionInitNewGame::execute(cModel& model) const
 			Log.write(" Apply upgrades failed. Unknown sID: " + unitId.getText(), cLog::eLOG_TYPE_NET_ERROR);
 			return;
 		}
-		int costs = upgradeValues.calcTotalCosts(unitsdata.getDynamicUnitData(unitId, player.getClan()), *player.getUnitDataCurrentVersion(unitId), player.getResearchState());
+        int costs = upgradeValues.calcTotalCosts(unitsdata.getDynamicData(unitId, player.getClan()), *player.getUnitDataCurrentVersion(unitId), player.getResearchState());
 		if (costs <= 0)
 		{
 			Log.write(" Apply upgrades failed. Couldn't calculate costs.", cLog::eLOG_TYPE_NET_ERROR);

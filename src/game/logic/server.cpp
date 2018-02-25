@@ -1078,7 +1078,7 @@ int cServer::getUpgradeCosts (const sID& ID, cPlayer& player,
 {
 	const bool bVehicle = ID.isAVehicle();
 	const cDynamicUnitData* currentVersion = player.getUnitDataCurrentVersion (ID);
-	const cDynamicUnitData* startVersion = &model.getUnitsData()->getDynamicUnitData(ID, player.getClan());
+    const cDynamicUnitData* startVersion = &model.getUnitsData()->getDynamicData(ID, player.getClan());
 	if (currentVersion == 0 || startVersion == 0)
 		return 1000000; // error (unbelievably high cost...)
 

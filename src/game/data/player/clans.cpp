@@ -59,7 +59,7 @@ static string GetModificatorString (int original, int modified)
 //--------------------------------------------------
 string cClanUnitStat::getClanStatsDescription(const cUnitsData& originalData) const
 {
-	const cDynamicUnitData* data = &originalData.getDynamicUnitData(unitId);
+    const cDynamicUnitData* data = &originalData.getDynamicData(unitId);
 
 	if (data == nullptr) return "Unknown";
 
