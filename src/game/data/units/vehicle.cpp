@@ -57,13 +57,28 @@ cVehicleData::cVehicleData()
 
 }
 
+bool cVehicleData::setGraphics(const std::string& layer, const cSpritePtr& sprite)
+{
+	if(layer == "build")
+		build = sprite;
+	else if(layer == "build_shadow")
+		build_shadow = sprite;
+	else if(layer == "clear")
+		clear = sprite;
+	else if(layer == "clear_shadow")
+		clear_shadow = sprite;
+	else
+		return cStaticUnitData::setGraphics(layer, sprite);
+	return true;
+}
+
 //-----------------------------------------------------------------------------
 // cVehicle Class Implementation
 //-----------------------------------------------------------------------------
 
 //-----------------------------------------------------------------------------
 cVehicle::cVehicle (sVehicleDataPtr sdata, const cDynamicUnitData& dynamicData, cPlayer* owner, unsigned int ID) :
-    cUnit (&dynamicData, sdata, owner, ID),
+	cUnit (&dynamicData, sdata, owner, ID),
 		vehicleData(sdata),
 	loaded (false),
 	isBuilding (false),
@@ -83,7 +98,7 @@ cVehicle::cVehicle (sVehicleDataPtr sdata, const cDynamicUnitData& dynamicData, 
 	bandPosition(0, 0),
 	moveJob(nullptr)
 {
-    //uiData = UnitsUiData.getVehicleUI (staticData.ID);
+	//uiData = UnitsUiData.getVehicleUI (staticData.ID);
 	ditherX = 0;
 	ditherY = 0;
 	flightHeight = 0;
@@ -112,20 +127,20 @@ cVehicle::~cVehicle()
 
 sVehicleDataPtr cVehicle::getVehicleData() const
 {
-    return this->vehicleData;
+	return this->vehicleData;
 }
 
 void cVehicle::drawOverlayAnimation (SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, int frameNr, int alpha) const
 {
-    drawOverlayAnimation (surface, dest, zoomFactor, *vehicleData, frameNr, alpha);
+	drawOverlayAnimation (surface, dest, zoomFactor, *vehicleData, frameNr, alpha);
 }
 
 /*static*/ void cVehicle::drawOverlayAnimation (SDL_Surface* surface, const SDL_Rect& dest,
-                                                float zoomFactor, const cVehicleData& data, int frameNr, int alpha)
+												float zoomFactor, const cVehicleData& data, int frameNr, int alpha)
 {
 #ifdef OVERLAYS_TO_BE_FIXED
-    if (uiData.hasOverlay == false || cSettings::getInstance().isAnimations() == false)
-        return;
+	if (uiData.hasOverlay == false || cSettings::getInstance().isAnimations() == false)
+		return;
 
 	const Uint16 size = (Uint16) (uiData.overlay_org->h * zoomFactor);
 	const Uint16 srcX = Round((uiData.overlay_org->h * frameNr) * zoomFactor);
@@ -172,15 +187,15 @@ void cVehicle::render_BuildingOrBigClearing (const cMapView& map, unsigned long 
 	// draw shadow
 	tmp = dest;
 	if (drawShadow)
-        blitWithPreScale (vehicleData->build_shw_org.get(), vehicleData->build_shw.get(), nullptr, surface, &tmp, zoomFactor);
+		blitWithPreScale (vehicleData->build_shw_org.get(), vehicleData->build_shw.get(), nullptr, surface, &tmp, zoomFactor);
 
 	// draw player color
 	SDL_Rect src;
 	src.y = 0;
-    src.h = src.w = (int) (vehicleData->build_org->h * zoomFactor);
+	src.h = src.w = (int) (vehicleData->build_org->h * zoomFactor);
 	src.x = (animationTime % 4) * src.w;
 	SDL_BlitSurface (getOwner()->getColor().getTexture(), nullptr, GraphicsData.gfx_tmp.get(), nullptr);
-    blitWithPreScale (vehicleData->build_org.get(), vehicleData->build.get(), &src, GraphicsData.gfx_tmp.get(), nullptr, zoomFactor, 4);
+	blitWithPreScale (vehicleData->build_org.get(), vehicleData->build.get(), &src, GraphicsData.gfx_tmp.get(), nullptr, zoomFactor, 4);
 
 	// draw vehicle
 	src.x = 0;
@@ -199,15 +214,15 @@ void cVehicle::render_smallClearing (unsigned long long animationTime, SDL_Surfa
 	// draw shadow
 	SDL_Rect tmp = dest;
 	if (drawShadow)
-        blitWithPreScale (vehicleData->clear_small_shw_org.get(), vehicleData->clear_small_shw.get(), nullptr, surface, &tmp, zoomFactor);
+		blitWithPreScale (vehicleData->clear_small_shw_org.get(), vehicleData->clear_small_shw.get(), nullptr, surface, &tmp, zoomFactor);
 
 	// draw player color
 	SDL_Rect src;
 	src.y = 0;
-    src.h = src.w = (int) (vehicleData->clear_small_org->h * zoomFactor);
+	src.h = src.w = (int) (vehicleData->clear_small_org->h * zoomFactor);
 	src.x = (animationTime % 4) * src.w;
 	SDL_BlitSurface (getOwner()->getColor().getTexture(), nullptr, GraphicsData.gfx_tmp.get(), nullptr);
-    blitWithPreScale (vehicleData->clear_small_org.get(), vehicleData->clear_small.get(), &src, GraphicsData.gfx_tmp.get(), nullptr, zoomFactor, 4);
+	blitWithPreScale (vehicleData->clear_small_org.get(), vehicleData->clear_small.get(), &src, GraphicsData.gfx_tmp.get(), nullptr, zoomFactor, 4);
 
 	// draw vehicle
 	src.x = 0;
@@ -220,128 +235,128 @@ void cVehicle::render_smallClearing (unsigned long long animationTime, SDL_Surfa
 
 void cVehicle::render_shadow (const cMapView& map, SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor) const
 {
-    if (map.isWater (getPosition()) && (staticData->isStealthOn & TERRAIN_SEA))
-        return;
+	if (map.isWater (getPosition()) && (staticData->isStealthOn & TERRAIN_SEA))
+		return;
 
-    cSpritePtr sprite = vehicleData->directed_shadow[dir];
-    if(!sprite)
-        sprite = vehicleData->shadow;
+	cSpritePtr sprite = vehicleData->directed_shadow[dir];
+	if(!sprite)
+		sprite = vehicleData->shadow;
 
-    if(!sprite)
-        return;
+	if(!sprite)
+		return;
 #ifdef FIX_SHADOW
-    //if(!uiData->shadow && uiData)
-    SDL_Surface* sprite = uiData->shw[dir].get();
-    SDL_Surface* sprite_org = uiData->shw_org[dir].get();
-    if (!sprite_org)
-        return;
+	//if(!uiData->shadow && uiData)
+	SDL_Surface* sprite = uiData->shw[dir].get();
+	SDL_Surface* sprite_org = uiData->shw_org[dir].get();
+	if (!sprite_org)
+		return;
 
-    if (alphaEffectValue && cSettings::getInstance().isAlphaEffects())
-        SDL_SetSurfaceAlphaMod (sprite, alphaEffectValue / 5);
-    else
-        SDL_SetSurfaceAlphaMod (sprite, 50);
+	if (alphaEffectValue && cSettings::getInstance().isAlphaEffects())
+		SDL_SetSurfaceAlphaMod (sprite, alphaEffectValue / 5);
+	else
+		SDL_SetSurfaceAlphaMod (sprite, 50);
 	SDL_Rect tmp = dest;
 
-    int size = getCellSize();
-    int totalSize = 64 * size;
-    int spriteSize = std::max(sprite_org->w, sprite_org->h);
+	int size = getCellSize();
+	int totalSize = 64 * size;
+	int spriteSize = std::max(sprite_org->w, sprite_org->h);
 
-    if (totalSize != spriteSize)
-    {
-        float upscale = double(totalSize) / double(sprite_org->w);
-        zoomFactor *= upscale;
-    }
+	if (totalSize != spriteSize)
+	{
+		float upscale = double(totalSize) / double(sprite_org->w);
+		zoomFactor *= upscale;
+	}
 
 	// draw shadow
 	if (getFlightHeight() > 0)
 	{
-        int high = ((int) (Round (sprite_org->w * zoomFactor) * (getFlightHeight() / 64.0f)));
+		int high = ((int) (Round (sprite_org->w * zoomFactor) * (getFlightHeight() / 64.0f)));
 		tmp.x += high;
 		tmp.y += high;
 
-        blitWithPreScale (sprite_org, sprite, nullptr, surface, &tmp, zoomFactor);
+		blitWithPreScale (sprite_org, sprite, nullptr, surface, &tmp, zoomFactor);
 	}
 	else if (uiData->animationMovement)
 	{
 		const Uint16 size = (int) (uiData->img_org[dir]->h * zoomFactor);
 		SDL_Rect r = {Sint16 (WalkFrame * size), 0, size, size};
-        blitWithPreScale (sprite_org, sprite, &r, surface, &tmp, zoomFactor);
+		blitWithPreScale (sprite_org, sprite, &r, surface, &tmp, zoomFactor);
 	}
 	else
-        blitWithPreScale (sprite_org, sprite, nullptr, surface, &tmp, zoomFactor);
+		blitWithPreScale (sprite_org, sprite, nullptr, surface, &tmp, zoomFactor);
 #endif
 }
 
 void cVehicle::render_simple (SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, int alpha) const
 {
-    render_simple (surface, dest, zoomFactor, *vehicleData, getOwner(), dir, WalkFrame, alpha);
+	render_simple (surface, dest, zoomFactor, *vehicleData, getOwner(), dir, WalkFrame, alpha);
 }
 
 /*static*/ void cVehicle::render_simple (SDL_Surface* surface, const SDL_Rect& dest_base,
-                                         float zoomFactor, const cVehicleData& data,
-                                         const cPlayer* owner, int dir, int walkFrame, int alpha)
+										 float zoomFactor, const cVehicleData& data,
+										 const cPlayer* owner, int dir, int walkFrame, int alpha)
 {
-    SDL_Surface* sprite_dest = GraphicsData.gfx_tmp.get();
+	SDL_Surface* sprite_dest = GraphicsData.gfx_tmp.get();
 	// draw player color
 	if (owner)
 	{
-        SDL_BlitSurface (owner->getColor().getTexture(), nullptr, sprite_dest, nullptr);
+		SDL_BlitSurface (owner->getColor().getTexture(), nullptr, sprite_dest, nullptr);
 	}
 
-    cSpritePtr sprite = data.directed_image[dir];
-    if(!sprite)
-        sprite = data.image;
+	cSpritePtr sprite = data.directed_image[dir];
+	if(!sprite)
+		sprite = data.image;
 
-    if(!sprite)
-        return;
+	if(!sprite)
+		return;
 
-    sprite->render_simple(surface, dest_base);
+	sprite->render_simple(surface, dest_base);
 
-    /*
+	/*
 
-    SDL_Surface* sprite = uiData.img[dir].get();
-    SDL_Surface* sprite_org = uiData.img_org[dir].get();
-    if (!sprite_org)
-        return;
+	SDL_Surface* sprite = uiData.img[dir].get();
+	SDL_Surface* sprite_org = uiData.img_org[dir].get();
+	if (!sprite_org)
+		return;
 
-    int size = unitData.cellSize;
-    int totalSize = 64 * size;
-    int spriteSize = std::max(sprite_org->w, sprite_org->h);
-    float upscale = 1.0;
+	int size = unitData.cellSize;
+	int totalSize = 64 * size;
+	int spriteSize = std::max(sprite_org->w, sprite_org->h);
+	float upscale = 1.0;
 
-    if (totalSize != spriteSize)
-    {
-        upscale = double(totalSize) / double(sprite_org->w);
-    }
+	if (totalSize != spriteSize)
+	{
+		upscale = double(totalSize) / double(sprite_org->w);
+	}
 
 	// read the size:
 	SDL_Rect src;
-    src.w = totalSize;
-    src.h = totalSize;
-    //src.w = (int) (sprite_org->w * zoomFactor);
-    //src.h = (int) (sprite_org->h * zoomFactor);
+	src.w = totalSize;
+	src.h = totalSize;
+	//src.w = (int) (sprite_org->w * zoomFactor);
+	//src.h = (int) (sprite_org->h * zoomFactor);
 
-    SDL_Rect prescaleRect = {0, 0, totalSize, totalSize};
+	SDL_Rect prescaleRect = {0, 0, totalSize, totalSize};
 
 	if (uiData.animationMovement)
 	{
 		SDL_Rect tmp;
-        src.w = src.h = tmp.h = tmp.w = (int) (sprite_org->h * zoomFactor);
+		src.w = src.h = tmp.h = tmp.w = (int) (sprite_org->h * zoomFactor);
 		tmp.x = walkFrame * tmp.w;
 		tmp.y = 0;
-        blitWithPreScale (sprite_org, sprite, &tmp, sprite_dest, &prescaleRect, zoomFactor*upscale);
+		blitWithPreScale (sprite_org, sprite, &tmp, sprite_dest, &prescaleRect, zoomFactor*upscale);
 	}
 	else
-        blitWithPreScale (sprite_org, sprite, nullptr, sprite_dest, &prescaleRect, zoomFactor*upscale);
+		blitWithPreScale (sprite_org, sprite, nullptr, sprite_dest, &prescaleRect, zoomFactor*upscale);
 
 	// draw the vehicle
 	src.x = 0;
 	src.y = 0;
 	SDL_Rect tmp = dest;
 
-    SDL_SetSurfaceAlphaMod (sprite_dest, alpha);
-    blittAlphaSurface (sprite_dest, &src, surface, &tmp);
-    */
+	SDL_SetSurfaceAlphaMod (sprite_dest, alpha);
+	blittAlphaSurface (sprite_dest, &src, surface, &tmp);
+	*/
 }
 
 void cVehicle::render (const cMapView* map, unsigned long long animationTime, const cPlayer* activePlayer, SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, bool drawShadow) const
@@ -386,17 +401,17 @@ void cVehicle::render (const cMapView* map, unsigned long long animationTime, co
 		// whether there is a brige, platform, etc.
 		// because the vehicle will drive on the bridge
 		cBuilding* building = map->getField (getPosition()).getBaseBuilding();
-        if(building && staticData->factorGround > 0)
-        {
-            const auto& surfacePosition = building->getStaticUnitData().surfacePosition;
-            if (surfacePosition == cStaticUnitData::SURFACE_POS_BASE ||
-                surfacePosition == cStaticUnitData::SURFACE_POS_ABOVE_SEA ||
-                surfacePosition == cStaticUnitData::SURFACE_POS_ABOVE_BASE)
-                water = false;
-        }
+		if(building && staticData->factorGround > 0)
+		{
+			const auto& surfacePosition = building->getStaticUnitData().surfacePosition;
+			if (surfacePosition == cStaticUnitData::SURFACE_POS_BASE ||
+				surfacePosition == cStaticUnitData::SURFACE_POS_ABOVE_SEA ||
+				surfacePosition == cStaticUnitData::SURFACE_POS_ABOVE_BASE)
+				water = false;
+		}
 
-        if (water && (staticData->isStealthOn & TERRAIN_SEA) && detectedByPlayerList.empty() && getOwner() == activePlayer)
-            alpha = std::min (alpha, 100);
+		if (water && (staticData->isStealthOn & TERRAIN_SEA) && detectedByPlayerList.empty() && getOwner() == activePlayer)
+			alpha = std::min (alpha, 100);
 	}
 	render_simple (surface, dest, zoomFactor, alpha);
 }
@@ -409,17 +424,17 @@ void cVehicle::proceedBuilding (cModel& model)
 	setBuildCosts (getBuildCosts() - (getBuildCosts() / getBuildTurns()));
 
 	setBuildTurns (getBuildTurns() - 1);
-    if (getBuildTurns() != 0)
-        return;
+	if (getBuildTurns() != 0)
+		return;
 
 	const cMap& map = *model.getMap();
-    auto building = model.getUnitsData()->getUnit(getBuildingType());
-    if(!building)
-    {
-        // TODO: Shout something to the log!
-        assert(false);
-        return;
-    }
+	auto building = model.getUnitsData()->getUnit(getBuildingType());
+	if(!building)
+	{
+		// TODO: Shout something to the log!
+		assert(false);
+		return;
+	}
 
 	getOwner()->addTurnReportUnit (getBuildingType());
 
@@ -456,7 +471,7 @@ void cVehicle::proceedBuilding (cModel& model)
 				}
 			}
 			// Can we build at this next position?
-            if (map.possiblePlaceBuilding (*building, nextPosition, nullptr))
+			if (map.possiblePlaceBuilding (*building, nextPosition, nullptr))
 			{
 				// We can build here.
 				found_next = true;
@@ -473,7 +488,7 @@ void cVehicle::proceedBuilding (cModel& model)
 		}
 		else
 		{
-            if (building->surfacePosition != cStaticUnitData::SURFACE_POS_GROUND)
+			if (building->surfacePosition != cStaticUnitData::SURFACE_POS_GROUND)
 			{
 				// add building immediately
 				// if it doesn't require the engineer to drive away
@@ -482,9 +497,9 @@ void cVehicle::proceedBuilding (cModel& model)
 			}
 			BuildPath = false;
 			getOwner()->buildPathInterrupted(*this);
- 		}
+		}
 	}
-    else if (building->surfacePosition != staticData->surfacePosition)
+	else if (building->surfacePosition != staticData->surfacePosition)
 	{
 		// add building immediately
 		// if it doesn't require the engineer to drive away
@@ -495,17 +510,17 @@ void cVehicle::proceedBuilding (cModel& model)
 
 void cVehicle::continuePathBuilding(cModel& model)
 {
-    if (!BuildPath)
-        return;
+	if (!BuildPath)
+		return;
 
-    auto building = model.getUnitsData()->getUnit(getBuildingType());
-    if(!building)
-    {
-        // TODO: Shout something loud to the log
-        assert(false);
-    }
+	auto building = model.getUnitsData()->getUnit(getBuildingType());
+	if(!building)
+	{
+		// TODO: Shout something loud to the log
+		assert(false);
+	}
 
-    if (getStoredResources() >= getBuildCostsStart() && model.getMap()->possiblePlaceBuilding(*building, getPosition(), nullptr, this))
+	if (getStoredResources() >= getBuildCostsStart() && model.getMap()->possiblePlaceBuilding(*building, getPosition(), nullptr, this))
 	{
 		model.addJob(new cStartBuildJob(*this, getPosition(), getCellSize()));
 		setBuildingABuilding(true);
@@ -589,8 +604,8 @@ string cVehicle::getStatusStr(const cPlayer* player, const cUnitsData& unitsData
 		return lngPack.i18n ("Text~Comp~Surveying");
 	else if (isUnitBuildingABuilding())
 	{
-        const auto& building = unitsData.getUnit(getBuildingType());
-        std::string name = building ? building->getName() : "UnknownBuilding";
+		const auto& building = unitsData.getUnit(getBuildingType());
+		std::string name = building ? building->getName() : "UnknownBuilding";
 
 		if (getOwner() != player)
 			return lngPack.i18n ("Text~Comp~Producing");
@@ -601,7 +616,7 @@ string cVehicle::getStatusStr(const cPlayer* player, const cUnitsData& unitsData
 			{
 				sText = lngPack.i18n ("Text~Comp~Producing");
 				sText += lngPack.i18n ("Text~Punctuation~Colon");
-                sText += name + " (";
+				sText += name + " (";
 				sText += iToStr (getBuildTurns());
 				sText += ")";
 
@@ -609,7 +624,7 @@ string cVehicle::getStatusStr(const cPlayer* player, const cUnitsData& unitsData
 				{
 					sText = lngPack.i18n ("Text~Comp~Producing");
 					sText += ":\n";
-                    sText += name + " (";
+					sText += name + " (";
 					sText += iToStr (getBuildTurns());
 					sText += ")";
 				}
@@ -619,13 +634,13 @@ string cVehicle::getStatusStr(const cPlayer* player, const cUnitsData& unitsData
 			{
 				sText = lngPack.i18n ("Text~Comp~Producing_Fin");
 				sText += lngPack.i18n ("Text~Punctuation~Colon");
-                sText += name;
+				sText += name;
 
 				if (font->getTextWide (sText) > 126)
 				{
 					sText = lngPack.i18n ("Text~Comp~Producing_Fin");
 					sText += ":\n";
-                    sText += name;
+					sText += name;
 				}
 				return sText;
 			}
@@ -668,7 +683,7 @@ string cVehicle::getStatusStr(const cPlayer* player, const cUnitsData& unitsData
 		// extra info only for infiltrators
 		// TODO should it be original behavior (as it is now) or
 		// don't display CommandRank for enemy (could also be a bug in original...?)
-        if ((staticData->hasFlag(UnitFlag::CanCapture) || staticData->hasFlag(UnitFlag::CanDisable)) /* && owner == gameGUI.getClient()->getActivePlayer()*/)
+		if ((staticData->hasFlag(UnitFlag::CanCapture) || staticData->hasFlag(UnitFlag::CanDisable)) /* && owner == gameGUI.getClient()->getActivePlayer()*/)
 		{
 			sTmp += "\n";
 			if (getCommandoRank() < 1.f) sTmp += lngPack.i18n ("Text~Comp~CommandoRank_Greenhorn");
@@ -695,8 +710,8 @@ void cVehicle::DecSpeed (int value)
 {
 	data.setSpeed (data.getSpeed() - value);
 
-    if (staticData->canAttack == 0 || staticData->hasFlag(UnitFlag::CanDriveAndFire))
-        return;
+	if (staticData->canAttack == 0 || staticData->hasFlag(UnitFlag::CanDriveAndFire))
+		return;
 
 	const int s = data.getSpeed() * data.getShotsMax() / data.getSpeedMax();
 	data.setShots (std::min (data.getShots(), s));
@@ -766,17 +781,17 @@ void cVehicle::doSurvey()
 {
 	const auto& owner = *getOwner();
 
-    int surveySize = 1;
+	int surveySize = 1;
 
-    cBox<cPosition> aabb = getArea();
-    const int minx = std::max (aabb.getMinCorner().x() - surveySize, 0);
-    const int maxx = std::min (aabb.getMaxCorner().x() + surveySize, owner.getMapSize().x() - 1);
-    const int miny = std::max (aabb.getMinCorner().y() - surveySize, 0);
-    const int maxy = std::min (aabb.getMaxCorner().y() + surveySize, owner.getMapSize().y() - 1);
+	cBox<cPosition> aabb = getArea();
+	const int minx = std::max (aabb.getMinCorner().x() - surveySize, 0);
+	const int maxx = std::min (aabb.getMaxCorner().x() + surveySize, owner.getMapSize().x() - 1);
+	const int miny = std::max (aabb.getMinCorner().y() - surveySize, 0);
+	const int maxy = std::min (aabb.getMaxCorner().y() + surveySize, owner.getMapSize().y() - 1);
 
-	for (int y = miny; y <= maxy; ++y)
+	for (int y = miny; y < maxy; ++y)
 	{
-		for (int x = minx; x <= maxx; ++x)
+		for (int x = minx; x < maxx; ++x)
 		{
 			const cPosition position (x, y);
 			getOwner()->exploreResource (position);
@@ -889,7 +904,7 @@ bool cVehicle::canTransferTo(const cPosition& position, const cMapView& map) con
 //------------------------------------------------------------------------------
 bool cVehicle::canTransferTo (const cUnit& unit) const
 {
-    if (!this->isNextTo(unit))
+	if (!this->isNextTo(unit))
 		return false;
 
 	if (&unit == this)
@@ -999,11 +1014,11 @@ bool cVehicle::isOtherUnitOffendedByThis(const cModel& model, const cUnit& other
 {
 	// don't treat the cheap buildings
 	// (connectors, roads, beton blocks) as offendable
-    if (otherUnit.isABuilding() && model.getUnitsData()->getDynamicData(otherUnit.data.getId()).getBuildCost() <= 2)
+	if (otherUnit.isABuilding() && model.getUnitsData()->getDynamicData(otherUnit.data.getId()).getBuildCost() <= 2)
 		return false;
 
 	cMapView mapView(model.getMap(), nullptr);
-    if (isInWeaponRange (otherUnit.getPosition()) && canAttackObjectAt (otherUnit.getPosition(), mapView, true, false))
+	if (isInWeaponRange (otherUnit.getPosition()) && canAttackObjectAt (otherUnit.getPosition(), mapView, true, false))
 	{
 		// test, if this vehicle can really attack the opponentVehicle
 		cUnit* target = cAttackJob::selectTarget (otherUnit.getPosition(), staticData->canAttack, mapView, getOwner());
@@ -1114,12 +1129,12 @@ bool cVehicle::provokeReactionFire (cModel& model)
 //-----------------------------------------------------------------------------
 bool cVehicle::canExitTo(const cPosition& position, const cMapView& map, const cStaticUnitData& unitData) const
 {
-    if (!map.possiblePlaceVehicle(unitData, position))
-        return false;
-    if (staticData->factorAir > 0 && (position != getPosition()))
-        return false;
-    if (!isNextTo(position, unitData.cellSize, unitData.cellSize))
-        return false;
+	if (!map.possiblePlaceVehicle(unitData, position))
+		return false;
+	if (staticData->factorAir > 0 && (position != getPosition()))
+		return false;
+	if (!isNextTo(position, unitData.cellSize, unitData.cellSize))
+		return false;
 
 	return true;
 }
@@ -1127,12 +1142,12 @@ bool cVehicle::canExitTo(const cPosition& position, const cMapView& map, const c
 //-----------------------------------------------------------------------------
 bool cVehicle::canExitTo(const cPosition& position, const cMap& map, const cStaticUnitData& unitData) const
 {
-    if (!map.possiblePlaceVehicle(unitData, position, getOwner()))
-        return false;
-    if (staticData->factorAir > 0 && (position != getPosition()))
-        return false;
-    if (!isNextTo(position, unitData.cellSize, unitData.cellSize))
-        return false;
+	if (!map.possiblePlaceVehicle(unitData, position, getOwner()))
+		return false;
+	if (staticData->factorAir > 0 && (position != getPosition()))
+		return false;
+	if (!isNextTo(position, unitData.cellSize, unitData.cellSize))
+		return false;
 
 	return true;
 }
@@ -1154,8 +1169,8 @@ bool cVehicle::canLoad (const cVehicle* Vehicle, bool checkPosition) const
 
 	if (storedUnits.size() >= static_cast<unsigned> (staticData->storageUnitsMax)) return false;
 
-    if (checkPosition && !isNextTo (*Vehicle))
-        return false;
+	if (checkPosition && !isNextTo (*Vehicle))
+		return false;
 
 	if (checkPosition && staticData->factorAir > 0 && (Vehicle->getPosition() != getPosition())) return false;
 
@@ -1233,7 +1248,7 @@ bool cVehicle::canSupply (const cUnit* unit, int supplyType) const
 	if (getStoredResources() <= 0)
 		return false;
 
-    if (isNextTo (*unit) == false)
+	if (isNextTo (*unit) == false)
 		return false;
 
 	if (unit->isAVehicle() && unit->getStaticUnitData().factorAir > 0 && static_cast<const cVehicle*> (unit)->getFlightHeight() > 0)
@@ -1271,21 +1286,21 @@ void cVehicle::layMine (cModel& model)
 	if (staticData->factorSea > 0 && staticData->factorGround == 0)
 	{
 		const auto& staticMineData = model.getUnitsData()->getSeaMineData();
-        if (!map.possiblePlaceBuilding (staticMineData, getPosition(), nullptr, this))
-            return;
+		if (!map.possiblePlaceBuilding (staticMineData, getPosition(), nullptr, this))
+			return;
 		model.addBuilding(getPosition(), staticMineData.ID, getOwner(), false);
 	}
 	else
 	{
 		const auto& staticMineData = model.getUnitsData()->getLandMineData();
-        if (!map.possiblePlaceBuilding(staticMineData, getPosition(), nullptr, this))
-            return;
+		if (!map.possiblePlaceBuilding(staticMineData, getPosition(), nullptr, this))
+			return;
 		model.addBuilding(getPosition(), staticMineData.ID, getOwner(), false);
 	}
 	setStoredResources (getStoredResources() - 1);
 
-    if (getStoredResources() <= 0)
-        setLayMines (false);
+	if (getStoredResources() <= 0)
+		setLayMines (false);
 #endif
 
 	return;
@@ -1334,27 +1349,27 @@ bool cVehicle::canDoCommandoAction (const cUnit* unit, bool steal) const
 {
 	if (unit == nullptr) return false;
 
-    if ((steal && !hasStaticFlag(UnitFlag::CanCapture)) || (steal == false && !hasStaticFlag(UnitFlag::CanDisable)))
+	if ((steal && !hasStaticFlag(UnitFlag::CanCapture)) || (steal == false && !hasStaticFlag(UnitFlag::CanDisable)))
 		return false;
 	if (data.getShots() == 0) return false;
 
-    if (isNextTo (*unit) == false)
+	if (isNextTo (*unit) == false)
 		return false;
 
-    if (steal == false && unit->isDisabled())
-        return false;
-    if (unit->isABuilding() && static_cast<const cBuilding*>(unit)->isRubble())
-        return false;
-    if (steal && !unit->getStaticUnitData().hasFlag(UnitFlag::CanBeCaptured))
-        return false;
-    if (steal == false && !unit->getStaticUnitData().hasFlag(UnitFlag::CanBeDisabled))
-        return false;
-    if (steal && unit->storedUnits.empty() == false)
-        return false;
-    if (unit->getOwner() == getOwner())
-        return false;
-    if (unit->isAVehicle() && unit->getStaticUnitData().factorAir > 0 && static_cast<const cVehicle*> (unit)->getFlightHeight() > 0)
-        return false;
+	if (steal == false && unit->isDisabled())
+		return false;
+	if (unit->isABuilding() && static_cast<const cBuilding*>(unit)->isRubble())
+		return false;
+	if (steal && !unit->getStaticUnitData().hasFlag(UnitFlag::CanBeCaptured))
+		return false;
+	if (steal == false && !unit->getStaticUnitData().hasFlag(UnitFlag::CanBeDisabled))
+		return false;
+	if (steal && unit->storedUnits.empty() == false)
+		return false;
+	if (unit->getOwner() == getOwner())
+		return false;
+	if (unit->isAVehicle() && unit->getStaticUnitData().factorAir > 0 && static_cast<const cVehicle*> (unit)->getFlightHeight() > 0)
+		return false;
 
 	return true;
 }
@@ -1581,12 +1596,12 @@ void cVehicle::blitWithPreScale (SDL_Surface* org_src, SDL_Surface* src, SDL_Rec
 	{
 		int width, height;
 		height = (int) (org_src->h * factor);
-        if (frames > 1)
-            width = height * frames;
-        else
-            width = (int) (org_src->w * factor);
+		if (frames > 1)
+			width = height * frames;
+		else
+			width = (int) (org_src->w * factor);
 
-        //if (src->w != width || src->h != height)
+		//if (src->w != width || src->h != height)
 		{
 			scaleSurface (org_src, src, width, height);
 		}
@@ -1667,7 +1682,7 @@ bool cVehicle::canBeStoppedViaUnitMenu() const
 //-----------------------------------------------------------------------------
 void cVehicle::executeAutoMoveJobCommand (cClient& client)
 {
-    if (!hasStaticFlag(UnitFlag::CanSurvey))
+	if (!hasStaticFlag(UnitFlag::CanSurvey))
 		return;
 	if (!autoMoveJob)
 	{
@@ -1687,38 +1702,38 @@ bool cVehicle::canLand (const cMap& map) const
 
 	if (moveJob != nullptr || isAttacking()) return false;      //vehicle busy?
 
-    // TODO: We should properly check our size
+	// TODO: We should properly check our size
 	// landing pad there?
 
-    bool canLand = false;
+	bool canLand = false;
 
-    const auto& field = map.getField(getPosition());
-    auto owner = getOwner();
+	const auto& field = map.getField(getPosition());
+	auto owner = getOwner();
 
-    for (const cBuilding* building: field.getBuildings())
+	for (const cBuilding* building: field.getBuildings())
 	{
-        if (building->hasStaticFlag(UnitFlag::CanBeLandedOn) && building->getOwner() == owner)
-        {
-            canLand = true;
+		if (building->hasStaticFlag(UnitFlag::CanBeLandedOn) && building->getOwner() == owner)
+		{
+			canLand = true;
 			break;
-        }
+		}
 	}
 
-    if (!canLand)
-        return false;
+	if (!canLand)
+		return false;
 
 	// is the landing pad already occupied?
-    for (const cVehicle* vehicle: field.getPlanes())
+	for (const cVehicle* vehicle: field.getPlanes())
 	{
-        // Check if vehicle is not 'self' and not landed already
-        if (vehicle->getFlightHeight() < 64 && vehicle->iID != iID)
+		// Check if vehicle is not 'self' and not landed already
+		if (vehicle->getFlightHeight() < 64 && vehicle->iID != iID)
 			return false;
 	}
 
 	// returning true before checking owner, because a stolen vehicle
 	// can stay on an enemy landing pad until it is moved
-    if (getFlightHeight() == 0)
-        return true;
+	if (getFlightHeight() == 0)
+		return true;
 
 	return true;
 }

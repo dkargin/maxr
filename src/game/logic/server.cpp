@@ -100,7 +100,7 @@ cServer::cServer(std::shared_ptr<cTCP> network_) :
 	});
 
 }
-	
+
 
 //------------------------------------------------------------------------------
 cServer::~cServer()
@@ -488,7 +488,6 @@ void cServer::handleNetMessage_GAME_EV_WANT_START_CLEAR (cNetMessage& message)
 	if (cellSize > 1)
 	{
 		rubblePosition = building->getPosition();
-
 		// TODO: this will be problematic!
 		sideStepStealthUnit (building->getPosition()                  , *Vehicle, rubblePosition);
 		sideStepStealthUnit (building->getPosition() + cPosition (1, 0), *Vehicle, rubblePosition);
@@ -505,7 +504,7 @@ void cServer::handleNetMessage_GAME_EV_WANT_START_CLEAR (cNetMessage& message)
 		}
 
 		Vehicle->buildBigSavedPosition = Vehicle->getPosition();
-		Map->moveVehicleBig (*Vehicle, building->getPosition());
+		//Map->moveVehicleBig (*Vehicle, building->getPosition());
 	}
 
 	Vehicle->setClearing (true);
@@ -632,8 +631,8 @@ void cServer::handleNetMessage_GAME_EV_WANT_EXIT (cNetMessage& message)
 
 		const auto position = message.popPosition();
 
-        if (!StoringVehicle->isNextTo (*StoredVehicle))
-            return;
+		if (!StoringVehicle->isNextTo (*StoredVehicle))
+			return;
 
 		// sidestep stealth units if necessary
 		sideStepStealthUnit (position, *StoredVehicle);
@@ -643,7 +642,7 @@ void cServer::handleNetMessage_GAME_EV_WANT_EXIT (cNetMessage& message)
 			StoringVehicle->exitVehicleTo (*StoredVehicle, position, *Map);
 			// vehicle is added to enemy clients by cServer::checkPlayerUnits()
 			sendActivateVehicle (*this, StoringVehicle->iID, true, StoredVehicle->iID, position, *StoringVehicle->getOwner());
-            if (StoredVehicle->getStaticUnitData().hasFlag(UnitFlag::CanSurvey))
+			if (StoredVehicle->getStaticUnitData().hasFlag(UnitFlag::CanSurvey))
 			{
 				sendVehicleResources (*this, *StoredVehicle);
 				StoredVehicle->doSurvey ();
@@ -668,8 +667,8 @@ void cServer::handleNetMessage_GAME_EV_WANT_EXIT (cNetMessage& message)
 
 		const auto position = message.popPosition();
 
-        if (!StoringBuilding->isNextTo (*StoringBuilding))
-            return;
+		if (!StoringBuilding->isNextTo (*StoringBuilding))
+			return;
 
 		// sidestep stealth units if necessary
 		sideStepStealthUnit (position, *StoredVehicle);
@@ -679,8 +678,8 @@ void cServer::handleNetMessage_GAME_EV_WANT_EXIT (cNetMessage& message)
 			StoringBuilding->exitVehicleTo (*StoredVehicle, position, *Map);
 			// vehicle is added to enemy clients by cServer::checkPlayerUnits()
 			sendActivateVehicle (*this, StoringBuilding->iID, false, StoredVehicle->iID, position, *StoringBuilding->getOwner());
-            // TODO: Surveyer can do this itself
-            if (StoredVehicle->getStaticUnitData().hasFlag(UnitFlag::CanSurvey))
+			// TODO: Surveyer can do this itself
+			if (StoredVehicle->getStaticUnitData().hasFlag(UnitFlag::CanSurvey))
 			{
 				sendVehicleResources (*this, *StoredVehicle);
 				StoredVehicle->doSurvey ();
@@ -852,7 +851,7 @@ void cServer::handleNetMessage_GAME_EV_WANT_RESEARCH_CHANGE (cNetMessage& messag
 		for (; currentBuildingIter != buildings.end() && centersToAssign > 0; ++currentBuildingIter)
 		{
 			auto& building = *currentBuildingIter;
-            if (building->getStaticUnitData().hasFlag(UnitFlag::CanResearch) && building->isUnitWorking())
+			if (building->getStaticUnitData().hasFlag(UnitFlag::CanResearch) && building->isUnitWorking())
 			{
 				researchCentersToChangeArea.push_back (building.get());
 				newAreasForResearchCenters.push_back ((cResearch::ResearchArea)newArea);
@@ -869,7 +868,7 @@ void cServer::handleNetMessage_GAME_EV_WANT_RESEARCH_CHANGE (cNetMessage& messag
 	for (; currentBuildingIter != buildings.end(); ++currentBuildingIter)
 	{
 		auto& building = *currentBuildingIter;
-        if (building->getStaticUnitData().hasFlag(UnitFlag::CanResearch) && building->isUnitWorking())
+		if (building->getStaticUnitData().hasFlag(UnitFlag::CanResearch) && building->isUnitWorking())
 			researchCentersToStop.push_back (building.get());
 	}
 	if (error)
@@ -1078,7 +1077,7 @@ int cServer::getUpgradeCosts (const sID& ID, cPlayer& player,
 {
 	const bool bVehicle = ID.isAVehicle();
 	const cDynamicUnitData* currentVersion = player.getUnitDataCurrentVersion (ID);
-    const cDynamicUnitData* startVersion = &model.getUnitsData()->getDynamicData(ID, player.getClan());
+	const cDynamicUnitData* startVersion = &model.getUnitsData()->getDynamicData(ID, player.getClan());
 	if (currentVersion == 0 || startVersion == 0)
 		return 1000000; // error (unbelievably high cost...)
 
@@ -1185,7 +1184,7 @@ void cServer::checkPlayerUnits (cVehicle& vehicle, cPlayer& MapPlayer)
 // 	else
 // 	{
 // 		std::vector<cPlayer*>::iterator it = std::find (seenByPlayers.begin(), seenByPlayers.end(), &MapPlayer);
-// 
+//
 // 		if (it != seenByPlayers.end())
 // 		{
 // 			seenByPlayers.erase (it);
@@ -1592,7 +1591,7 @@ void cServer::changeUnitOwner (cVehicle& vehicle, cPlayer& newOwner)
 	checkPlayerUnits();
 
 	// let the unit work for his new owner
-    if (vehicle.getStaticUnitData().hasFlag(UnitFlag::CanSurvey))
+	if (vehicle.getStaticUnitData().hasFlag(UnitFlag::CanSurvey))
 	{
 		sendVehicleResources (*this, vehicle);
 		vehicle.doSurvey ();

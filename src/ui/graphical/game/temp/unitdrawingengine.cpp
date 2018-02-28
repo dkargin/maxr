@@ -74,7 +74,7 @@ void cUnitDrawingEngine::drawBuilding(const cBuilding& building, SDL_Rect destin
 	unsigned long long animationTime = animationTimer->getAnimationTime(); //call getAnimationTime only once in this method and save the result,
 	//to avoid a changing time within this method
 
-    SDL_Rect dest = {0,0, destination.w, destination.h};
+	SDL_Rect dest = {0,0, destination.w, destination.h};
 
 	int cellSize = building.getCellSize();
 
@@ -96,7 +96,7 @@ void cUnitDrawingEngine::drawBuilding(const cBuilding& building, SDL_Rect destin
 
 	if (bDraw)
 	{
-        building.render(animationTime, drawingSurface, dest, zoomFactor, cSettings::getInstance().isShadows(), true);
+		building.render(animationTime, drawingSurface, dest, zoomFactor, cSettings::getInstance().isShadows(), true);
 	}
 
 	// now check, whether the image has to be blitted to screen buffer
@@ -114,24 +114,30 @@ void cUnitDrawingEngine::drawBuilding(const cBuilding& building, SDL_Rect destin
 	// draw the effect if necessary
 	if (building.uiData->powerOnGraphic && cSettings::getInstance().isAnimations() && (building.isUnitWorking() || !building.getStaticUnitData().hasFlag(UnitFlag::CanWork)))
 	{
+		/*
 		SDL_Rect tmp = dest;
 		if(building.uiData->img_effect && building.uiData->img_effect_original)
 		{
-        SDL_SetSurfaceAlphaMod (building.uiData->img_effect.get(), building.effectAlpha);
-        CHECK_SCALING (*building.uiData->img_effect, *building.uiData->img_effect_original, zoomFactor);
-        SDL_BlitSurface (building.uiData->img_effect.get(), nullptr, cVideo::buffer, &tmp);
+			SDL_SetSurfaceAlphaMod (building.uiData->img_effect.get(), building.effectAlpha);
+			CHECK_SCALING (*building.uiData->img_effect, *building.uiData->img_effect_original, zoomFactor);
+			SDL_BlitSurface (building.uiData->img_effect.get(), nullptr, cVideo::buffer, &tmp);
+		}*/
+		if(cSpritePtr sprite = building.uiData->effect)
+		{
+			SDL_Rect tmp = dest;
+			sprite->render_simple(cVideo::buffer, tmp);
 		}
 	}
 
 	// draw the mark, when a build order is finished
 	if (building.getOwner() == player && ((!building.isBuildListEmpty() && !building.isUnitWorking() && building.getBuildListItem (0).getRemainingMetal() <= 0) ||
-        (building.getStaticUnitData().hasFlag(UnitFlag::CanResearch) && building.getOwner()->isCurrentTurnResearchAreaFinished(building.getResearchArea()))))
+		(building.getStaticUnitData().hasFlag(UnitFlag::CanResearch) && building.getOwner()->isCurrentTurnResearchAreaFinished(building.getResearchArea()))))
 	{
 		const cRgbColor finishedMarkColor = cRgbColor::green();
 		cPosition minCorner(dest.x + 2, dest.y + 2);
 		cPosition maxCorner(
-                dest.x + 2 + (destination.w - 3),
-                dest.y + 2 + (destination.h - 3));
+				dest.x + 2 + (destination.w - 3),
+				dest.y + 2 + (destination.h - 3));
 		const cBox<cPosition> d(minCorner, maxCorner);
 
 		drawRectangle (*cVideo::buffer, d, finishedMarkColor.exchangeGreen (255 - 16 * (animationTime % 0x8)), 3);
@@ -174,7 +180,7 @@ void cUnitDrawingEngine::drawVehicle(const cVehicle& vehicle, SDL_Rect destinati
 		destination.y += vehicle.ditherY;
 	}
 
-    SDL_Rect dest = {0,0, destination.w, destination.h};
+	SDL_Rect dest = {0,0, destination.w, destination.h};
 
 	bool bDraw = false;
 	SDL_Surface* drawingSurface = drawingCache.getCachedImage (vehicle, zoomFactor, map, animationTime);
@@ -194,8 +200,8 @@ void cUnitDrawingEngine::drawVehicle(const cVehicle& vehicle, SDL_Rect destinati
 
 	if (bDraw)
 	{
-        bool shadows = cSettings::getInstance().isShadows();
-        vehicle.render (&map, animationTime, player, drawingSurface, dest, zoomFactor, shadows);
+		bool shadows = cSettings::getInstance().isShadows();
+		vehicle.render (&map, animationTime, player, drawingSurface, dest, zoomFactor, shadows);
 	}
 
 	// now check, whether the image has to be blitted to screen buffer
@@ -225,14 +231,14 @@ void cUnitDrawingEngine::drawVehicle(const cVehicle& vehicle, SDL_Rect destinati
 	// draw indication, when building is complete
 	if (vehicle.isUnitBuildingABuilding() && vehicle.getBuildTurns() == 0 && vehicle.getOwner() == player && !vehicle.BuildPath)
 	{
-        int offset = 2;
+		int offset = 2;
 		const cRgbColor finishedMarkColor = cRgbColor::green();
 		//const cBox<cPosition> d (cPosition (destination.x + 2, destination.y + 2), cPosition (destination.x + 2 + (vehicle.getIsBig() ? 2 * destination.w - 3 : destination.w - 3), destination.y + 2 + (vehicle.getIsBig() ? 2 * destination.h - 3 : destination.h - 3)));
-        cPosition minCorner(destination.x + offset, destination.y + offset);
+		cPosition minCorner(destination.x + offset, destination.y + offset);
 		cPosition maxCorner(
-                destination.x + destination.w - offset-1,
-                destination.y + destination.h - offset-1);
-        const cBox<cPosition> d(minCorner, maxCorner);
+				destination.x + destination.w - offset-1,
+				destination.y + destination.h - offset-1);
+		const cBox<cPosition> d(minCorner, maxCorner);
 
 		drawRectangle (*cVideo::buffer, d, finishedMarkColor.exchangeGreen (255 - 16 * (animationTime % 0x8)), 3);
 	}
@@ -240,13 +246,13 @@ void cUnitDrawingEngine::drawVehicle(const cVehicle& vehicle, SDL_Rect destinati
 	// Draw the colored frame if necessary
 	if (shouldDrawColor)
 	{
-        int offset = 1;
+		int offset = 1;
 		//const cBox<cPosition> d (cPosition (destination.x + 1, destination.y + 1), cPosition (destination.x + 1 + (vehicle.getIsBig() ? 2 * destination.w - 1 : destination.w - 1), destination.y + 1 + (vehicle.getIsBig() ? 2 * destination.h - 1 : destination.h - 1)));
-        cPosition minCorner(destination.x + offset, destination.y + offset);
+		cPosition minCorner(destination.x + offset, destination.y + offset);
 		cPosition maxCorner(
-                destination.x + destination.w - 2*offset,
-                destination.y + destination.h - 2*offset);
-        const cBox<cPosition> d(minCorner, maxCorner);
+				destination.x + destination.w - 2*offset,
+				destination.y + destination.h - 2*offset);
+		const cBox<cPosition> d(minCorner, maxCorner);
 
 		drawRectangle (*cVideo::buffer, d, vehicle.getOwner()->getColor().getColor());
 	}
@@ -255,10 +261,10 @@ void cUnitDrawingEngine::drawVehicle(const cVehicle& vehicle, SDL_Rect destinati
 	if (unitSelection && unitSelection->getSelectedUnitsCount() > 1 && unitSelection->isSelected (vehicle))
 	{
 		const cRgbColor groupSelectionColor = cRgbColor::yellow();
-        cPosition minCorner(destination.x + 2, destination.y + 2);
+		cPosition minCorner(destination.x + 2, destination.y + 2);
 		cPosition maxCorner(
-                destination.x + 2 + (destination.w - 3),
-                destination.y + 2 + (destination.h - 3));
+				destination.x + 2 + (destination.w - 3),
+				destination.y + 2 + (destination.h - 3));
 		const cBox<cPosition> d (minCorner, maxCorner);
 
 		drawRectangle (*cVideo::buffer, d, groupSelectionColor, 1);

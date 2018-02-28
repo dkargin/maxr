@@ -41,156 +41,153 @@ class cClanData;
 class cUnitsData
 {
 public:
-    typedef sID UID;
-    typedef std::map<UID, cDynamicUnitData> DynamicUnitDataStorage;
+	typedef sID UID;
+	typedef std::map<UID, cDynamicUnitData> DynamicUnitDataStorage;
 
 	cUnitsData();
 
-    // TODO: Should get rid of this
-    cBuildingData* rubbleBig;
-    cBuildingData* rubbleSmall;
-
-    // direct pointer on some of the building graphics
-    SDL_Surface* ptr_small_beton;
-    SDL_Surface* ptr_small_beton_org;
-    SDL_Surface* ptr_connector;
-    SDL_Surface* ptr_connector_org;
-    SDL_Surface* ptr_connector_shw;
-    SDL_Surface* ptr_connector_shw_org;
-
+	// direct pointer on some of the building graphics
+	SDL_Surface* ptr_connector;
+	SDL_Surface* ptr_connector_org;
+	SDL_Surface* ptr_connector_shw;
+	SDL_Surface* ptr_connector_shw_org;
 
 	void initializeIDData();
 	void initializeClanUnitData(const cClanData& clanData);
 
-    // Generate or obtain dynamic unit data for specified id
-    cDynamicUnitData& getDynamicData(const std::string& id);
-    // Generate or obtain static unit data for specified id
-    cStaticUnitDataPtr getUnit(const std::string& id);
+	// Generate or obtain dynamic unit data for specified id
+	cDynamicUnitData& getDynamicData(const std::string& id);
+	// Generate or obtain static unit data for specified id
+	cStaticUnitDataPtr getUnit(const std::string& id);
 
-    // Get vehicle data for specified id
-    // Can return empty pointer if no object is found
-    std::shared_ptr<cVehicleData> getVehicle(const UID& id) const;
+	// Get vehicle data for specified id
+	// Can return empty pointer if no object is found
+	std::shared_ptr<cVehicleData> getVehicle(const UID& id) const;
 
-    // Get vehicle data for specified id
-    // Can return empty pointer if no object is found
-    std::shared_ptr<cBuildingData> getBuilding(const UID& id) const;
+	// Get vehicle data for specified id
+	// Can return empty pointer if no object is found
+	std::shared_ptr<cBuildingData> getBuilding(const UID& id) const;
 
-    // Get vehicle data for specified id
-    // Will create a new object, if there is no such one already
-    std::shared_ptr<cVehicleData> makeVehicle(const UID& id);
+	// Get vehicle data for specified id
+	// Will create a new object, if there is no such one already
+	std::shared_ptr<cVehicleData> makeVehicle(const UID& id);
 
-    // Get vehicle data for specified id
-    // Will create a new object, if there is no such one already
-    std::shared_ptr<cBuildingData> makeBuilding(const UID& id);
+	// Get vehicle data for specified id
+	// Will create a new object, if there is no such one already
+	std::shared_ptr<cBuildingData> makeBuilding(const UID& id);
 
-    // Get vehicle data for specified id
-    // Can return empty pointer if no object is found
-    cStaticUnitDataPtr getUnit(const UID& id) const;
+	// Get vehicle data for specified id
+	// Can return empty pointer if no object is found
+	cStaticUnitDataPtr getUnit(const UID& id) const;
 
-    bool isValidId(const UID& id) const;
+	bool isValidId(const UID& id) const;
 
 	size_t getNrOfClans() const;
 
 	// clan = -1: without clans
-    const cDynamicUnitData& getDynamicData(const sID& id, int clan = -1) const;
-    cDynamicUnitData& getDynamicData(const sID& id, int clan = -1);
+	const cDynamicUnitData& getDynamicData(const sID& id, int clan = -1) const;
+	cDynamicUnitData& getDynamicData(const sID& id, int clan = -1);
 	// clan = -1: without clans
-    const DynamicUnitDataStorage& getAllDynamicData(int clan = -1) const;
+	const DynamicUnitDataStorage& getAllDynamicData(int clan = -1) const;
 
-    std::vector<cStaticUnitDataPtr> getAllUnits() const;
-    std::vector<cStaticUnitDataPtr> getUnitsOfType(UnitType type) const;
-    std::vector<std::shared_ptr<cVehicleData>> getAllVehicles() const;
-    std::vector<std::shared_ptr<cBuildingData>> getAllBuildings() const;
+	std::vector<cStaticUnitDataPtr> getAllUnits() const;
+	std::vector<cStaticUnitDataPtr> getUnitsOfType(UnitType type) const;
+	std::vector<std::shared_ptr<cVehicleData>> getAllVehicles() const;
+	std::vector<std::shared_ptr<cBuildingData>> getAllBuildings() const;
 
 	uint32_t getChecksum(uint32_t crc) const;
 
-    template <typename T> void serialize(T& archive)
-    {
-        if (!archive.isWriter)
-        {
-            staticUnitData.clear();
-            dynamicUnitData.clear();
-            clanDynamicUnitData.clear();
-            crcValid = false;
-        }
+	template <typename T> void save(T& archive)
+	{
+		try
+		{
+			auto buildings = getAllBuildings();
+			auto vehicles = getAllVehicles();
 
-        if(archive.isWriter)
-        {
-            auto buildings = getAllBuildings();
-            auto vehicles = getAllVehicles();
+			int vehicleNum = vehicles.size();
+			archive & NVP(vehicleNum);
+			for (auto vehicle : vehicles)
+			{
+				archive & serialization::makeNvp("vehicleID", vehicle->ID);
+				archive & serialization::makeNvp("vehicle", *vehicle);
+			}
 
-            int vehicleNum = vehicles.size();
-            archive & NVP(vehicleNum);
-            for (auto vehicle : vehicles)
-            {
-                archive & serialization::makeNvp("vehicleID", vehicle->ID);
-                archive & serialization::makeNvp("vehicle", *vehicle);
-            }
+			int buildingNum = buildings.size();
 
-            int buildingNum = buildings.size();
+			archive & NVP(buildingNum);
+			for (auto building : buildings)
+			{
+				archive & serialization::makeNvp("buildingID", building->ID);
+				archive & serialization::makeNvp("building", *building);
+			}
+		}
+		catch(std::runtime_error& e)
+		{
+			printf("Error saving cUnitData: %s\n", e.what());
+		}
 
-            archive & NVP(buildingNum);
-            for (auto building : buildings)
-            {
-                archive & serialization::makeNvp("buildingID", building->ID);
-                archive & serialization::makeNvp("building", *building);
-            }
-        }
-        else
-        {
-            int vehicleNum = 0;
-            archive & NVP(vehicleNum);
-            for(int i = 0; i < vehicleNum; i++)
-            {
-                sID vehicleID;
-                archive & NVP(vehicleID);
-                auto vehicle = makeBuilding(vehicleID);
-                archive & NVP(*vehicle);
-            }
+		archive & NVP(dynamicUnitData);
+		archive & NVP(clanDynamicUnitData);
+	}
 
-            int buildingNum = 0;
-            archive & NVP(buildingNum);
-            for(int i = 0; i < buildingNum; i++)
-            {
-                sID buildingID;
-                archive & NVP(buildingID);
-                auto building = makeBuilding(buildingID);
-                archive & NVP(*building);
-            }
-        }
+	template <typename T> void load(T& archive)
+	{
+		//staticUnitData.clear();
+		dynamicUnitData.clear();
+		clanDynamicUnitData.clear();
+		crcValid = false;
+		try
+		{
+			int vehicleNum = 0;
+			archive & NVP(vehicleNum);
+			for(int i = 0; i < vehicleNum; i++)
+			{
+				sID vehicleID;
+				archive & NVP(vehicleID);
+				auto& vehicle = *makeVehicle(vehicleID);
+				archive & NVP(vehicle);
+			}
 
-        archive & NVP(dynamicUnitData);
-        archive & NVP(clanDynamicUnitData);
-    }
+			int buildingNum = 0;
+			archive & NVP(buildingNum);
+			for(int i = 0; i < buildingNum; i++)
+			{
+				sID buildingID;
+				archive & NVP(buildingID);
+				auto& building = *makeBuilding(buildingID);
+				archive & NVP(building);
+			}
+		}catch(std::runtime_error& e) {
+			printf("Error loading cUnitData: %s\n", e.what());
+		}
+		archive & NVP(dynamicUnitData);
+		archive & NVP(clanDynamicUnitData);
+	}
+
+	SERIALIZATION_SPLIT_MEMBER()
 private:
-	sID constructorID;
-	sID engineerID;
-	sID surveyorID;
 	sID specialIDLandMine;
 	sID specialIDSeaMine;
-	sID specialIDMine;
-	sID specialIDSmallGen;
 	sID specialIDConnector;
-	sID specialIDSmallBeton;
 
-    bool registerBuilding(const std::shared_ptr<cBuildingData>& building);
-    bool registerVehicle(const std::shared_ptr<cVehicleData>& building);
+	bool registerBuilding(const std::shared_ptr<cBuildingData>& building);
+	bool registerVehicle(const std::shared_ptr<cVehicleData>& building);
 
 	// the dynamic unit data. Contains the modified versions for the clans
-    // 'Clan' should be replaced in this context on 'Player'
-    // 'Clan' stuff is relevant during embarcation stage and calculation of final unit stats.
-    // After player has embarked - no need to keep 'clan' stuff
-    std::vector<DynamicUnitDataStorage> clanDynamicUnitData;
+	// 'Clan' should be replaced in this context on 'Player'
+	// 'Clan' stuff is relevant during embarcation stage and calculation of final unit stats.
+	// After player has embarked - no need to keep 'clan' stuff
+	std::vector<DynamicUnitDataStorage> clanDynamicUnitData;
 
-    //cStaticUnitData rubbleSmall;
-    //cStaticUnitData rubbleBig;
+	//cStaticUnitData rubbleSmall;
+	//cStaticUnitData rubbleBig;
 
-    // the static unit data
-    std::map<UID, cStaticUnitDataPtr> staticUnitData;
-    // the dynamic unit data. Standard version without clan modifications
-    DynamicUnitDataStorage dynamicUnitData;
+	// the static unit data
+	std::map<UID, cStaticUnitDataPtr> staticUnitData;
+	// the dynamic unit data. Standard version without clan modifications
+	DynamicUnitDataStorage dynamicUnitData;
 
-	// unitdata does not change during the game. 
+	// unitdata does not change during the game.
 	// So caching the checksum saves a lot cpu ressources.
 	mutable uint32_t crcCache;
 	mutable bool crcValid;

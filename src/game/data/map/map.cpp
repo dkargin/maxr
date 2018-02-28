@@ -151,7 +151,7 @@ cBuilding* cMapField::getRubble() const
 cBuilding* cMapField::getMine() const
 {
 	for (cBuilding* building : buildings)
-        if (building->getStaticUnitData().hasFlag(UnitFlag::ExplodesOnContact))
+		if (building->getStaticUnitData().hasFlag(UnitFlag::ExplodesOnContact))
 			return building;
 	return nullptr;
 }
@@ -736,11 +736,11 @@ void cMap::placeRessources(cModel& model)
 	Resources.fill(sResources());
 
 	std::vector<eResourceType> resSpotTypes(playerList.size(), eResourceType::Metal);
-    std::vector<cPosition> resSpots;
+	std::vector<cPosition> resSpots;
 	for (const auto& player : playerList)
 	{
 		const auto& position = player->getLandingPos();
-        resSpots.push_back(cPosition((position.x() & ~1) + 1, position.y() & ~1));
+		resSpots.push_back(cPosition((position.x() & ~1) + 1, position.y() & ~1));
 	}
 
 	const eGameSettingsResourceDensity density = gameSettings.getResourceDensity();
@@ -755,10 +755,10 @@ void cMap::placeRessources(cModel& model)
 	// create remaining resource positions
 	while (resSpots.size() < resSpotCount)
 	{
-        cPosition pos(
-            2 + model.randomGenerator.get (getSize().x() - 4),
-            2 + model.randomGenerator.get (getSize().y() - 4)
-        );
+		cPosition pos(
+			2 + model.randomGenerator.get (getSize().x() - 4),
+			2 + model.randomGenerator.get (getSize().y() - 4)
+		);
 		resSpots.push_back(pos);
 	}
 	resSpotTypes.resize (resSpotCount);
@@ -767,15 +767,15 @@ void cMap::placeRessources(cModel& model)
 	{
 		for (std::size_t i = playerCount; i < resSpotCount; i++)
 		{
-            cVector2 d(0, 0);
+			cVector2 d(0, 0);
 			for (std::size_t j = 0; j < resSpotCount; j++)
 			{
 				if (i == j) continue;
 
-                int diffx1 = resSpots[i].x() - resSpots[j].x();
+				int diffx1 = resSpots[i].x() - resSpots[j].x();
 				int diffx2 = diffx1 + (getSize().x() - 4);
 				int diffx3 = diffx1 - (getSize().x() - 4);
-                int diffy1 = resSpots[i].y() - resSpots[j].y();
+				int diffy1 = resSpots[i].y() - resSpots[j].y();
 				int diffy2 = diffy1 + (getSize().y() - 4);
 				int diffy3 = diffy1 - (getSize().y() - 4);
 				if (abs (diffx2) < abs (diffx1)) diffx1 = diffx2;
@@ -783,25 +783,25 @@ void cMap::placeRessources(cModel& model)
 				if (abs (diffy2) < abs (diffy1)) diffy1 = diffy2;
 				if (abs (diffy3) < abs (diffy1)) diffy1 = diffy3;
 
-                cVector2 diff (diffx1, diffy1);
-                if (diff.l2Norm() == 0.0f)
+				cVector2 diff (diffx1, diffy1);
+				if (diff.l2Norm() == 0.0f)
 				{
-                    diff.x() += 1;
+					diff.x() += 1;
 				}
 
-                d += diff * (10.f / diff.l2NormSquared());
+				d += diff * (10.f / diff.l2NormSquared());
 			}
 
-            resSpots[i] += cVector2(Round (d.x()), Round (d.y()));
+			resSpots[i] += cVector2(Round (d.x()), Round (d.y()));
 
-            if (resSpots[i].x() < 2)
-                resSpots[i].x() += getSize().x() - 4;
-            if (resSpots[i].y() < 2)
-                resSpots[i].y() += getSize().y() - 4;
-            if (resSpots[i].x() > getSize().x() - 3)
-                resSpots[i].x() -= getSize().x() - 4;
-            if (resSpots[i].y() > getSize().y() - 3)
-                resSpots[i].y() -= getSize().y() - 4;
+			if (resSpots[i].x() < 2)
+				resSpots[i].x() += getSize().x() - 4;
+			if (resSpots[i].y() < 2)
+				resSpots[i].y() += getSize().y() - 4;
+			if (resSpots[i].x() > getSize().x() - 3)
+				resSpots[i].x() -= getSize().x() - 4;
+			if (resSpots[i].y() > getSize().y() - 3)
+				resSpots[i].y() -= getSize().y() - 4;
 
 		}
 	}
@@ -812,11 +812,11 @@ void cMap::placeRessources(cModel& model)
 		for (std::size_t j = 0; j < i; j++)
 		{
 			const float maxDist = 40.f;
-            cVector2 spotA = resSpots[i];
-            cVector2 spotB = resSpots[j];
-            float dist = (spotA - spotB).l2Norm();
-            if (dist < maxDist)
-                amount[resSpotTypes[j]] += 1 - sqrtf (dist / maxDist);
+			cVector2 spotA = resSpots[i];
+			cVector2 spotB = resSpots[j];
+			float dist = (spotA - spotB).l2Norm();
+			if (dist < maxDist)
+				amount[resSpotTypes[j]] += 1 - sqrtf (dist / maxDist);
 		}
 
 		amount[eResourceType::Metal] /= 1.0f;
@@ -824,40 +824,40 @@ void cMap::placeRessources(cModel& model)
 		amount[eResourceType::Gold] /= 0.4f;
 
 		eResourceType type = eResourceType::Metal;
-        if (amount[eResourceType::Oil] < amount[type])
-            type = eResourceType::Oil;
-        if (amount[eResourceType::Gold] < amount[type])
-            type = eResourceType::Gold;
+		if (amount[eResourceType::Oil] < amount[type])
+			type = eResourceType::Oil;
+		if (amount[eResourceType::Gold] < amount[type])
+			type = eResourceType::Gold;
 
-        resSpots[i].x() &= ~1;
-        resSpots[i].y() &= ~1;
-        resSpots[i].x() += static_cast<int>(type) % 2;
-        resSpots[i].y() += (static_cast<int>(type) / 2) % 2;
+		resSpots[i].x() &= ~1;
+		resSpots[i].y() &= ~1;
+		resSpots[i].x() += static_cast<int>(type) % 2;
+		resSpots[i].y() += (static_cast<int>(type) / 2) % 2;
 
-        resSpotTypes[i] = static_cast<eResourceType>(((resSpots[i].y() % 2) * 2) + (resSpots[i].x() % 2));
+		resSpotTypes[i] = static_cast<eResourceType>(((resSpots[i].y() % 2) * 2) + (resSpots[i].x() % 2));
 	}
 	// Resourcen platzieren
 	for (std::size_t i = 0; i < resSpotCount; i++)
 	{
-        cPosition pos = resSpots[i];
-        cPosition p;
+		cPosition pos = resSpots[i];
+		cPosition p;
 		bool hasGold = model.randomGenerator.get (100) < 40;
-        const int minx = std::max (pos.x() - 1, 0);
-        const int maxx = std::min (pos.x() + 1, getSize().x() - 1);
-        const int miny = std::max (pos.y() - 1, 0);
-        const int maxy = std::min (pos.y() + 1, getSize().y() - 1);
+		const int minx = std::max (pos.x() - 1, 0);
+		const int maxx = std::min (pos.x() + 1, getSize().x() - 1);
+		const int miny = std::max (pos.y() - 1, 0);
+		const int maxy = std::min (pos.y() + 1, getSize().y() - 1);
 
-        for (int y = miny; y <= maxy; ++y)
+		for (int y = miny; y <= maxy; ++y)
 		{
-            for (int x = minx; x <= maxx; ++x)
+			for (int x = minx; x <= maxx; ++x)
 			{
-                cPosition absPos(x,y);
-                eResourceType type = static_cast<eResourceType>((y % 2) * 2 + (x % 2));
+				cPosition absPos(x,y);
+				eResourceType type = static_cast<eResourceType>((y % 2) * 2 + (x % 2));
 
-                int index = getOffset (absPos);
+				int index = getOffset (absPos);
 				if (type != eResourceType::None &&
 					((hasGold && i >= playerCount) || resSpotTypes[i] == eResourceType::Gold || type != eResourceType::Gold) &&
-                    !isBlocked (absPos))
+					!isBlocked (absPos))
 				{
 					sResources res;
 					res.typ = type;
@@ -933,39 +933,39 @@ void cMap::addBuilding (cBuilding& building, const cPosition& position)
 
 void cMap::addVehicle (cVehicle& vehicle, const cPosition& position)
 {
-    bool isAir = vehicle.getStaticUnitData().factorAir;
+	bool isAir = vehicle.getStaticUnitData().factorAir;
 
-    int size = vehicle.getCellSize();
+	int size = vehicle.getCellSize();
 
-    // We are iterating all over every position inside the vehicle
-    for(int y = 0; y < size; y++)
-    {
-        for(int x = 0; x < size; x++)
-        {
-            auto& field = getField (position.relative(x,y));
-
-            if (isAir > 0)
-            {
-                field.addPlane (vehicle, 0);
-            }
-            else
-            {
-                field.addVehicle (vehicle, 0);
-            }
-        }
-    }
-
-	if (vehicle.getCellSize() > 1)
+	// We are iterating all over every position inside the vehicle
+	for(int y = 0; y < size; y++)
 	{
-		moveVehicleBig(vehicle, position);
+		for(int x = 0; x < size; x++)
+		{
+			auto& field = getField (position.relative(x,y));
+
+			if (isAir > 0)
+			{
+				field.addPlane (vehicle, 0);
+			}
+			else
+			{
+				field.addVehicle (vehicle, 0);
+			}
+		}
 	}
+
+	//if (vehicle.getCellSize() > 1)
+	//{
+	//	moveVehicleBig(vehicle, position);
+	//}
 
 	addedUnit (vehicle);
 }
 
 void cMap::deleteBuilding (const cBuilding& object)
 {
-    // We are iterating all over every occupied position inside the building
+	// We are iterating all over every occupied position inside the building
 	int size = object.getCellSize();
 	cPosition pos = object.getPosition();
 
@@ -973,33 +973,33 @@ void cMap::deleteBuilding (const cBuilding& object)
 	{
 		for(int x = 0; x < size; x++)
 		{
-            auto& field = getField (pos.relative(x,y));
-            field.removeBuilding (object);
+			auto& field = getField (pos.relative(x,y));
+			field.removeBuilding (object);
 		}
 	}
 }
 
 void cMap::deleteVehicle (const cVehicle& object)
 {
-    bool isAir = object.getStaticUnitData().factorAir;
+	bool isAir = object.getStaticUnitData().factorAir;
 
-    // We are iterating all over every occupied position inside the vehicle
-    int size = object.getCellSize();
-    cPosition pos = object.getPosition();
+	// We are iterating all over every occupied position inside the vehicle
+	int size = object.getCellSize();
+	cPosition pos = object.getPosition();
 
-    for(int y = 0; y < size; y++)
-    {
-        for(int x = 0; x < size; x++)
-        {
-            auto& field = getField (pos.relative(x,y));
-            field.removeVehicle (object);
+	for(int y = 0; y < size; y++)
+	{
+		for(int x = 0; x < size; x++)
+		{
+			auto& field = getField (pos.relative(x,y));
+			field.removeVehicle (object);
 
-            if(isAir)
-            {
-                field.removePlane(object);
-            }
-        }
-    }
+			if(isAir)
+			{
+				field.removePlane(object);
+			}
+		}
+	}
 
 	removedUnit (object);
 }
@@ -1019,73 +1019,41 @@ void cMap::deleteUnit (const cUnit& unit)
 
 void cMap::moveVehicle (cVehicle& vehicle, const cPosition& position, int height)
 {
+	int size = vehicle.getCellSize();
 	const auto oldPosition = vehicle.getPosition();
 
 	vehicle.setPosition (position);
 
 	if (vehicle.getStaticUnitData().factorAir > 0)
 	{
-		getField (oldPosition).removePlane (vehicle);
+		for(int y = 0; y < size; y++)
+			for(int x = 0; x < size; x++)
+			{
+				getField (oldPosition.relative(x,y)).removePlane (vehicle);
+			}
+
 		height = std::min<int> (getField (position).getPlanes().size(), height);
-		getField (position).addPlane (vehicle, height);
+		for(int y = 0; y < size; y++)
+			for(int x = 0; x < size; x++)
+			{
+				getField (oldPosition.relative(x,y)).addPlane (vehicle, height);
+			}
 	}
 	else
 	{
-		int size = vehicle.getCellSize();
 		for(int y = 0; y < size; y++)
-		{
 			for(int x = 0; x < size; x++)
 			{
 				getField (oldPosition.relative(x,y)).removeVehicle (vehicle);
 			}
-		}
-#ifdef FUCL_THIS
-		getField (oldPosition).removeVehicle (vehicle);
 
-		//check, whether the vehicle is centered on 4 map fields
-		if (vehicle.getIsBig())
-		{
-			getField (oldPosition + cPosition (1, 0)).removeVehicle (vehicle);
-			getField (oldPosition + cPosition (1, 1)).removeVehicle (vehicle);
-			getField (oldPosition + cPosition (0, 1)).removeVehicle (vehicle);
-
-			vehicle.setIsBig(false);
-		}
-#endif
-
-		/// RLY only one cell?
-		getField (position).addVehicle (vehicle, 0);
-
+		// Adding vehicle to the new position
+		for(int y = 0; y < size; y++)
+			for(int x = 0; x < size; x++)
+			{
+				getField (position.relative(x,y)).addVehicle (vehicle, 0);
+			}
 	}
-
-	movedVehicle (vehicle, oldPosition);
-}
-
-void cMap::moveVehicleBig (cVehicle& vehicle, const cPosition& position)
-{
-	if (vehicle.getCellSize() > 1)
-	{
-		Log.write ("Calling moveVehicleBig on a big vehicle", cLog::eLOG_TYPE_NET_ERROR);
-		//calling this function twice is always an error.
-		//nevertheless try to proceed by resetting the data.isBig flag
-		moveVehicle (vehicle, position);
-	}
-
-    // Removing vehicle from the old position
-	const auto oldPosition = vehicle.getPosition();
-	getField (oldPosition).removeVehicle (vehicle);
-
-    // Registering vehicle at the new position
-	vehicle.setPosition (position);
-
-	getField (position).addVehicle (vehicle, 0);
-	getField (position + cPosition (1, 0)).addVehicle (vehicle, 0);
-	getField (position + cPosition (1, 1)).addVehicle (vehicle, 0);
-	getField (position + cPosition (0, 1)).addVehicle (vehicle, 0);
-
-	// WTF? TODO: Why we reset it here?
-	//vehicle.setIsBig(true);
-
 
 	movedVehicle (vehicle, oldPosition);
 }
@@ -1095,129 +1063,139 @@ bool cMap::possiblePlace (const cVehicle& vehicle, const cPosition& position, bo
 	return possiblePlaceVehicle (vehicle.getStaticUnitData(), position, checkPlayer ? vehicle.getOwner() : nullptr, ignoreMovingVehicles);
 }
 
-bool cMap::possiblePlaceVehicle (const cStaticUnitData& vehicleData, const cPosition& position, const cPlayer* player, bool ignoreMovingVehicles) const
+bool cMap::possiblePlaceVehicle (const cStaticUnitData& vehicleData, const cPosition& pos, const cPlayer* player, bool ignoreMovingVehicles) const
 {
-	if (isValidPosition (position) == false)
-		return false;
-	const auto field = cMapFieldView(getField(position), staticMap->getTerrain(position), player);
-
-	const std::vector<cBuilding*> buildings = field.getBuildings();
-	std::vector<cBuilding*>::const_iterator b_it = buildings.begin();
-	std::vector<cBuilding*>::const_iterator b_end = buildings.end();
-
-	//search first building, that is not a connector
-	if (b_it != b_end && (*b_it)->getStaticUnitData().surfacePosition == cStaticUnitData::SURFACE_POS_ABOVE)
-		++b_it;
-
-	if (vehicleData.factorAir > 0)
+	// TODO: Split it to gathering of all obstacles in area and decision making
+	int size = vehicleData.cellSize;
+	for(int y = 0; y < size; y++)
 	{
-		if (player && !player->canSeeAt (position))
-			return true;
-
-		const auto& planes = field.getPlanes();
-		if (!ignoreMovingVehicles)
+		for(int x = 0; x < size; x++)
 		{
-			if (planes.size() >= MAX_PLANES_PER_FIELD)
+			cPosition position = pos.relative(x,y);
+			if (isValidPosition (position) == false)
 				return false;
-		}
-		else
-		{
-			int notMovingPlanes = 0;
-			for (const auto& plane : planes)
+
+			const auto field = cMapFieldView(getField(position), staticMap->getTerrain(position), player);
+
+			const std::vector<cBuilding*> buildings = field.getBuildings();
+			std::vector<cBuilding*>::const_iterator b_it = buildings.begin();
+			std::vector<cBuilding*>::const_iterator b_end = buildings.end();
+
+			//search first building, that is not a connector
+			if (b_it != b_end && (*b_it)->getStaticUnitData().surfacePosition == cStaticUnitData::SURFACE_POS_ABOVE)
+				++b_it;
+
+			if (vehicleData.factorAir > 0)
 			{
-				if (!plane->isUnitMoving())
+				if (player && !player->canSeeAt (position))
+					return true;
+
+				const auto& planes = field.getPlanes();
+				if (!ignoreMovingVehicles)
 				{
-					notMovingPlanes++;
+					if (planes.size() >= MAX_PLANES_PER_FIELD)
+						return false;
+				}
+				else
+				{
+					int notMovingPlanes = 0;
+					for (const auto& plane : planes)
+					{
+						if (!plane->isUnitMoving())
+						{
+							notMovingPlanes++;
+						}
+					}
+					if (notMovingPlanes >= MAX_PLANES_PER_FIELD)
+						return false;
 				}
 			}
-			if (notMovingPlanes >= MAX_PLANES_PER_FIELD)
-				return false;
-		}
-	}
-	if (vehicleData.factorGround > 0)
-	{
-		if (isBlocked (position))
-			return false;
-
-		if ((isWater (position) && vehicleData.factorSea == 0) ||
-			(isCoast (position) && vehicleData.factorCoast == 0))
-		{
-			if (player && !player->canSeeAt (position)) return false;
-
-			//vehicle can drive on water, if there is a bridge, platform or road
-			if (b_it == b_end)
-				return false;
-			auto surfacePosition = (*b_it)->getStaticUnitData().surfacePosition;
-			if (surfacePosition != cStaticUnitData::SURFACE_POS_ABOVE_SEA &&
-					surfacePosition != cStaticUnitData::SURFACE_POS_BASE &&
-					surfacePosition != cStaticUnitData::SURFACE_POS_ABOVE_BASE)
-				return false;
-		}
-		//check for enemy mines
-		if (player &&
-			b_it != b_end &&
-			(*b_it)->getOwner() != player &&
-            (*b_it)->getStaticUnitData().hasFlag(UnitFlag::ExplodesOnContact) &&
-			(*b_it)->isDetectedByPlayer(player))
-		{
-			return false;
-		}
-
-		if (player && !player->canSeeAt (position)) return true;
-
-		if (field.getVehicle() && (!ignoreMovingVehicles || !field.getVehicle()->isUnitMoving()))
-		{
-			return false;
-		}
-		if (b_it != b_end)
-		{
-			// only base buildings and rubble is allowed on the same field with a vehicle
-			// (connectors have been skiped, so doesn't matter here)
-			auto surfacePosition = (*b_it)->getStaticUnitData().surfacePosition;
-			if (surfacePosition != cStaticUnitData::SURFACE_POS_ABOVE_SEA &&
-					surfacePosition != cStaticUnitData::SURFACE_POS_BASE &&
-					surfacePosition != cStaticUnitData::SURFACE_POS_ABOVE_BASE &&
-					surfacePosition != cStaticUnitData::SURFACE_POS_BENEATH_SEA &&
-					!(*b_it)->isRubble())
-				return false;
-		}
-	}
-	else if (vehicleData.factorSea > 0)
-	{
-		if (isBlocked (position)) return false;
-
-		if (!isWater (position) &&
-			(!isCoast (position) || vehicleData.factorCoast == 0)) return false;
-
-		//check for enemy mines
-		if (player &&
-			b_it != b_end &&
-			(*b_it)->getOwner() != player &&
-            (*b_it)->getStaticUnitData().hasFlag(UnitFlag::ExplodesOnContact) &&
-			(*b_it)->isDetectedByPlayer(player))
-		{
-			return false;
-		}
-
-		if (player && !player->canSeeAt (position)) return true;
-
-		if (field.getVehicle() && (!ignoreMovingVehicles || !field.getVehicle()->isUnitMoving()))
-		{
-			return false;
-		}
-
-		//only bridge and sea mine are allowed on the same field with a ship (connectors have been skiped, so doesn't matter here)
-		if (b_it != b_end &&
-			(*b_it)->getStaticUnitData().surfacePosition != cStaticUnitData::SURFACE_POS_ABOVE_SEA &&
-			(*b_it)->getStaticUnitData().surfacePosition != cStaticUnitData::SURFACE_POS_BENEATH_SEA)
-		{
-			// if the building is a landmine, we have to check whether it's on a bridge or not
-			if ((*b_it)->getStaticUnitData().surfacePosition == cStaticUnitData::SURFACE_POS_ABOVE_BASE)
+			if (vehicleData.factorGround > 0)
 			{
-				++b_it;
-				if (b_it == b_end || (*b_it)->getStaticUnitData().surfacePosition != cStaticUnitData::SURFACE_POS_ABOVE_SEA) return false;
+				if (isBlocked (position))
+					return false;
+
+				if ((isWater (position) && vehicleData.factorSea == 0) ||
+					(isCoast (position) && vehicleData.factorCoast == 0))
+				{
+					if (player && !player->canSeeAt (position)) return false;
+
+					//vehicle can drive on water, if there is a bridge, platform or road
+					if (b_it == b_end)
+						return false;
+					auto surfacePosition = (*b_it)->getStaticUnitData().surfacePosition;
+					if (surfacePosition != cStaticUnitData::SURFACE_POS_ABOVE_SEA &&
+							surfacePosition != cStaticUnitData::SURFACE_POS_BASE &&
+							surfacePosition != cStaticUnitData::SURFACE_POS_ABOVE_BASE)
+						return false;
+				}
+				//check for enemy mines
+				if (player &&
+					b_it != b_end &&
+					(*b_it)->getOwner() != player &&
+					(*b_it)->getStaticUnitData().hasFlag(UnitFlag::ExplodesOnContact) &&
+					(*b_it)->isDetectedByPlayer(player))
+				{
+					return false;
+				}
+
+				if (player && !player->canSeeAt (position)) return true;
+
+				if (field.getVehicle() && (!ignoreMovingVehicles || !field.getVehicle()->isUnitMoving()))
+				{
+					return false;
+				}
+				if (b_it != b_end)
+				{
+					// only base buildings and rubble is allowed on the same field with a vehicle
+					// (connectors have been skiped, so doesn't matter here)
+					auto surfacePosition = (*b_it)->getStaticUnitData().surfacePosition;
+					if (surfacePosition != cStaticUnitData::SURFACE_POS_ABOVE_SEA &&
+							surfacePosition != cStaticUnitData::SURFACE_POS_BASE &&
+							surfacePosition != cStaticUnitData::SURFACE_POS_ABOVE_BASE &&
+							surfacePosition != cStaticUnitData::SURFACE_POS_BENEATH_SEA &&
+							!(*b_it)->isRubble())
+						return false;
+				}
 			}
-			else return false;
+			else if (vehicleData.factorSea > 0)
+			{
+				if (isBlocked (position)) return false;
+
+				if (!isWater (position) &&
+					(!isCoast (position) || vehicleData.factorCoast == 0)) return false;
+
+				//check for enemy mines
+				if (player &&
+					b_it != b_end &&
+					(*b_it)->getOwner() != player &&
+					(*b_it)->getStaticUnitData().hasFlag(UnitFlag::ExplodesOnContact) &&
+					(*b_it)->isDetectedByPlayer(player))
+				{
+					return false;
+				}
+
+				if (player && !player->canSeeAt (position)) return true;
+
+				if (field.getVehicle() && (!ignoreMovingVehicles || !field.getVehicle()->isUnitMoving()))
+				{
+					return false;
+				}
+
+				//only bridge and sea mine are allowed on the same field with a ship (connectors have been skiped, so doesn't matter here)
+				if (b_it != b_end &&
+					(*b_it)->getStaticUnitData().surfacePosition != cStaticUnitData::SURFACE_POS_ABOVE_SEA &&
+					(*b_it)->getStaticUnitData().surfacePosition != cStaticUnitData::SURFACE_POS_BENEATH_SEA)
+				{
+					// if the building is a landmine, we have to check whether it's on a bridge or not
+					if ((*b_it)->getStaticUnitData().surfacePosition == cStaticUnitData::SURFACE_POS_ABOVE_BASE)
+					{
+						++b_it;
+						if (b_it == b_end || (*b_it)->getStaticUnitData().surfacePosition != cStaticUnitData::SURFACE_POS_ABOVE_SEA) return false;
+					}
+					else return false;
+				}
+			}
 		}
 	}
 	return true;

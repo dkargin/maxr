@@ -67,40 +67,49 @@ void blitClipped (SDL_Surface& source, const cBox<cPosition>& area, SDL_Surface&
 class cRenderable : public std::enable_shared_from_this<cRenderable>
 {
 public:
-    // A set of values, that necessary to pick proper graphics from all the objects
-    struct sContext
-    {
-        SDL_Surface* surface;
-        SDL_Rect dstRect;
-        // Channel values. Here are clan variations or animated frames
-        std::vector<int> channels;
-        // Selected layer
-        int layer;
-        bool cache = true;
-    };
+	// A set of values, that necessary to pick proper graphics from all the objects
+	struct sContext
+	{
+		SDL_Surface* surface;
+		SDL_Rect dstRect;
+		// Channel values. Here are clan variations or animated frames
+		std::map<std::string, int> channels;
+		// Selected layer
+		int layer;
+		bool cache = true;
+	};
 
-    virtual ~cRenderable() {}
-    virtual cBox<cVector2> getRect() const; 	// Get bounding rectangle
+	virtual ~cRenderable() {}
+	virtual cBox<cVector2> getRect() const; 	// Get bounding rectangle
 
-    // Runs actual rendering process
-    virtual void render(sContext& context) = 0;
+	// Runs actual rendering process
+	virtual void render(sContext& context) = 0;
 
-    // Simplified rendering function
-    // TODO: Remove it later
-    virtual void render_simple(SDL_Surface* surf, SDL_Rect rect);
+	// Simplified rendering function
+	// TODO: Remove it later
+	virtual void render_simple(SDL_Surface* surf, SDL_Rect rect);
+	// Set logical size
+	void setSize(const cVector2& newSize);
+	// Set channel
+	void setChannel(const char* channel);
+	void setChannel(const std::string& channel);
+	const char* getChannel() const;
 
-    void setSize(const cVector2& newSize);
+	virtual void setColorKey(int key);
+	virtual void setAlphaKey(int alpha = -1);
 protected:
-    // Some helper ID. IDs are always usefull
-    int id;
-    // Z coordinate for additional z-ordering
-    float z = 0.0;
-    // Offset and desired size. In 'world' tile coordinates. That's static data from XML
-    cVector2 pos;
-    // Desired size. In 'world' tile coordinates. That's static data from XML
-    cVector2 size;
+	// Some helper ID. IDs are always usefull
+	int id;
+	// Z coordinate for additional z-ordering
+	float z = 0.0;
+	// Offset and desired size. In 'world' tile coordinates. That's static data from XML
+	cVector2 pos;
+	// Desired size. In 'world' tile coordinates. That's static data from XML
+	cVector2 size;
 
-    int layer = -1;
+	int layer = -1;
+
+	std::string channel;
 };
 
 class cSprite;
@@ -113,43 +122,46 @@ typedef std::shared_ptr<cSpriteList> cSpriteListPtr;
 
 enum class FitMode
 {
-    Center,              //< Place source bitmap at the center of 'offset' rect
-    Scale,               //< Scale source bitmap to fit 'rect'
-    Tile,                //< Repeat source bitbap to fill in all the area
+	Center,              //< Place source bitmap at the center of 'offset' rect
+	Scale,               //< Scale source bitmap to fit 'rect'
+	Tile,                //< Repeat source bitbap to fill in all the area
 };
 
 // Wrapper for drawing sprites from world coordinates
 class cSprite: public cRenderable
 {
-    friend class cSpriteTool;
+	friend class cSpriteTool;
 public:
-    cSprite(SurfacePtr surf, SDL_Rect srcRect);
+	cSprite(SurfacePtr surf, SDL_Rect srcRect);
 
-    operator SDL_Surface*();
+	operator SDL_Surface*();
 
-    void setColorKey(int key);
-    void setAlphaKey(int alpha = -1);
-    // Blit this sprite to output surface
-    // Will do rescaling, if necessary
-    //void blit_and_cache(SDL_Surface* surface, SDL_Rect rect) override;
-    virtual void render(sContext& context) override;
+	void setColorKey(int key);
+	void setAlphaKey(int alpha = -1);
+	// Blit this sprite to output surface
+	// Will do rescaling, if necessary
+	//void blit_and_cache(SDL_Surface* surface, SDL_Rect rect) override;
+	virtual void render(sContext& context) override;
 
-    // Applies blending settings to specified surface
-    void applyBlending(SDL_Surface* surface) const;
+	// Applies blending settings to specified surface
+	void applyBlending(SDL_Surface* surface) const;
 protected:
-    // Cached surface. We update this cache every time
-    SurfaceUPtr cache;
-    // Last used scale
-    cPosition lastSize;
+	// Cached surface. We update this cache every time
+	SurfaceUPtr cache;
+	// Last used scale
+	cPosition lastSize;
 
-    int colorkey = -1;
-    int alpha = -1;
-    // Shared pointer to SDL surface
-    SurfacePtr surface;
-    // Area of source surface. We copy data from that area
-    SDL_Rect srcRect;
-    // Rendering mode. That's static data from XML
-    FitMode mode;
+	int colorkey = -1;
+	int alpha = -1;
+	// Shared pointer to SDL surface
+	SurfacePtr surface;
+	// Area of source surface. We copy data from that area
+	SDL_Rect srcRect;
+	// Rendering mode. That's static data from XML
+	FitMode mode;
+
+	// Filename for source bitmap
+	std::string file;
 };
 
 /**
@@ -157,60 +169,60 @@ protected:
  */
 class cSpriteList : public cSprite
 {
-    friend class cSpriteTool;
+	friend class cSpriteTool;
 public:
-    cSpriteList(SurfacePtr surf, SDL_Rect srcRect);
+	cSpriteList(SurfacePtr surf, SDL_Rect srcRect);
 
-    // Blit this sprite to output surface
-    // Will do rescaling, if necessary
-    //void blit_and_cache(SDL_Surface* surface, SDL_Rect rect) override;
-    virtual void render(sContext& context) override;
+	// Blit this sprite to output surface
+	// Will do rescaling, if necessary
+	//void blit_and_cache(SDL_Surface* surface, SDL_Rect rect) override;
+	virtual void render(sContext& context) override;
 
-    SDL_Rect getSrcRect(int frame);
+	SDL_Rect getSrcRect(int frame);
 protected:
-    // Number of frames stored
-    int frames;
+	// Number of frames stored
+	int frames;
 };
 
 // A tool to load and wrap sprites
 class cSpriteTool
 {
 public:
-    cSpriteTool();
+	cSpriteTool();
 
-    // Set reference size
-    // It is 'intended' unit size in pixels
-    void setRefSize(const cPosition& size);
-    void resetRefSize();
+	// Set reference size
+	// It is 'intended' unit size in pixels
+	void setRefSize(const cPosition& size);
+	void resetRefSize();
 
-    // Set cell size
-    void setCellSize(int size);
+	// Set cell size
+	void setCellSize(int size);
 
-    // Set default layer for creates sprites
-    void setLayer(int layer);
+	// Set default layer for creates sprites
+	void setLayer(int layer);
 
-    // @path - path to an image
-    // @size - size of the sprite in world coordinates
-    cSpritePtr makeSprite(const std::string& path, const cVector2& size = cVector2(1,1), FitMode mode = FitMode::Scale);
+	// @path - path to an image
+	// @size - size of the sprite in world coordinates
+	cSpritePtr makeSprite(const std::string& path, const cVector2& size = cVector2(1,1), FitMode mode = FitMode::Scale);
 
-    // Creates a sprite object, that has several variants
-    // @paths - a list of paths to an images
-    // @size - size of the sprite in world coordinates
-    cSpriteListPtr makeVariantSprite(const std::list<std::string>& paths, const cVector2& size = cVector2(1,1), FitMode mode = FitMode::Scale);
+	// Creates a sprite object, that has several variants
+	// @paths - a list of paths to an images
+	// @size - size of the sprite in world coordinates
+	cSpriteListPtr makeVariantSprite(const std::list<std::string>& paths, const cVector2& size = cVector2(1,1), FitMode mode = FitMode::Scale);
 
-    // Creates a sprite object, that has several variants
-    // @path - path to an image
-    // @size - size of the sprite in world coordinates
-    cSpriteListPtr makeVariantSprite(const std::string& path, int variants, const cVector2& size = cVector2(1,1), FitMode mode = FitMode::Scale);
+	// Creates a sprite object, that has several variants
+	// @path - path to an image
+	// @size - size of the sprite in world coordinates
+	cSpriteListPtr makeVariantSprite(const std::string& path, int variants, const cVector2& size = cVector2(1,1), FitMode mode = FitMode::Scale);
 
-    // Reset current flags
-    void reset();
+	// Reset current flags
+	void reset();
 protected:
-    bool hasRefSize = false;
-    cPosition refSize;
-    bool hasLayer;
-    int layer = -1;
-    int cellSize;
+	bool hasRefSize = false;
+	cPosition refSize;
+	bool hasLayer;
+	int layer = -1;
+	int cellSize;
 };
 
 // Renderable group
@@ -218,7 +230,7 @@ class cRenderableGroup
 {
 public:
 
-    std::list<cRenderablePtr> children;
+	std::list<cRenderablePtr> children;
 };
 
 #endif // utility_drawingH

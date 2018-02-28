@@ -74,13 +74,13 @@ void cActionStartBuild::execute(cModel& model) const
 		return;
 	if (buildSpeed > 2 || buildSpeed < 0)
 		return;
-	
+
 	if (vehicle->isUnitBuildingABuilding() || vehicle->BuildPath)
 		return;
 	if (vehicle->isDisabled())
 		return;
 
-    const cStaticUnitData& data = *model.getUnitsData()->getUnit(buildingTypeID);
+	const cStaticUnitData& data = *model.getUnitsData()->getUnit(buildingTypeID);
 
 	if (vehicle->getStaticUnitData().canBuild != data.buildAs)
 		return;
@@ -98,37 +98,36 @@ void cActionStartBuild::execute(cModel& model) const
 	}
 
 	cPosition oldPosition = vehicle->getPosition();
-	if (data.cellSize > 1)
-	{
-// 		model.sideStepStealthUnit(buildPosition, *vehicle, buildPosition);
-// 		model.sideStepStealthUnit(buildPosition + cPosition(1, 0), *vehicle, buildPosition);
-// 		model.sideStepStealthUnit(buildPosition + cPosition(0, 1), *vehicle, buildPosition);
-// 		model.sideStepStealthUnit(buildPosition + cPosition(1, 1), *vehicle, buildPosition);
 
-		if (!(map.possiblePlaceBuilding(data, buildPosition, nullptr, vehicle) &&
-			map.possiblePlaceBuilding(data, buildPosition + cPosition(1, 0), nullptr, vehicle) &&
-			map.possiblePlaceBuilding(data, buildPosition + cPosition(0, 1), nullptr, vehicle) &&
-			map.possiblePlaceBuilding(data, buildPosition + cPosition(1, 1), nullptr, vehicle)))
+	// TODO: SideStepStealthUnit for every cell
+	//model.sideStepStealthUnit();
+	//model.sideStepStealthUnit(buildPosition, *vehicle, buildPosition);
+	//model.sideStepStealthUnit(buildPosition + cPosition(1, 0), *vehicle, buildPosition);
+	//model.sideStepStealthUnit(buildPosition + cPosition(0, 1), *vehicle, buildPosition);
+	//model.sideStepStealthUnit(buildPosition + cPosition(1, 1), *vehicle, buildPosition);
+
+	int size = data.cellSize;
+	bool valid = true;
+	for(int y = 0; y < size; y++)
+		for(int x = 0; x < size; x++)
 		{
-			vehicle->getOwner()->buildErrorBuildPositionBlocked();
-			return;
+			if(!map.possiblePlaceBuilding(data, buildPosition.relative(x,y), nullptr, vehicle))
+			{
+				valid = false;
+				break;
+			}
 		}
-		vehicle->buildBigSavedPosition = vehicle->getPosition();
 
-		// set vehicle to build position
-		map.moveVehicleBig(*vehicle, buildPosition);
-		vehicle->getOwner()->doScan();
-	}
-	else
+	if(!valid)
 	{
-		if (buildPosition != vehicle->getPosition()) return;
-
-		if (!map.possiblePlaceBuilding(data, buildPosition, nullptr, vehicle))
-		{
-			vehicle->getOwner()->buildErrorBuildPositionBlocked();
-			return;
-		}
+		vehicle->getOwner()->buildErrorBuildPositionBlocked();
+		return;
 	}
+	vehicle->buildBigSavedPosition = vehicle->getPosition();
+
+	// set vehicle to build position
+	map.moveVehicle(*vehicle, buildPosition);
+	vehicle->getOwner()->doScan();
 
 	vehicle->setBuildingType(buildingTypeID);
 	vehicle->bandPosition = pathEndPosition;
@@ -143,5 +142,6 @@ void cActionStartBuild::execute(cModel& model) const
 
 	model.addJob (new cStartBuildJob (*vehicle, oldPosition, data.cellSize > 1));
 
-	if (vehicle->getMoveJob()) vehicle->getMoveJob()->stop();
+	if (vehicle->getMoveJob())
+		vehicle->getMoveJob()->stop();
 }

@@ -118,29 +118,29 @@ public:
 	void updateActiveUnitCommandShortcuts();
 	void deactivateUnitCommandShortcuts();
 
-    struct sRenderContext
-    {
-        // Pixel offset of the camera
-        cPosition pixelOffset;
+	struct sRenderContext
+	{
+		// Pixel offset of the camera
+		cPosition pixelOffset;
 
-        float zoomFactor;
-        // Screen size of zoomed tile
-        cPosition tileSize;
-        // Visible area of the map
-        cBox<cVector2> visibleMapArea;
+		float zoomFactor;
+		// Screen size of zoomed tile
+		cPosition tileSize;
+		// Visible area of the map
+		cBox<cVector2> visibleMapArea;
 
-        cBox<cVector2> viewPort;
+		cBox<cVector2> viewPort;
 
-        cIndexIterator<cPosition> tileIterator() const;
+		cIndexIterator<cPosition> tileIterator() const;
 
-        // Calculate renderable area
-        // @param tile - tile position of the object
-        // @param width - object width, in cells
-        // @param height - object height, in cells
-        SDL_Rect computeTileDrawingArea (const cPosition& tile, int width, int height) const;
+		// Calculate renderable area
+		// @param tile - tile position of the object
+		// @param width - object width, in cells
+		// @param height - object height, in cells
+		SDL_Rect computeTileDrawingArea (const cPosition& tile, int width, int height) const;
 
-        cPosition getZoomedStartTilePixelOffset() const;
-    };
+		cPosition getZoomedStartTilePixelOffset() const;
+	};
 
 public:
 	cSignal<void ()> scrolled;
@@ -288,24 +288,23 @@ private:
 	//
 	// draw methods
 	//
-    void drawTerrain(sRenderContext& rc);
-    void drawGrid(sRenderContext& rc);
+	void drawTerrain(sRenderContext& rc);
+	void drawGrid(sRenderContext& rc);
 	void drawEffects (bool bottom);
-    void drawResources(sRenderContext& rc);
-    void drawPath (const cVehicle& vehicle, sRenderContext& rc);
+	void drawResources(sRenderContext& rc);
+	void drawPath (const cVehicle& vehicle, sRenderContext& rc);
 	void drawPathArrow(SDL_Rect dest, const SDL_Rect& lastDest, bool spezialColor) const;
-    void drawBuildPath (const cVehicle& vehicle, sRenderContext& rc);
+	void drawBuildPath (const cVehicle& vehicle, sRenderContext& rc);
 
-    // Draw a box around selected units
-    void drawSelectionBox(sRenderContext& rc);
+	// Draw a box around selected units
+	void drawSelectionBox(sRenderContext& rc);
 
-    void drawUnitCircles(sRenderContext& rc);
+	void drawUnitCircles(sRenderContext& rc);
 	void drawLockList ();
 
 	void drawExitPoints();
-	void drawExitPoint (const cPosition& position);
-	void drawExitPointsIf (const cUnit& unit, const std::function<bool (const cPosition&)>& predicate);
-    // Draws an area for build mode
+	void drawExitPoint (const cPosition& position, const cPosition& pixelOffset = cPosition(0,0));
+	// Draws an area for build mode
 	void drawBuildBand();
 
 	bool shouldDrawUnit (const cUnit& unit, const cPosition& visitingPosition, const std::pair<cPosition, cPosition>& tileDrawingRange);
@@ -322,11 +321,11 @@ private:
 	cPosition zoomSize (const cPosition& size, float zoomFactor) const;
 	cPosition getZoomedTileSize() const;
 	cPosition getZoomedStartTilePixelOffset() const;
-    //cBox<cVector2> computeTileDrawingRange() const;
-    std::pair<cPosition, cPosition> computeTileDrawingRange() const;
+	//cBox<cVector2> computeTileDrawingRange() const;
+	std::pair<cPosition, cPosition> computeTileDrawingRange() const;
 
-    // Bad method
-    SDL_Rect computeTileDrawingArea (const cPosition& zoomedTileSize, const cPosition& zoomedStartTilePixelOffset, const cPosition& tileStartIndex, const cPosition& tileIndex);
+	// Bad method
+	SDL_Rect computeTileDrawingArea (const cPosition& zoomedTileSize, const cPosition& zoomedStartTilePixelOffset, const cPosition& tileStartIndex, const cPosition& tileIndex);
 
 	cPosition getMapTilePosition (const cPosition& pixelPosition) const;
 	cPosition getScreenPosition (const cUnit& unit, bool movementOffset = true) const;
@@ -344,9 +343,9 @@ private:
 
 	void runOwnedEffects();
 
-    // Called from event handler
-    // Maybe we should call it from render cycle and never ever again?
-    void renewDamageEffects();
+	// Called from event handler
+	// Maybe we should call it from render cycle and never ever again?
+	void renewDamageEffects();
 	void renewDamageEffect (const cBuilding& building);
 	void renewDamageEffect (const cVehicle& vehicle);
 

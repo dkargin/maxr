@@ -91,7 +91,7 @@ public:
 	cBuilding* getRubble() const;
 	/** returns a pointer to an expl. mine, if there is one */
 	cBuilding* getMine() const;
-	
+
 	/** checks if there is a building that allows gorund units on water fields */
 	bool hasBridgeOrPlattform() const;
 
@@ -211,7 +211,7 @@ public:
 		}
 		if (!loadMap(fileToLoad))
 			throw std::runtime_error("Loading map failed.");
-		
+
 		if (crc != crcFromSave && crcFromSave != 0)
 			throw std::runtime_error("CRC error while loading map. The loaded map file is not equal to the one the game was started with.");
 	}
@@ -273,7 +273,7 @@ public:
 	/**
 	* places a vehicle on the 4 fields to the right and below the given position
 	*/
-	void moveVehicleBig (cVehicle& vehicle, const cPosition& position);
+	//void moveVehicleBig (cVehicle& vehicle, const cPosition& position);
 
 	void deleteBuilding (const cBuilding& building);
 	void deleteVehicle (const cVehicle& vehicle);

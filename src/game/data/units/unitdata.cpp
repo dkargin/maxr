@@ -88,24 +88,8 @@ cUnitsData::cUnitsData() :
 //------------------------------------------------------------------------------
 void cUnitsData::initializeIDData()
 {
-	for (const auto& data : staticUnitData)
-	{
-        auto ID = data.second->ID;
-        if (data.second->canBuild == "BigBuilding")
-            constructorID = ID;
-        if (data.second->canBuild == "SmallBuilding")
-            engineerID = ID;
-        if (data.second->hasFlag(UnitFlag::CanSurvey))
-            surveyorID = ID;
-	}
-
-    if (constructorID == sID(0, 0))
-        Log.write("Constructor index not found. Constructor needs to have the property \"Can_Build = BigBuilding\"", cLog::eLOG_TYPE_ERROR);
-    if (engineerID    == sID(0, 0))
-        Log.write("Engineer index not found. Engineer needs to have the property \"Can_Build = SmallBuilding\"", cLog::eLOG_TYPE_ERROR);
-    if (surveyorID    == sID(0, 0))
-        Log.write("Surveyor index not found. Surveyor needs to have the property \"Can_Survey = Yes\"", cLog::eLOG_TYPE_ERROR);
-
+	// Once upon a time we gathered a 'special' unit IDs, like engineer, pioneer or connector
+	// Right now this specific data is nit needed in the code
 	crcValid = false;
 }
 
@@ -113,7 +97,7 @@ void cUnitsData::initializeIDData()
 void cUnitsData::initializeClanUnitData(const cClanData& clanData)
 {
 	crcValid = false;
- 
+
 	clanDynamicUnitData.resize(clanData.getNrClans());
 
 	for (int i = 0; i != clanData.getNrClans(); ++i)
@@ -122,18 +106,18 @@ void cUnitsData::initializeClanUnitData(const cClanData& clanData)
 		if (clan == nullptr)
 			continue;
 
-        DynamicUnitDataStorage& clanListVehicles = clanDynamicUnitData[i];
+		DynamicUnitDataStorage& clanListVehicles = clanDynamicUnitData[i];
 
 		// make a copy of the vehicle's stats
-        clanListVehicles = dynamicUnitData;
+		clanListVehicles = dynamicUnitData;
 
-        for (auto &pairs: dynamicUnitData)
+		for (auto &pairs: dynamicUnitData)
 		{
-            cDynamicUnitData& clanVehicle = pairs.second;
+			cDynamicUnitData& clanVehicle = pairs.second;
 
 			const cClanUnitStat* changedStat = clan->getUnitStat(clanVehicle.getId());
 			if (changedStat == nullptr) continue;
-			
+
 			if (changedStat->hasModification("Damage"))
 				clanVehicle.setDamage(changedStat->getModificationValue("Damage"));
 			if (changedStat->hasModification("Range"))
@@ -155,7 +139,7 @@ void cUnitsData::initializeClanUnitData(const cClanData& clanData)
 //------------------------------------------------------------------------------
 bool cUnitsData::isValidId(const sID& id) const
 {
-    return staticUnitData.find(id) != staticUnitData.end();
+	return staticUnitData.find(id) != staticUnitData.end();
 }
 
 //------------------------------------------------------------------------------
@@ -171,8 +155,8 @@ const cDynamicUnitData& cUnitsData::getDynamicData(const sID& id, int clan /*= -
 	{
 		for (const auto& data : dynamicUnitData)
 		{
-            if (data.second.getId() == id)
-                return data.second;
+			if (data.second.getId() == id)
+				return data.second;
 		}
 		throw std::runtime_error("Unitdata not found" + id.getText());
 	}
@@ -180,8 +164,8 @@ const cDynamicUnitData& cUnitsData::getDynamicData(const sID& id, int clan /*= -
 	{
 		for (const auto& data : clanDynamicUnitData[clan])
 		{
-            if (data.second.getId() == id)
-                return data.second;
+			if (data.second.getId() == id)
+				return data.second;
 		}
 		throw std::runtime_error("Unitdata not found" + id.getText());
 	}
@@ -189,24 +173,24 @@ const cDynamicUnitData& cUnitsData::getDynamicData(const sID& id, int clan /*= -
 
 cDynamicUnitData& cUnitsData::getDynamicData(const sID& id, int clan /*= -1*/)
 {
-    if (clan < 0 || static_cast<unsigned>(clan) >= clanDynamicUnitData.size())
-    {
-        for (auto& data : dynamicUnitData)
-        {
-            if (data.second.getId() == id)
-                return data.second;
-        }
-        throw std::runtime_error("Unitdata not found" + id.getText());
-    }
-    else
-    {
-        for (auto& data : clanDynamicUnitData[clan])
-        {
-            if (data.second.getId() == id)
-                return data.second;
-        }
-        throw std::runtime_error("Unitdata not found" + id.getText());
-    }
+	if (clan < 0 || static_cast<unsigned>(clan) >= clanDynamicUnitData.size())
+	{
+		for (auto& data : dynamicUnitData)
+		{
+			if (data.second.getId() == id)
+				return data.second;
+		}
+		throw std::runtime_error("Unitdata not found" + id.getText());
+	}
+	else
+	{
+		for (auto& data : clanDynamicUnitData[clan])
+		{
+			if (data.second.getId() == id)
+				return data.second;
+		}
+		throw std::runtime_error("Unitdata not found" + id.getText());
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -214,12 +198,12 @@ cStaticUnitDataPtr cUnitsData::getUnit(const sID& id) const
 {
 	for (const auto& data : staticUnitData)
 	{
-        if (!data.second)
-            continue;
-        if (data.second->ID == id)
-            return data.second;
+		if (!data.second)
+			continue;
+		if (data.second->ID == id)
+			return data.second;
 	}
-    return nullptr;//throw std::runtime_error("Unitdata not found" + id.getText());
+	return nullptr;//throw std::runtime_error("Unitdata not found" + id.getText());
 }
 
 //--------------------------------------------------------------------------
@@ -227,8 +211,8 @@ cStaticUnitDataPtr cUnitsData::getUnit(const sID& id) const
 // Can return empty pointer if no object is found
 std::shared_ptr<cVehicleData> cUnitsData::getVehicle(const UID& id) const
 {
-    auto unit = this->getUnit(id);
-    return std::dynamic_pointer_cast<cVehicleData>(unit);
+	auto unit = this->getUnit(id);
+	return std::dynamic_pointer_cast<cVehicleData>(unit);
 }
 
 //--------------------------------------------------------------------------
@@ -236,70 +220,72 @@ std::shared_ptr<cVehicleData> cUnitsData::getVehicle(const UID& id) const
 // Can return empty pointer if no object is found
 std::shared_ptr<cBuildingData> cUnitsData::getBuilding(const UID& id) const
 {
-    auto unit = this->getUnit(id);
-    return std::dynamic_pointer_cast<cBuildingData>(unit);
+	auto unit = this->getUnit(id);
+	return std::dynamic_pointer_cast<cBuildingData>(unit);
 }
 
 //--------------------------------------------------------------------------
 std::shared_ptr<cVehicleData> cUnitsData::makeVehicle(const UID& id)
 {
-    std::shared_ptr<cVehicleData> result;
+	std::shared_ptr<cVehicleData> result;
 
-    auto unit = this->getUnit(id);
+	auto unit = this->getUnit(id);
 
-    if(!unit)
-    {
-        // Create new vehicle
-        result.reset(new cVehicleData());
-        result->ID = id;
-        staticUnitData[id] = result;
+	if(!unit)
+	{
+		// Create new vehicle
+		result.reset(new cVehicleData());
+		result->ID = id;
+		staticUnitData[id] = result;
 
-        // Ensure that dynamic data exists
-        if (dynamicUnitData.find(id) == dynamicUnitData.end())
-        {
-            cDynamicUnitData ddata;
-            ddata.setId(id);
-            dynamicUnitData[id] = ddata;
-        }
-        return result;
-    }
+		// Ensure that dynamic data exists
+		if (dynamicUnitData.find(id) == dynamicUnitData.end())
+		{
+			Log.write ("makeVehicle: Creating dynamic data for ID="+id.getText(), cLog::eLOG_TYPE_INFO);
+			cDynamicUnitData ddata;
+			ddata.setId(id);
+			dynamicUnitData[id] = ddata;
+		}
+		return result;
+	}
 
-    if(unit->getType() != UnitType::Vehicle)
-    {
-        throw std::runtime_error("cUnitsData::getVehicle() - specified ID is not a vehicle" + id.getText());
-    }
-    return std::dynamic_pointer_cast<cVehicleData>(unit);
+	if(unit->getType() != UnitType::Vehicle)
+	{
+		throw std::runtime_error("cUnitsData::getVehicle() - specified ID is not a vehicle" + id.getText());
+	}
+	return std::dynamic_pointer_cast<cVehicleData>(unit);
 }
 
 //--------------------------------------------------------------------------
 std::shared_ptr<cBuildingData> cUnitsData::makeBuilding(const UID& id)
 {
-    std::shared_ptr<cBuildingData> result;
+	std::shared_ptr<cBuildingData> result;
 
-    auto unit = this->getUnit(id);
+	auto unit = this->getUnit(id);
 
-    if(!unit)
-    {
-        // Create new building
-        result.reset(new cBuildingData());
-        result->ID = id;
-        staticUnitData[id] = result;
+	if(!unit)
+	{
+		// Create new building
+		result.reset(new cBuildingData());
+		result->ID = id;
+		staticUnitData[id] = result;
 
-        // Ensure that dynamic data exists
-        if (dynamicUnitData.find(id) == dynamicUnitData.end())
-        {
-            cDynamicUnitData ddata;
-            ddata.setId(id);
-            dynamicUnitData[id] = ddata;
-        }
-        return result;
-    }
+		// Ensure that dynamic data exists
+		if (dynamicUnitData.find(id) == dynamicUnitData.end())
+		{
+			Log.write ("makeBuilding: Creating dynamic data for ID="+id.getText(), cLog::eLOG_TYPE_INFO);
+			cDynamicUnitData ddata;
+			ddata.setId(id);
+			dynamicUnitData[id] = ddata;
+		}
+		return result;
+	}
 
-    if(unit->getType() != UnitType::Building)
-    {
-        throw std::runtime_error("cUnitsData::getBuilding() - specified ID is not a building " + id.getText());
-    }
-    return std::dynamic_pointer_cast<cBuildingData>(unit);
+	if(unit->getType() != UnitType::Building)
+	{
+		throw std::runtime_error("cUnitsData::getBuilding() - specified ID is not a building " + id.getText());
+	}
+	return std::dynamic_pointer_cast<cBuildingData>(unit);
 }
 
 //------------------------------------------------------------------------------
@@ -317,54 +303,54 @@ const cUnitsData::DynamicUnitDataStorage& cUnitsData::getAllDynamicData(int clan
 
 std::vector<cStaticUnitDataPtr> cUnitsData::getUnitsOfType(UnitType type) const
 {
-    std::vector<cStaticUnitDataPtr> result;
-    for(auto pairs: staticUnitData)
-    {
-        if(pairs.second->getType() == type)
-            result.push_back(pairs.second);
-    }
-    return result;
+	std::vector<cStaticUnitDataPtr> result;
+	for(auto pairs: staticUnitData)
+	{
+		if(pairs.second->getType() == type)
+			result.push_back(pairs.second);
+	}
+	return result;
 }
 
 //------------------------------------------------------------------------------
 std::vector<cStaticUnitDataPtr> cUnitsData::getAllUnits() const
 {
-    std::vector<cStaticUnitDataPtr> result;
-    for(auto pairs: staticUnitData)
-    {
-        result.push_back(pairs.second);
-    }
-    return result;
+	std::vector<cStaticUnitDataPtr> result;
+	for(auto pairs: staticUnitData)
+	{
+		result.push_back(pairs.second);
+	}
+	return result;
 }
 
 std::vector<std::shared_ptr<cBuildingData>> cUnitsData::getAllBuildings() const
 {
-    std::vector<std::shared_ptr<cBuildingData>> result;
-    for(auto pairs: staticUnitData)
-    {
-        if(pairs.second->getType() == UnitType::Building)
-        {
-            auto object = std::dynamic_pointer_cast<cBuildingData>(pairs.second);
-            if(object)
-                result.push_back(object);
-        }
-    }
-    return result;
+	std::vector<std::shared_ptr<cBuildingData>> result;
+	for(auto pairs: staticUnitData)
+	{
+		if(pairs.second->getType() == UnitType::Building)
+		{
+			auto object = std::dynamic_pointer_cast<cBuildingData>(pairs.second);
+			if(object)
+				result.push_back(object);
+		}
+	}
+	return result;
 }
 
 std::vector<std::shared_ptr<cVehicleData>> cUnitsData::getAllVehicles() const
 {
-    std::vector<std::shared_ptr<cVehicleData>> result;
-    for(auto pairs: staticUnitData)
-    {
-        if(pairs.second->getType() == UnitType::Vehicle)
-        {
-            auto object = std::dynamic_pointer_cast<cVehicleData>(pairs.second);
-            if(object)
-                result.push_back(object);
-        }
-    }
-    return result;
+	std::vector<std::shared_ptr<cVehicleData>> result;
+	for(auto pairs: staticUnitData)
+	{
+		if(pairs.second->getType() == UnitType::Vehicle)
+		{
+			auto object = std::dynamic_pointer_cast<cVehicleData>(pairs.second);
+			if(object)
+				result.push_back(object);
+		}
+	}
+	return result;
 }
 
 //------------------------------------------------------------------------------
@@ -374,15 +360,6 @@ uint32_t cUnitsData::getChecksum(uint32_t crc) const
 	if (!crcValid)
 	{
 		crcCache = 0;
-		crcCache = calcCheckSum(constructorID, crcCache);
-		crcCache = calcCheckSum(engineerID, crcCache);
-		crcCache = calcCheckSum(surveyorID, crcCache);
-		crcCache = calcCheckSum(specialIDLandMine, crcCache);
-		crcCache = calcCheckSum(specialIDSeaMine, crcCache);
-		crcCache = calcCheckSum(specialIDMine, crcCache);
-		crcCache = calcCheckSum(specialIDSmallGen, crcCache);
-		crcCache = calcCheckSum(specialIDConnector, crcCache);
-		crcCache = calcCheckSum(specialIDSmallBeton, crcCache);
 		crcCache = calcCheckSum(staticUnitData, crcCache);
 		crcCache = calcCheckSum(dynamicUnitData, crcCache);
 		crcCache = calcCheckSum(clanDynamicUnitData, crcCache);
@@ -409,8 +386,8 @@ cStaticUnitData::cStaticUnitData()
 	factorCoast = 0.0f;
 
 	// Abilities
-    modifiesSpeed = 0.0f;
-    convertsGold = 0;
+	modifiesSpeed = 0.0f;
+	convertsGold = 0;
 
 	canMineMaxRes = 0;
 	needsMetal = 0;
@@ -473,7 +450,7 @@ uint32_t cStaticUnitData::getChecksum(uint32_t crc) const
 	crc = calcCheckSum(factorCoast, crc);
 	crc = calcCheckSum(modifiesSpeed, crc);
 	crc = calcCheckSum(convertsGold, crc);
-    crc = calcCheckSum(canMineMaxRes, crc);
+	crc = calcCheckSum(canMineMaxRes, crc);
 	crc = calcCheckSum(needsMetal, crc);
 	crc = calcCheckSum(needsOil, crc);
 	crc = calcCheckSum(needsEnergy, crc);
@@ -484,7 +461,7 @@ uint32_t cStaticUnitData::getChecksum(uint32_t crc) const
 	crc = calcCheckSum(canDetectStealthOn, crc);
 	crc = calcCheckSum(surfacePosition, crc);
 	crc = calcCheckSum(canBeOverbuild, crc);
-    crc = calcCheckSum(cellSize, crc);
+	crc = calcCheckSum(cellSize, crc);
 	crc = calcCheckSum(storageResMax, crc);
 	crc = calcCheckSum(storeResType, crc);
 	crc = calcCheckSum(storageUnitsMax, crc);
@@ -493,7 +470,7 @@ uint32_t cStaticUnitData::getChecksum(uint32_t crc) const
 	crc = calcCheckSum(isStorageType, crc);
 	crc = calcCheckSum(description, crc);
 	crc = calcCheckSum(name, crc);
-    crc = calcCheckSum(flags, crc);
+	crc = calcCheckSum(flags, crc);
 	return crc;
 }
 

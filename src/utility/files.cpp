@@ -51,12 +51,17 @@ bool FileExists (const char* path)
 
 	if (file == nullptr)
 	{
-		Log.write (SDL_GetError(), cLog::eLOG_TYPE_WARNING);
+		//Log.write (SDL_GetError(), cLog::eLOG_TYPE_WARNING);
 
 		return false;
 	}
 	SDL_RWclose (file);
 	return true;
+}
+
+bool FileExists (const std::string& path)
+{
+	return FileExists(path.c_str());
 }
 
 //--------------------------------------------------------------

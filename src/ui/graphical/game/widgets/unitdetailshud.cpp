@@ -141,18 +141,22 @@ void cUnitDetailsHud::reset()
 			if (unit->isABuilding())
 			{
 				const auto& building = static_cast<const cBuilding&> (*unit);
-				switch (staticData.storeResType)
+
+				if(building.subBase)
 				{
-					case eResourceType::Metal:
-						drawRow (2, symbolType, building.subBase->getMetalStored(), building.subBase->getMaxMetalStored(), lngPack.i18n ("Text~Others~Total"));
-						break;
-					case eResourceType::Oil:
-						drawRow (2, symbolType, building.subBase->getOilStored(), building.subBase->getMaxOilStored(), lngPack.i18n ("Text~Others~Total"));
-						break;
-					case eResourceType::Gold:
-						drawRow (2, symbolType, building.subBase->getGoldStored(), building.subBase->getMaxGoldStored(), lngPack.i18n ("Text~Others~Total"));
-						break;
-					case eResourceType::None: break;
+					switch (staticData.storeResType)
+					{
+						case eResourceType::Metal:
+							drawRow (2, symbolType, building.subBase->getMetalStored(), building.subBase->getMaxMetalStored(), lngPack.i18n ("Text~Others~Total"));
+							break;
+						case eResourceType::Oil:
+							drawRow (2, symbolType, building.subBase->getOilStored(), building.subBase->getMaxOilStored(), lngPack.i18n ("Text~Others~Total"));
+							break;
+						case eResourceType::Gold:
+							drawRow (2, symbolType, building.subBase->getGoldStored(), building.subBase->getMaxGoldStored(), lngPack.i18n ("Text~Others~Total"));
+							break;
+						case eResourceType::None: break;
+					}
 				}
 			}
 		}
@@ -186,9 +190,9 @@ void cUnitDetailsHud::reset()
 	else if (staticData.produceEnergy && unit->isABuilding())
 	{
 		const auto& building = static_cast<const cBuilding&> (*unit);
-		drawRow (1, eUnitDataSymbolType::Energy, (building.isUnitWorking() ? staticData.produceEnergy : 0), staticData.produceEnergy, lngPack.i18n ("Text~Others~Power"));
+		drawRow(1, eUnitDataSymbolType::Energy, (building.isUnitWorking() ? staticData.produceEnergy : 0), staticData.produceEnergy, lngPack.i18n ("Text~Others~Power"));
 
-		if (unit->getOwner() == player)
+		if (unit->getOwner() == player && building.subBase)
 		{
 			drawRow (2, eUnitDataSymbolType::Energy, building.subBase->getEnergyProd(), building.subBase->getMaxEnergyProd(), lngPack.i18n ("Text~Others~Total"));
 			drawRow (3, eUnitDataSymbolType::Energy, building.subBase->getEnergyNeed(), building.subBase->getMaxEnergyNeed(), lngPack.i18n ("Text~Others~Usage_7"));
@@ -199,7 +203,7 @@ void cUnitDetailsHud::reset()
 		const auto& building = static_cast<const cBuilding&> (*unit);
 		drawRow (1, eUnitDataSymbolType::Human, staticData.produceHumans, staticData.produceHumans, lngPack.i18n ("Text~Others~Teams_7"));
 
-		if (unit->getOwner() == player)
+		if (unit->getOwner() == player && building.subBase)
 		{
 			drawRow (2, eUnitDataSymbolType::Human, building.subBase->getHumanProd(), building.subBase->getHumanProd(), lngPack.i18n ("Text~Others~Total"));
 			drawRow (3, eUnitDataSymbolType::Human, building.subBase->getHumanNeed(), building.subBase->getMaxHumanNeed(), lngPack.i18n ("Text~Others~Usage_7"));
@@ -208,10 +212,13 @@ void cUnitDetailsHud::reset()
 	else if (staticData.needsHumans && unit->isABuilding())
 	{
 		const auto& building = static_cast<const cBuilding&> (*unit);
-		if (building.isUnitWorking()) drawRow (1, eUnitDataSymbolType::Human, staticData.needsHumans, staticData.needsHumans, lngPack.i18n ("Text~Others~Usage_7"));
-		else drawRow (1, eUnitDataSymbolType::Human, 0, staticData.needsHumans, lngPack.i18n ("Text~Others~Usage_7"));
+		if (building.isUnitWorking())
+			drawRow (1, eUnitDataSymbolType::Human, staticData.needsHumans, staticData.needsHumans, lngPack.i18n ("Text~Others~Usage_7"));
+		else
+			drawRow (1, eUnitDataSymbolType::Human, 0, staticData.needsHumans, lngPack.i18n ("Text~Others~Usage_7"));
 
-		if (unit->getOwner() == player) drawRow (2, eUnitDataSymbolType::Human, building.subBase->getHumanNeed(), building.subBase->getMaxHumanNeed(), lngPack.i18n ("Text~Others~Total"));
+		if (unit->getOwner() == player && building.subBase)
+			drawRow (2, eUnitDataSymbolType::Human, building.subBase->getHumanNeed(), building.subBase->getMaxHumanNeed(), lngPack.i18n ("Text~Others~Total"));
 	}
 }
 

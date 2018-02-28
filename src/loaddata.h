@@ -54,16 +54,6 @@ int LoadData (void* loadingState);
 
 void createShadowGfx();
 
-// Represents a pack of game data
-class DataPack
-{
-public:
-    int load(const char *path);
-
-    // Check if loading process is complete
-    bool isComplete() const;
-};
-
 /**
 * Splits a string s by "word" according to one of separators seps.
 */

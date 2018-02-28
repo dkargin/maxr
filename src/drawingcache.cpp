@@ -130,27 +130,27 @@ void sDrawingCacheEntry::init (const cVehicle& vehicle, const cMapView& map, con
 	lastUsed = frameNr;
 
 	//determine needed size of the surface
-    //int height = (int) std::max (vehicle.uiData->img_org[vehicle.dir]->h * zoom, vehicle.uiData->shw_org[vehicle.dir]->h * zoom);
-    //int width  = (int) std::max (vehicle.uiData->img_org[vehicle.dir]->w * zoom, vehicle.uiData->shw_org[vehicle.dir]->w * zoom);
-    // Overrides from multicell feature
-    int width = vehicle.getCellSize() * defaultCellSize * zoom;
-    int height = vehicle.getCellSize() * defaultCellSize * zoom;
+	//int height = (int) std::max (vehicle.uiData->img_org[vehicle.dir]->h * zoom, vehicle.uiData->shw_org[vehicle.dir]->h * zoom);
+	//int width  = (int) std::max (vehicle.uiData->img_org[vehicle.dir]->w * zoom, vehicle.uiData->shw_org[vehicle.dir]->w * zoom);
+	// Overrides from multicell feature
+	int width = vehicle.getCellSize() * defaultCellSize * zoom;
+	int height = vehicle.getCellSize() * defaultCellSize * zoom;
 
 	if (vehicle.getFlightHeight() > 0)
 	{
-        #ifdef FIX_THIS
+		#ifdef FIX_THIS
 		int shwOff = ((int) (Round (vehicle.uiData->img_org[vehicle.dir]->w * zoom) * (vehicle.getFlightHeight() / 64.0f)));
 		height += shwOff;
 		width  += shwOff;
-        #endif
+		#endif
 	}
-    /*
-    // O RLY?
+	/*
+	// O RLY?
 	if (vehicle.isUnitClearing() || vehicle.isUnitBuildingABuilding())
 	{
 		width  = 130;
 		height = 130;
-    }*/
+	}*/
 	surface = AutoSurface (SDL_CreateRGBSurface (0, width, height, 32, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000));
 
 	SDL_FillRect (surface.get(), nullptr, SDL_MapRGBA (surface->format, 0, 0, 0, 0));
@@ -177,14 +177,14 @@ void sDrawingCacheEntry::init (const cBuilding& building, double zoom_, unsigned
 	lastUsed = frameNr;
 
 	//determine needed size of the surface
-    //int height = (int) std::max (building.uiData->img_org->h * zoom, building.uiData->shw_org->h * zoom);
-    //int width  = (int) std::max (building.uiData->img_org->w * zoom, building.uiData->shw_org->w * zoom);
-    //if (building.uiData->hasFrames) width = (int)(building.uiData->shw_org->w * zoom);
-    int width = building.getCellSize() * defaultCellSize * zoom;
-    int height = building.getCellSize() * defaultCellSize * zoom;
+	//int height = (int) std::max (building.uiData->img_org->h * zoom, building.uiData->shw_org->h * zoom);
+	//int width  = (int) std::max (building.uiData->img_org->w * zoom, building.uiData->shw_org->w * zoom);
+	//if (building.uiData->hasFrames) width = (int)(building.uiData->shw_org->w * zoom);
+	int width = building.getCellSize() * defaultCellSize * zoom;
+	int height = building.getCellSize() * defaultCellSize * zoom;
 
-    //if(building.uiData->hasFrames)
-    //    width = building.getCellSize() * 64 * zoom;
+	//if(building.uiData->hasFrames)
+	//    width = building.getCellSize() * 64 * zoom;
 
 	surface = AutoSurface (SDL_CreateRGBSurface (0, width, height, 32, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000));
 
@@ -224,7 +224,7 @@ SDL_Surface* cDrawingCache::getCachedImage (const cBuilding& building, double zo
 		if (building.subBase)
 		{
 #ifdef FUCK_THIS
-            // TODO: Remake this attachments
+			// TODO: Remake this attachments
 			if (building.BaseN != entry.BaseN ||
 				building.BaseE != entry.BaseE ||
 				building.BaseS != entry.BaseS ||
@@ -239,17 +239,20 @@ SDL_Surface* cDrawingCache::getCachedImage (const cBuilding& building, double zo
 			}
 #endif
 		}
-        //if (building.uiData->hasFrames && !building.uiData->isAnimated)
+		if (building.uiData->hasFrames)
 		{
-            if (entry.dir != building.dir)
-                continue;
+			if (entry.dir != building.dir)
+				continue;
 		}
-        if (entry.zoom != zoom)
-            continue;
+		if (entry.zoom != zoom)
+			continue;
 
-        //if (building.uiData->hasClanLogos && building.getOwner()->getClan() != entry.clan)
-        if (building.getOwner()->getClan() != entry.clan)
-            continue;
+		//if (building.uiData->hasClanLogos && building.getOwner()->getClan() != entry.clan)
+		if (building.getOwner()->getClan() != entry.clan)
+			continue;
+
+		if(building.uiData->customGraphics)
+			continue;
 
 		//cache hit!
 		cacheHits++;
@@ -426,7 +429,7 @@ void cDrawingCache::flush()
 bool cDrawingCache::canCache (const cBuilding& building)
 {
 	if (!building.getOwner() ||
-        building.alphaEffectValue)
+		building.alphaEffectValue)
 	{
 		notCached++;
 		return false;

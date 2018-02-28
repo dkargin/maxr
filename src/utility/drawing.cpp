@@ -25,6 +25,8 @@
 #include "utility/files.h"
 #include "utility/pcx.h"
 
+#include <SDL_image.h>
+
 //------------------------------------------------------------------------------
 void drawPoint (SDL_Surface* surface, const cPosition& position, const cRgbColor& color)
 {
@@ -255,292 +257,364 @@ void blitClipped (SDL_Surface& source, const cBox<cPosition>& area, SDL_Surface&
 
 void drawCheckerPattern(SDL_Surface* surface, int cellSize, int colorA, int colorB)
 {
-    SDL_Rect dst_rect = {0, 0, surface->w, surface->h};
-    SDL_FillRect(surface, nullptr, colorA);
+	SDL_Rect dst_rect = {0, 0, surface->w, surface->h};
+	SDL_FillRect(surface, nullptr, colorA);
 
-    for(int y = 0; y < ceil(dst_rect.h / (float)cellSize); y++)
-        for(int x = 0; x < ceil(dst_rect.w / (float)cellSize); x++)
-        {
-            if(x&1 ^ y&1)
-            {
-                SDL_Rect cell_rect{dst_rect.x + x*surface->w, dst_rect.y + y*surface->h, surface->w, surface->h};
-                SDL_FillRect(surface, &cell_rect, colorB);
-            }
-        }
+	for(int y = 0; y < ceil(dst_rect.h / (float)cellSize); y++)
+		for(int x = 0; x < ceil(dst_rect.w / (float)cellSize); x++)
+		{
+			if(x&1 ^ y&1)
+			{
+				SDL_Rect cell_rect{dst_rect.x + x*cellSize, dst_rect.y + y*cellSize, cellSize, cellSize};
+				SDL_FillRect(surface, &cell_rect, colorB);
+			}
+		}
 }
 
 //------------------------------------------------------------------------------
 void cRenderable::setSize(const cVector2& newSize)
 {
-    this->size = newSize;
+	this->size = newSize;
 }
 
 //------------------------------------------------------------------------------
 cBox<cVector2> cRenderable::getRect() const
 {
-    return cBox<cVector2>(pos, pos + size);
+	return cBox<cVector2>(pos, pos + size);
 }
 
 //------------------------------------------------------------------------------
 void cRenderable::render_simple(SDL_Surface* surf, SDL_Rect rect)
 {
-    sContext context;
-    context.surface = surf;
-    context.dstRect = rect;
-    context.cache = true;
-    context.layer = 0;
-    render(context);
+	sContext context;
+	context.surface = surf;
+	context.dstRect = rect;
+	context.cache = true;
+	context.layer = 0;
+	render(context);
+}
+
+void cRenderable::setColorKey(int key)
+{
+
+}
+
+void cRenderable::setAlphaKey(int alpha)
+{
+
+}
+
+void cRenderable::setChannel(const char* channel)
+{
+	this->channel = channel;
+}
+
+void cRenderable::setChannel(const std::string& channel)
+{
+	this->channel = channel;
+}
+
+const char* cRenderable::getChannel() const
+{
+	return channel.c_str();
 }
 
 //------------------------------------------------------------------------------
 cSprite::cSprite(SurfacePtr surf, SDL_Rect rect)
 {
-    surface = surf;
-    srcRect = rect;
+	surface = surf;
+	srcRect = rect;
 }
 
 //------------------------------------------------------------------------------
 cSprite::operator SDL_Surface*()
 {
-    return cache.get();
+	return cache.get();
 }
 
 void cSprite::render(cRenderable::sContext& context)
 {
-    SDL_Surface* dst = context.surface;
-    SDL_Rect dst_rect = context.dstRect;
+	SDL_Surface* dst = context.surface;
+	SDL_Rect dst_rect = context.dstRect;
 
-    if(!this->surface)
-        return;
+	if(!this->surface)
+		return;
 
-    SDL_Surface* src = this->surface.get();
+	SDL_Surface* src = this->surface.get();
 
-    bool refresh = false;
-    // Updating the cache to fit an upscaled image
-    if(!cache || cache->w < dst_rect.w || cache->h < dst_rect.h)
-    {
-        int depth = surface->format->BitsPerPixel;
-        cache = AutoSurface(SDL_CreateRGBSurface (0, dst_rect.w, dst_rect.h, depth, 0, 0, 0, 0));
+	bool refresh = false;
+	// Updating the cache to fit an upscaled image
+	if(!cache || cache->w < dst_rect.w || cache->h < dst_rect.h)
+	{
+		int depth = surface->format->BitsPerPixel;
+		cache = AutoSurface(SDL_CreateRGBSurface (0, dst_rect.w, dst_rect.h, depth, 0, 0, 0, 0));
 
-        // Fill in background by something distinguishable.
-        // So we can easily see problems with sprite cache and proper resizing
-        int colorA = SDL_MapRGB(cache.get()->format, 0, 255, 0);
-        int colorB = SDL_MapRGB(cache.get()->format, 0, 0, 255);
-        drawCheckerPattern(cache.get(), 16, colorA, colorB);
+		// Fill in background by something distinguishable.
+		// So we can easily see problems with sprite cache and proper resizing
+		int colorA = SDL_MapRGB(cache.get()->format, 0, 255, 0);
+		int colorB = SDL_MapRGB(cache.get()->format, 0, 0, 255);
+		drawCheckerPattern(cache.get(), 16, colorA, colorB);
+		refresh = true;
+	}
 
-        if(colorkey >= 0)
-        {
-            SDL_SetColorKey (cache.get(), SDL_TRUE, colorkey);
-            SDL_FillRect (cache.get(), nullptr, colorkey);
-        }
+	if(lastSize.x() != dst_rect.w || lastSize.y() != dst_rect.h)
+		refresh = true;
 
-        refresh = true;
-    }
+	SDL_Rect rc{0,0, dst_rect.w, dst_rect.h};
 
-    if(lastSize.x() != dst_rect.w || lastSize.y() != dst_rect.h)
-        refresh = true;
+	if(refresh)
+	{
+		// TODO: Clear the surface
+		this->applyBlending(src);
+		SDL_BlitScaled(src, &srcRect, cache.get(), &rc);
+		lastSize = cPosition(dst_rect.w, dst_rect.h);
+		applyBlending(cache.get());
+	}
 
-    SDL_Rect rc{0,0, dst_rect.w, dst_rect.h};
+	applyBlending(dst);
 
-    if(refresh)
-    {
-        // TODO: Clear the surface
-        SDL_BlitScaled(src, &srcRect, cache.get(), &rc);
-        lastSize = cPosition(dst_rect.w, dst_rect.h);
-        applyBlending(cache.get());
-    }
-
-    applyBlending(dst);
-
-    // Draw internal cache to the destination surface
-    SDL_BlitSurface(cache.get(), &rc, dst, &dst_rect);
+	// Draw internal cache to the destination surface
+	SDL_BlitSurface(cache.get(), &rc, dst, &dst_rect);
 }
 
 void cSprite::applyBlending(SDL_Surface* surface) const
 {
-    // Fix color settings
-    if(alpha >= 0)
-        SDL_SetSurfaceAlphaMod(surface, alpha);
+	// Fix color settings
+	if(alpha >= 0)
+		SDL_SetSurfaceAlphaMod(surface, alpha);
 
-    if(colorkey >= 0)
-        SDL_SetColorKey(surface, SDL_TRUE, colorkey);
-    else
-        SDL_SetColorKey(surface, SDL_FALSE, 0);
+	if(colorkey >= 0)
+		SDL_SetColorKey(surface, SDL_TRUE, colorkey);
+	else
+		SDL_SetColorKey(surface, SDL_FALSE, 0);
 }
 
 void cSprite::setColorKey(int key)
 {
-    if(key == this->colorkey)
-        return;
+	if(key == this->colorkey)
+		return;
 
-    colorkey = key;
+	colorkey = key;
 
-    if(surface)
-    {
-        if(colorkey >= 0)
-            SDL_SetColorKey(surface.get(), SDL_TRUE, colorkey);
-        else
-            SDL_SetColorKey(surface.get(), SDL_FALSE, 0);
-    }
+	if(surface)
+	{
+		if(colorkey >= 0)
+			SDL_SetColorKey(surface.get(), SDL_TRUE, colorkey);
+		else
+			SDL_SetColorKey(surface.get(), SDL_FALSE, 0);
+	}
 }
 
 void cSprite::setAlphaKey(int key)
 {
-    if(key == this->alpha)
-        return;
+	if(key == this->alpha)
+		return;
 
-    alpha = key;
+	alpha = key;
 
-    if(surface)
-    {
-        if(alpha >= 0)
-            SDL_SetSurfaceAlphaMod(surface.get(), alpha);
-        else
-            SDL_SetSurfaceAlphaMod(surface.get(), 255);
-    }
+	if(surface)
+	{
+		if(alpha >= 0)
+			SDL_SetSurfaceAlphaMod(surface.get(), alpha);
+		else
+			SDL_SetSurfaceAlphaMod(surface.get(), 255);
+	}
 }
 
 //------------------------------------------------------------------------------
 cSpriteList::cSpriteList(SurfacePtr surf, SDL_Rect rect)
-    :cSprite(surf, rect)
+	:cSprite(surf, rect)
 {
 }
 
 void cSpriteList::render(sContext& context)
 {
-    SDL_Surface* dst = context.surface;
-    SDL_Rect dst_rect = context.dstRect;
+	SDL_Surface* dst = context.surface;
+	SDL_Rect dst_rect = context.dstRect;
 
-    if(!this->surface)
-        return;
+	if(!this->surface)
+		return;
 
-    SDL_Surface* src = this->surface.get();
+	SDL_Surface* src = this->surface.get();
 
-    bool refresh = false;
+	bool refresh = false;
 
-    // Updating the cache to fit an upscaled image
-    int cacheWidth = dst_rect.w*frames;
-    if(!cache || cache->w < cacheWidth || cache->h < dst_rect.h)
-    {
-        int depth = surface->format->BitsPerPixel;
-        cache = AutoSurface(SDL_CreateRGBSurface (0, cacheWidth, dst_rect.h, depth, 0, 0, 0, 0));
-        refresh = true;
-    }
+	// Updating the cache to fit an upscaled image
+	int cacheWidth = dst_rect.w*frames;
+	if(!cache || cache->w < cacheWidth || cache->h < dst_rect.h)
+	{
+		int depth = surface->format->BitsPerPixel;
+		cache = AutoSurface(SDL_CreateRGBSurface (0, cacheWidth, dst_rect.h, depth, 0, 0, 0, 0));
 
-    if(lastSize.x() != cacheWidth || lastSize.y() != dst_rect.h)
-        refresh = true;
+		// Fill in background by something distinguishable.
+		// So we can easily see problems with sprite cache and proper resizing
+		//int colorA = SDL_MapRGB(cache.get()->format, 0, 255, 0);
+		//int colorB = SDL_MapRGB(cache.get()->format, 0, 0, 255);
+		//drawCheckerPattern(cache.get(), 16, colorA, colorB);
 
-    SDL_Rect rc{0,0, cacheWidth, dst_rect.h};
+		refresh = true;
+	}
 
-    if(refresh)
-    {
-        SDL_BlitScaled(src, &srcRect, cache.get(), &rc);
-        lastSize = cPosition(dst_rect.w, dst_rect.h);
+	if(lastSize.x() != cacheWidth || lastSize.y() != dst_rect.h)
+		refresh = true;
 
-        // Fix color settings
-        if(alpha >= 0)
-            SDL_SetSurfaceAlphaMod(cache.get(), alpha);
+	// Need to refill local cache
+	// We upscale original frames to desired size.
+	// By the way, desired size could be lesser than real cache size.
+	if(refresh)
+	{
+		SDL_Rect rc{0,0, cacheWidth, dst_rect.h};
+		SDL_FillRect(cache.get(), &rc, colorkey);
+		SDL_BlitScaled(src, &srcRect, cache.get(), &rc);
+		// Should update last size
+		lastSize = cPosition(dst_rect.w, dst_rect.h);
 
-        if(colorkey >= 0)
-            SDL_SetColorKey(cache.get(), SDL_TRUE, colorkey);
-        else
-            SDL_SetColorKey(cache.get(), SDL_FALSE, 0);
-    }
+		applyBlending(cache.get());
 
-    // Fix color settings
-    if(alpha >= 0)
-        SDL_SetSurfaceAlphaMod(dst, alpha);
+		if(!file.empty())
+		{
+			IMG_SavePNG(cache.get(), (file + ".cache.png").c_str());
+		}
+	}
 
-    if(colorkey >= 0)
-        SDL_SetColorKey(dst, SDL_TRUE, colorkey);
-    else
-        SDL_SetColorKey(dst, SDL_FALSE, 0);
+	// Fix color settings
+	int frame = 0;
+	if(context.channels.count(channel))
+		frame = context.channels[channel];
 
-    // Draw to the destination surface
-    //SDL_BlitScaled(src, &srcRect, dst, &dst_rect);
-    SDL_BlitSurface(cache.get(), &rc, dst, &dst_rect);
+	if (frame < 0)
+		frame = 0;
+
+	if (frame > frames)
+		frame = frame % frames;
+
+	SDL_Rect rc = this->getSrcRect(frame);
+	// Draw to the destination surface
+	SDL_BlitSurface(cache.get(), &rc, dst, &dst_rect);
 }
 
 
 SDL_Rect cSpriteList::getSrcRect(int frame)
 {
-    SDL_Rect result;
-    result.x = srcRect.x + srcRect.w*frame;
-    result.y = srcRect.y;
-    result.w = srcRect.w;
-    result.h = srcRect.h;
-    return result;
+	SDL_Rect result;
+	result.x = lastSize.x() * frame;
+	result.y = 0;
+	result.w = lastSize.x();
+	result.h = lastSize.y();
+	return result;
 }
 
 //------------------------------------------------------------------------------
 cSpriteTool::cSpriteTool()
 {
-    cellSize = 64;
+	cellSize = 64;
 }
 
 void cSpriteTool::setCellSize(int size)
 {
-    cellSize = size;
+	cellSize = size;
 }
 
 void cSpriteTool::setRefSize(const cPosition& size)
 {
-    this->hasRefSize = true;
-    refSize = size;
+	this->hasRefSize = true;
+	refSize = size;
 }
 
 void cSpriteTool::resetRefSize()
 {
-    hasRefSize = false;
+	hasRefSize = false;
 }
+
+void cSpriteTool::reset()
+{
+	this->hasLayer = false;
+	this->hasRefSize = false;
+}
+
 
 // @path - path to an image
 // @size - size of the sprite in world coordinates
 cSpritePtr cSpriteTool::makeSprite(const std::string& path, const cVector2& size, FitMode mode)
 {
-    if (!FileExists (path.c_str()))
-        return nullptr;
+	if (!FileExists (path.c_str()))
+		return nullptr;
 
-    auto surface = LoadPCX(path);
-    if(!surface)
-        return nullptr;
+	auto surface = LoadPCX(path);
+	if(!surface)
+		return nullptr;
 
-    SDL_Rect rect = SDL_Rect{0, 0, surface->w, surface->h};
+	SDL_Rect rect = SDL_Rect{0, 0, surface->w, surface->h};
 
-    cSprite* sprite = new cSprite(SurfacePtr(surface.release(), detail::SdlSurfaceDeleter()), rect);
+	cSprite* sprite = new cSprite(SurfacePtr(surface.release(), detail::SdlSurfaceDeleter()), rect);
 
-    //SDL_SetColorKey(ui.img_org[n].get(), SDL_TRUE, 0xFFFFFF);
-    //ui.img[n] = AutoSurface (SDL_CreateRGBSurface (0, size*64, size*64, Video.getColDepth(), 0, 0, 0, 0));
-    //ui.img[n] = CloneSDLSurface (*ui.img_org[n]);
-    //SDL_SetColorKey(ui.img[n].get(), SDL_TRUE, 0xFFFFFF);
-    //SDL_SetColorKey(sprite->surface.get(), SDL_TRUE, 0xFFFFFF);
+	sprite->setSize(size);
+	sprite->mode = mode;
+	sprite->file = path;
+	//sprite->setColorKey(0xFFFFFF);
 
-    sprite->setSize(size);
-    sprite->mode = mode;
-    sprite->setColorKey(0xFFFFFF);
-
-    return cSpritePtr(sprite);
+	return cSpritePtr(sprite);
 }
 
 cSpriteListPtr cSpriteTool::makeVariantSprite(const std::string& path, int frames, const cVector2& size, FitMode mode)
 {
-    if (!FileExists (path.c_str()))
-        return nullptr;
+	if (!FileExists (path.c_str()))
+		return nullptr;
 
-    auto surface = LoadPCX(path);
-    if(!surface)
-        return nullptr;
+	auto surface = LoadPCX(path);
+	if(!surface)
+		return nullptr;
 
-    SDL_Rect rect = SDL_Rect{0, 0, surface->w, surface->h};
+	if(frames < 1)
+		frames = 1;
 
-    cSpriteList* sprite = new cSpriteList(SurfacePtr(surface.release(), detail::SdlSurfaceDeleter()), rect);
-    sprite->frames = frames;
-    // TODO: Check the geometry
+	SDL_Rect rect = SDL_Rect{0, 0, surface->w, surface->h};
+	cSpriteList* sprite = new cSpriteList(SurfacePtr(surface.release(), detail::SdlSurfaceDeleter()), rect);
+	sprite->frames = frames;
+	sprite->file = path;
 
-    return cSpriteListPtr(sprite);
+	return cSpriteListPtr(sprite);
 }
 
-cSpriteListPtr makeVariantSprite(const std::list<std::string>& paths, int variants, const cVector2& size, FitMode mode)
+cSpriteListPtr cSpriteTool::makeVariantSprite(const std::list<std::string>& paths, const cVector2& size, FitMode mode)
 {
-    return nullptr;
+	if(paths.empty())
+		return nullptr;
+
+	std::vector<AutoSurface> src;
+	for(auto path: paths)
+	{
+		auto surface = LoadPCX(path);
+		if(!surface)
+		{
+			printf("cSpriteTool::makeVariantSprite - can not load surface from %s\n", path.c_str());
+		}
+		src.push_back(std::move(surface));
+	}
+
+	if(!src.empty())
+	{
+		int w = src[0]->w;
+		int h=  src[0]->h;
+		int depth = src[0]->format->BitsPerPixel;
+		SDL_Rect rect = {0, 0, int(w * src.size()), h};
+		SDL_Surface* surface = SDL_CreateRGBSurface (0, rect.w, rect.h, depth, 0, 0, 0, 0);
+
+		// Put frames to internal surface
+		for(int i = 0; i < src.size(); i++)
+		{
+			auto surf = src[i].get();
+			SDL_Rect dst_rect = {i*w, 0, w, h};
+			SDL_Rect src_rect = {0, 0, surf->w, surf->h};
+			SDL_BlitSurface(surf, &src_rect, surface, &dst_rect);
+		}
+
+		cSpriteList* sprite = new cSpriteList(SurfacePtr(surface, detail::SdlSurfaceDeleter()), rect);
+		sprite->frames = src.size();
+		sprite->mode = mode;
+		sprite->file = paths.front();
+		return cSpriteListPtr(sprite);
+	}
+
+	return nullptr;
 }

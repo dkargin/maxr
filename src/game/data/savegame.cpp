@@ -41,7 +41,7 @@
 		Log.write(msg, cLog::eLOG_TYPE_ERROR); \
 		info.gameName = "XML Error";           \
 		return;                                \
-	}                                 
+	}
 
 cSavegame::cSavegame() :
 	loadedSlot(-1),
@@ -50,7 +50,7 @@ cSavegame::cSavegame() :
 
 int cSavegame::save(const cModel& model, int slot, const std::string& saveName)
 {
-#if 0 //---serialization test code---	
+#if 0 //---serialization test code---
 	//write 1st xml archive
 	tinyxml2::XMLDocument document1;
 	document1.LinkEndChild(document1.NewElement("MAXR_SAVE_FILE"));
@@ -138,20 +138,20 @@ cSaveGameInfo cSavegame::loadSaveInfo(int slot)
 		info.gameName = "XML Error";
 		return info;
 	}
-		
+
 	if (!loadVersion(info.saveVersion))
 	{
 		info.gameName = "XML Error";
 		return info;
 	}
-	
-	
+
+
 	if (info.saveVersion < cVersion("1.0"))
 	{
 		loadLegacyHeader(info);
 		return info;
 	}
-	
+
 	try
 	{
 		cXmlArchiveOut archive(*xmlDocument.RootElement());
@@ -179,7 +179,7 @@ cSaveGameInfo cSavegame::loadSaveInfo(int slot)
 		archive.leaveChild(); // mapFile
 		archive.leaveChild(); // map
 		archive.leaveChild(); // model
-		
+
 		//TODO: load turn
 
 	}
@@ -293,15 +293,17 @@ void cSavegame::loadModel(cModel& model, int slot)
 	{
 		throw std::runtime_error("Could not load version info from savegame file " + iToStr(slot));
 	}
-	
+
 	if (saveVersion < cVersion(1, 0))
 	{
 		throw std::runtime_error("Savegame version is not compatible. Versions < 1.0 are not supported.");
 	}
-	
+
 	serialization::cPointerLoader loader(model);
 	cXmlArchiveOut archive(*xmlDocument.RootElement(), &loader);
 	archive >> NVP(model);
+	// TODO: Dirty hack to pass real graphics data
+	model.setUnitsData(std::make_shared<cUnitsData>(UnitsDataGlobal));
 
 	// check crc
 	uint32_t crcFromSave;
@@ -309,11 +311,11 @@ void cSavegame::loadModel(cModel& model, int slot)
 	archive >> serialization::makeNvp("modelcrc", crcFromSave);
 	archive.leaveChild();
 	Log.write(" Checksum from save file: " + toString(crcFromSave), cLog::eLOG_TYPE_NET_DEBUG);
-	
+
 	uint32_t modelCrc = model.getChecksum();
 	Log.write(" Checksum after loading model: " + toString(modelCrc), cLog::eLOG_TYPE_NET_DEBUG);
 	Log.write(" GameId: " + toString(model.getGameId()), cLog::eLOG_TYPE_NET_DEBUG);
-	
+
 	if (crcFromSave != modelCrc)
 	{
 		Log.write(" Crc of loaded model does not match the saved crc!", cLog::eLOG_TYPE_NET_ERROR);

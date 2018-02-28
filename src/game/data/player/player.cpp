@@ -163,7 +163,7 @@ cVehicle& cPlayer::addNewVehicle (const cPosition& position, const sVehicleDataP
 }
 
 //------------------------------------------------------------------------------
-cBuilding& cPlayer::addNewBuilding (const cPosition& position, const sBuildingUIDataPtr& unitData, unsigned int uid)
+cBuilding& cPlayer::addNewBuilding (const cPosition& position, const sBuildingDataPtr& unitData, unsigned int uid)
 {
     auto building = std::make_shared<cBuilding>(unitData, getUnitDataCurrentVersion(unitData->ID), this, uid);
 

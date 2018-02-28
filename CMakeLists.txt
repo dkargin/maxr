@@ -201,6 +201,16 @@ find_package(SDL2_net REQUIRED)
 include_directories(${SDL2_NET_INCLUDE_DIR})
 target_link_libraries(maxr ${SDL2_NET_LIBRARY})
 
+# ---------------------------------------
+# SDL2_image
+
+INCLUDE(FindPkgConfig)
+#PKG_SEARCH_MODULE(SDL2 REQUIRED sdl2)
+PKG_SEARCH_MODULE(SDL2IMAGE REQUIRED SDL2_image>=2.0.0)
+
+find_package(SDL2 REQUIRED)
+include_directories(${SDL2_INCLUDE_DIR})
+target_link_libraries(maxr ${SDL2IMAGE_LIBRARIES})
 
 # ---------------------------------------
 # add crash reporting library

@@ -47,6 +47,14 @@
 
 using namespace std;
 
+bool cBuildingData::setGraphics(const std::string& layer, const cSpritePtr& sprite)
+{
+	if(layer == "effect")
+		this->effect = sprite;
+	else
+		return cStaticUnitData::setGraphics(layer, sprite);
+	return true;
+}
 
 //--------------------------------------------------------------------------
 cBuildListItem::cBuildListItem()
@@ -127,9 +135,9 @@ uint32_t cBuildListItem::getChecksum(uint32_t crc) const
 //--------------------------------------------------------------------------
 
 //--------------------------------------------------------------------------
-cBuilding::cBuilding (sBuildingUIDataPtr data, const cDynamicUnitData* ddata, cPlayer* owner, unsigned int ID) :
-    cUnit(ddata, data, owner, ID),
-    uiData(data),
+cBuilding::cBuilding (sBuildingDataPtr data, const cDynamicUnitData* ddata, cPlayer* owner, unsigned int ID) :
+	cUnit(ddata, data, owner, ID),
+	uiData(data),
 	isWorking (false),
 	wasWorking(false),
 	metalPerRound(0),
@@ -203,7 +211,7 @@ string cBuilding::getStatusStr (const cPlayer* whoWantsToKnow, const cUnitsData&
 		if (!staticData->canBuild.empty() && !buildList.empty() && getOwner() == whoWantsToKnow)
 		{
 			const cBuildListItem& buildListItem = buildList[0];
-            const string& unitName = unitsData.getUnit(buildListItem.getType())->getName();
+			const string& unitName = unitsData.getUnit(buildListItem.getType())->getName();
 			string sText;
 
 			if (buildListItem.getRemainingMetal() > 0)
@@ -241,7 +249,7 @@ string cBuilding::getStatusStr (const cPlayer* whoWantsToKnow, const cUnitsData&
 		}
 
 		// Research Center
-        if (staticData->hasFlag(UnitFlag::CanResearch) && getOwner() == whoWantsToKnow)
+		if (staticData->hasFlag(UnitFlag::CanResearch) && getOwner() == whoWantsToKnow)
 		{
 			string sText = lngPack.i18n ("Text~Comp~Working") + "\n";
 			for (int area = 0; area < cResearch::kNrResearchAreas; area++)
@@ -298,7 +306,7 @@ string cBuilding::getStatusStr (const cPlayer* whoWantsToKnow, const cUnitsData&
 
 	//Research centre idle + projects
 	// Research Center
-    if (staticData->hasFlag(UnitFlag::CanResearch) && getOwner() == whoWantsToKnow && !isUnitWorking())
+	if (staticData->hasFlag(UnitFlag::CanResearch) && getOwner() == whoWantsToKnow && !isUnitWorking())
 	{
 		string sText = lngPack.i18n("Text~Comp~Waits") + "\n";
 		for (int area = 0; area < cResearch::kNrResearchAreas; area++)
@@ -330,7 +338,7 @@ string cBuilding::getStatusStr (const cPlayer* whoWantsToKnow, const cUnitsData&
 //--------------------------------------------------------------------------
 void cBuilding::makeReport (cSoundManager& soundManager) const
 {
-    if (hasStaticFlag(UnitFlag::CanResearch) && isUnitWorking() && getOwner() && getOwner()->isCurrentTurnResearchAreaFinished (getResearchArea()))
+	if (hasStaticFlag(UnitFlag::CanResearch) && isUnitWorking() && getOwner() && getOwner()->isCurrentTurnResearchAreaFinished (getResearchArea()))
 	{
 		soundManager.playSound (std::make_shared<cSoundEffectVoice> (eSoundEffectType::VoiceUnitStatus, VoiceData.VOIResearchComplete));
 	}
@@ -412,47 +420,47 @@ void cBuilding::render_rubble (SDL_Surface* surface, const SDL_Rect& dest, float
 void cBuilding::render_beton (SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor) const
 {
 	SDL_Rect tmp = dest;
-    /* TODO: Properly fill in the whole area
-     * This place is likely a good reason to implement proper tiling templates
-     */
+	/* TODO: Properly fill in the whole area
+	 * This place is likely a good reason to implement proper tiling templates
+	 */
 #ifdef FIX_BUILDING_UNDERLAY
 	int size = cellSize;
-    SDL_Surface* underlay_surface = nullptr;
-    int step = 0;
+	SDL_Surface* underlay_surface = nullptr;
+	int step = 0;
 	if (size & 1)	// if size is even - fill land by 1x1 floor tiles
 	{
-        if(!UnitsUiData.ptr_small_beton)
-            return;
+		if(!UnitsUiData.ptr_small_beton)
+			return;
 		CHECK_SCALING (*UnitsUiData.ptr_small_beton, *UnitsUiData.ptr_small_beton_org, zoomFactor);
 
-        step = 1;
-        underlay_surface = UnitsUiData.ptr_small_beton;
+		step = 1;
+		underlay_surface = UnitsUiData.ptr_small_beton;
 	}
 	else // or use 2x2 tiles
 	{
-        if(!GraphicsData.gfx_big_beton)
-            return;
+		if(!GraphicsData.gfx_big_beton)
+			return;
 
 		CHECK_SCALING (*GraphicsData.gfx_big_beton, *GraphicsData.gfx_big_beton_org, zoomFactor);
-        step = 2;
-        underlay_surface = GraphicsData.gfx_big_beton.get();
+		step = 2;
+		underlay_surface = GraphicsData.gfx_big_beton.get();
 	}
 
-    if (alphaEffectValue && cSettings::getInstance().isAlphaEffects())
-        SDL_SetSurfaceAlphaMod(underlay_surface, alphaEffectValue);
-    else
-        SDL_SetSurfaceAlphaMod(underlay_surface, 254);
+	if (alphaEffectValue && cSettings::getInstance().isAlphaEffects())
+		SDL_SetSurfaceAlphaMod(underlay_surface, alphaEffectValue);
+	else
+		SDL_SetSurfaceAlphaMod(underlay_surface, 254);
 
 
-    for(int y = 0; y < size; y += step)
-        for(int x = 0; x < size;  x+= step)
-        {
-            SDL_Rect tmp = dest;
-            tmp.x += (x * 64 * zoomFactor);
-            tmp.y += (y * 64 * zoomFactor);
+	for(int y = 0; y < size; y += step)
+		for(int x = 0; x < size;  x+= step)
+		{
+			SDL_Rect tmp = dest;
+			tmp.x += (x * 64 * zoomFactor);
+			tmp.y += (y * 64 * zoomFactor);
 
-            SDL_BlitSurface(underlay_surface, nullptr, surface, &tmp);
-        }
+			SDL_BlitSurface(underlay_surface, nullptr, surface, &tmp);
+		}
 #endif
 }
 
@@ -470,11 +478,11 @@ void cBuilding::connectFirstBuildListItem()
 //------------------------------------------------------------------------------
 void cBuilding::render_simple (SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, unsigned long long animationTime, int alpha) const
 {
-	int frameNr = dir;
-    if (uiData->hasFrames && cSettings::getInstance().isAnimations() &&
+	int frameNr = animationTime;//dir;
+	if (uiData->hasFrames && cSettings::getInstance().isAnimations() &&
 		isDisabled() == false)
 	{
-		frameNr = (animationTime % uiData->hasFrames);
+		//frameNr = (animationTime % uiData->hasFrames);
 	}
 
 	render_simple (surface, dest, zoomFactor, *uiData, getOwner(), frameNr, alpha);
@@ -483,79 +491,28 @@ void cBuilding::render_simple (SDL_Surface* surface, const SDL_Rect& dest, float
 /*static*/ void cBuilding::render_simple (SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, const cBuildingData& uiData, const cPlayer* owner, int frameNr, int alpha)
 {
 	// read the size:
-    SDL_Surface* sprite_dest = GraphicsData.gfx_tmp.get();
-    // draw player color
-    if (owner)
-    {
-        SDL_BlitSurface (owner->getColor().getTexture(), nullptr, sprite_dest, nullptr);
-    }
-
-    cSpritePtr sprite = uiData.directed_image[0];
-    if(!sprite)
-        sprite = uiData.image;
-
-    if(!sprite)
-        return;
-
-    sprite->render_simple(surface, dest);
-
-    /*
-	SDL_Rect src;
-	src.x = 0;
-	src.y = 0;
-	if (uiData.hasFrames)
+	SDL_Surface* sprite_dest = GraphicsData.gfx_tmp.get();
+	// draw player color
+	if (owner)
 	{
-		src.w = Round (64.0f * zoomFactor);
-		src.h = Round (64.0f * zoomFactor);
-	}
-	else
-	{
-		src.w = (int) (uiData.img_org->w * zoomFactor);
-		src.h = (int) (uiData.img_org->h * zoomFactor);
+		SDL_BlitSurface (owner->getColor().getTexture(), nullptr, sprite_dest, nullptr);
 	}
 
-	// blit the players color and building graphic
-    if (uiData.hasPlayerColor && owner)
-        SDL_BlitSurface(owner->getColor().getTexture(), nullptr, GraphicsData.gfx_tmp.get(), nullptr);
-    else
-        SDL_FillRect (GraphicsData.gfx_tmp.get(), nullptr, 0x00FF00FF);
+	cSpritePtr sprite = uiData.directed_image[0];
+	if(!sprite)
+		sprite = uiData.image;
 
-	if (uiData.hasFrames)
-	{
-		src.x = frameNr * Round (64.0f * zoomFactor);
+	if(!sprite)
+		return;
 
-		CHECK_SCALING (*uiData.img, *uiData.img_org, zoomFactor);
-		SDL_BlitSurface (uiData.img.get(), &src, GraphicsData.gfx_tmp.get(), nullptr);
+	cRenderable::sContext context;
+	context.surface = surface;
+	context.dstRect = dest;
+	context.cache = true;
+	context.channels["clan"] = owner->getClan()+1;
+	context.channels["animation"] = frameNr;
 
-		src.x = 0;
-	}
-	else if (uiData.hasClanLogos)
-	{
-		CHECK_SCALING (*uiData.img, *uiData.img_org, zoomFactor);
-		src.x = 0;
-		src.y = 0;
-		src.w = (int) (128 * zoomFactor);
-		src.h = (int) (128 * zoomFactor);
-		// select clan image
-		if (owner && owner->getClan() != -1)
-			src.x = (int) ((owner->getClan() + 1) * 128 * zoomFactor);
-		SDL_BlitSurface (uiData.img.get(), &src, GraphicsData.gfx_tmp.get(), nullptr);
-	}
-	else
-	{
-		CHECK_SCALING (*uiData.img, *uiData.img_org, zoomFactor);
-		SDL_BlitSurface (uiData.img.get(), nullptr, GraphicsData.gfx_tmp.get(), nullptr);
-	}
-
-	// draw the building
-	SDL_Rect tmp = dest;
-
-	src.x = 0;
-	src.y = 0;
-
-	SDL_SetSurfaceAlphaMod (GraphicsData.gfx_tmp.get(), alpha);
-	SDL_BlitSurface (GraphicsData.gfx_tmp.get(), &src, surface, &tmp);
-    */
+	sprite->render(context);
 }
 
 
@@ -582,20 +539,21 @@ void cBuilding::render (unsigned long long animationTime, SDL_Surface* surface, 
 		drawConnectors (surface, dest, zoomFactor, drawShadow);
 		if (uiData->isConnectorGraphic) return;
 	}
-#ifdef FIX_SHADOW
+
 	// draw the shadows
 	if (drawShadow)
 	{
+	#ifdef FIX_SHADOW
 		SDL_Rect tmp = dest;
 		if (alphaEffectValue && cSettings::getInstance().isAlphaEffects())
-            SDL_SetSurfaceAlphaMod (uiData->img_shadow.get(), alphaEffectValue / 5);
+			SDL_SetSurfaceAlphaMod (uiData->img_shadow.get(), alphaEffectValue / 5);
 		else
-            SDL_SetSurfaceAlphaMod (uiData->img_shadow.get(), 50);
+			SDL_SetSurfaceAlphaMod (uiData->img_shadow.get(), 50);
 
-        CHECK_SCALING (*uiData->img_shadow, *uiData->img_shadow_original, zoomFactor);
-        blittAlphaSurface (uiData->img_shadow.get(), nullptr, surface, &tmp);
+		CHECK_SCALING (*uiData->img_shadow, *uiData->img_shadow_original, zoomFactor);
+		blittAlphaSurface (uiData->img_shadow.get(), nullptr, surface, &tmp);
+	#endif
 	}
-#endif
 	render_simple (surface, dest, zoomFactor, animationTime, alphaEffectValue && cSettings::getInstance().isAlphaEffects() ? alphaEffectValue : 254);
 }
 
@@ -621,14 +579,14 @@ void cBuilding::updateNeighbours (const cMap& map)
 //--------------------------------------------------------------------------
 void cBuilding::CheckNeighbours (const cMap& map)
 {
-    /*
+	/*
 #define CHECK_NEIGHBOUR(x, y, m) \
-    if (map.isValidPosition (cPosition(x, y))) \
-    { \
-        const cBuilding* b = map.getField(cPosition(x, y)).getTopBuilding(); \
-        if (b && b->getOwner() == getOwner() && b->staticData->connectsToBase) \
-        {m = true;}else{m = false;} \
-    }*/
+	if (map.isValidPosition (cPosition(x, y))) \
+	{ \
+		const cBuilding* b = map.getField(cPosition(x, y)).getTopBuilding(); \
+		if (b && b->getOwner() == getOwner() && b->staticData->connectsToBase) \
+		{m = true;}else{m = false;} \
+	}*/
 
 	auto adjacent = generateAdjacentBorder(this->getPosition(), this->getCellSize());
 	// find all neighbouring subbases
@@ -639,7 +597,7 @@ void cBuilding::CheckNeighbours (const cMap& map)
 		if (map.isValidPosition (pos))
 		{
 			const cBuilding* b = map.getField(pos).getTopBuilding();
-            bool val = b && b->getOwner() == getOwner() && b->hasStaticFlag(UnitFlag::ConnectsToBase);
+			bool val = b && b->getOwner() == getOwner() && b->hasStaticFlag(UnitFlag::ConnectsToBase);
 			// TODO: Connectors can deal with virtual ports themselves
 			switch(side)
 			{
@@ -653,24 +611,24 @@ void cBuilding::CheckNeighbours (const cMap& map)
 	}
 
 #ifdef FUCK_THIS
-    if (!isBig)
-    {
-        CHECK_NEIGHBOUR (getPosition().x()    , getPosition().y() - 1, BaseN)
-        CHECK_NEIGHBOUR (getPosition().x() + 1, getPosition().y()    , BaseE)
-        CHECK_NEIGHBOUR (getPosition().x()    , getPosition().y() + 1, BaseS)
-        CHECK_NEIGHBOUR (getPosition().x() - 1, getPosition().y()    , BaseW)
-    }
-    else
-    {
-        CHECK_NEIGHBOUR (getPosition().x()    , getPosition().y() - 1, BaseN)
-        CHECK_NEIGHBOUR (getPosition().x() + 1, getPosition().y() - 1, BaseBN)
-        CHECK_NEIGHBOUR (getPosition().x() + 2, getPosition().y()    , BaseE)
-        CHECK_NEIGHBOUR (getPosition().x() + 2, getPosition().y() + 1, BaseBE)
-        CHECK_NEIGHBOUR (getPosition().x()    , getPosition().y() + 2, BaseS)
-        CHECK_NEIGHBOUR (getPosition().x() + 1, getPosition().y() + 2, BaseBS)
-        CHECK_NEIGHBOUR (getPosition().x() - 1, getPosition().y()    , BaseW)
-        CHECK_NEIGHBOUR (getPosition().x() - 1, getPosition().y() + 1, BaseBW)
-    }
+	if (!isBig)
+	{
+		CHECK_NEIGHBOUR (getPosition().x()    , getPosition().y() - 1, BaseN)
+		CHECK_NEIGHBOUR (getPosition().x() + 1, getPosition().y()    , BaseE)
+		CHECK_NEIGHBOUR (getPosition().x()    , getPosition().y() + 1, BaseS)
+		CHECK_NEIGHBOUR (getPosition().x() - 1, getPosition().y()    , BaseW)
+	}
+	else
+	{
+		CHECK_NEIGHBOUR (getPosition().x()    , getPosition().y() - 1, BaseN)
+		CHECK_NEIGHBOUR (getPosition().x() + 1, getPosition().y() - 1, BaseBN)
+		CHECK_NEIGHBOUR (getPosition().x() + 2, getPosition().y()    , BaseE)
+		CHECK_NEIGHBOUR (getPosition().x() + 2, getPosition().y() + 1, BaseBE)
+		CHECK_NEIGHBOUR (getPosition().x()    , getPosition().y() + 2, BaseS)
+		CHECK_NEIGHBOUR (getPosition().x() + 1, getPosition().y() + 2, BaseBS)
+		CHECK_NEIGHBOUR (getPosition().x() - 1, getPosition().y()    , BaseW)
+		CHECK_NEIGHBOUR (getPosition().x() - 1, getPosition().y() + 1, BaseBW)
+	}
 #endif
 }
 
@@ -819,12 +777,12 @@ void cBuilding::startWork ()
 		return;
 
 	// research building
-    if (hasStaticFlag(UnitFlag::CanResearch))
+	if (hasStaticFlag(UnitFlag::CanResearch))
 	{
 		getOwner()->startAResearch (researchArea);
 	}
 
-    if (hasStaticFlag(UnitFlag::CanScore))
+	if (hasStaticFlag(UnitFlag::CanScore))
 	{
 		//sendNumEcos (server, *getOwner());
 	}
@@ -839,13 +797,13 @@ void cBuilding::stopWork (bool forced)
 
 	if (subBase && !subBase->stopBuilding(this, forced))
 		return;
-	
-    if (hasStaticFlag(UnitFlag::CanResearch))
+
+	if (hasStaticFlag(UnitFlag::CanResearch))
 	{
 		getOwner()->stopAResearch (researchArea);
 	}
 
-    if (hasStaticFlag(UnitFlag::CanScore))
+	if (hasStaticFlag(UnitFlag::CanScore))
 	{
 		//sendNumEcos (server, *getOwner());
 	}
@@ -919,8 +877,8 @@ bool cBuilding::canTransferTo (const cUnit& unit) const
 bool cBuilding::canExitTo(const cPosition& position, const cMap& map, const cStaticUnitData& vehicleData) const
 {
 	if (!map.possiblePlaceVehicle(vehicleData, position, getOwner())) return false;
-    if (!isNextTo(position, vehicleData))
-        return false;
+	if (!isNextTo(position, vehicleData))
+		return false;
 
 	return true;
 }
@@ -929,8 +887,8 @@ bool cBuilding::canExitTo(const cPosition& position, const cMap& map, const cSta
 bool cBuilding::canExitTo(const cPosition& position, const cMapView& map, const cStaticUnitData& vehicleData) const
 {
 	if (!map.possiblePlaceVehicle(vehicleData, position)) return false;
-    if (!isNextTo(position, vehicleData))
-        return false;
+	if (!isNextTo(position, vehicleData))
+		return false;
 
 	return true;
 }
@@ -955,7 +913,7 @@ bool cBuilding::canLoad (const cVehicle* Vehicle, bool checkPosition) const
 
 	if (storedUnits.size() == staticData->storageUnitsMax) return false;
 
-    if (checkPosition && !isNextTo(*Vehicle)) return false;
+	if (checkPosition && !isNextTo(*Vehicle)) return false;
 
 	if (!Contains(staticData->storeUnitsTypes, Vehicle->getStaticUnitData().isStorageType)) return false;
 
@@ -1337,7 +1295,7 @@ void cBuilding::executeUpdateBuildingCommmand (const cClient& client, bool updat
 //-----------------------------------------------------------------------------
 bool cBuilding::buildingCanBeStarted() const
 {
-    return (staticData->hasFlag(UnitFlag::CanWork) && isUnitWorking() == false
+	return (staticData->hasFlag(UnitFlag::CanWork) && isUnitWorking() == false
 		&& (!buildList.empty() || staticData->canBuild.empty()));
 }
 
@@ -1552,7 +1510,7 @@ void cBuilding::registerOwnerEvents()
 		ownerSignalConnectionManager.connect (getOwner()->creditsChanged, [&]() { statusChanged(); });
 	}
 
-    if (staticData->hasFlag(UnitFlag::CanResearch))
+	if (staticData->hasFlag(UnitFlag::CanResearch))
 	{
 		ownerSignalConnectionManager.connect (getOwner()->researchCentersWorkingOnAreaChanged, [&] (cResearch::ResearchArea) { statusChanged(); });
 		ownerSignalConnectionManager.connect (getOwner()->getResearchState().neededResearchPointsChanged, [&] (cResearch::ResearchArea) { statusChanged(); });

@@ -91,23 +91,25 @@ enum eSymbolsBig
 //-----------------------------------------------------------------------------
 struct cVehicleData : public cStaticUnitData
 {
-    bool animationMovement = false;
-    bool makeTracks = false;
+	bool animationMovement = false;
+	bool makeTracks = false;
 
-    cRenderablePtr build;
-    cRenderablePtr build_shadow;
-    cRenderablePtr clear_small;
-    cRenderablePtr clear_small_shadow;
+	cRenderablePtr build;
+	cRenderablePtr build_shadow;
+	cRenderablePtr clear;
+	cRenderablePtr clear_shadow;
 
-    virtual UnitType getType() const
-    {
-        return UnitType::Vehicle;
-    }
+	bool setGraphics(const std::string& layer, const cSpritePtr& sprite) override;
 
-    AutoSurface storage;        // image of the vehicle in storage
-    std::string FLCFile;        // FLC-Video
+	virtual UnitType getType() const
+	{
+		return UnitType::Vehicle;
+	}
 
-    cVehicleData();
+	AutoSurface storage;        // image of the vehicle in storage
+	std::string FLCFile;        // FLC-Video
+
+	cVehicleData();
 };
 
 typedef std::shared_ptr<cVehicleData> sVehicleDataPtr;
@@ -119,7 +121,7 @@ class cVehicle : public cUnit
 {
 	//-----------------------------------------------------------------------------
 public:
-    cVehicle (sVehicleDataPtr staticData,  const cDynamicUnitData& data, cPlayer* Owner, unsigned int ID);
+	cVehicle (sVehicleDataPtr staticData,  const cDynamicUnitData& data, cPlayer* Owner, unsigned int ID);
 	virtual ~cVehicle();
 
 	virtual bool isAVehicle() const { return true; }
@@ -128,9 +130,9 @@ public:
 	virtual const cPosition& getMovementOffset() const MAXR_OVERRIDE_FUNCTION { return tileMovementOffset; }
 	void setMovementOffset (const cPosition& newOffset) { tileMovementOffset = newOffset; }
 
-    sVehicleDataPtr getVehicleData() const;
+	sVehicleDataPtr getVehicleData() const;
 
-    sVehicleDataPtr vehicleData;
+	sVehicleDataPtr vehicleData;
 
 	mutable int ditherX, ditherY;
 	mutable int bigBetonAlpha;
@@ -241,19 +243,19 @@ public:
 	*/
 	void render (const cMapView* map, unsigned long long animationTime, const cPlayer* activePlayer, SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, bool drawShadow) const;
 	void render_simple (SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, int alpha = 254) const;
-    static void render_simple (SDL_Surface* surface, const SDL_Rect& dest,
-                               float zoomFactor, const cVehicleData& vehicleData,
-                               const cPlayer* owner, int dir = 0, int walkFrame = 0, int alpha = 254);
+	static void render_simple (SDL_Surface* surface, const SDL_Rect& dest,
+							   float zoomFactor, const cVehicleData& vehicleData,
+							   const cPlayer* owner, int dir = 0, int walkFrame = 0, int alpha = 254);
 	/**
-     * draws the overlay animation of the vehicle on the given surface
-     * Needed by radar units
-     *@author: eiko
-     */
+	 * draws the overlay animation of the vehicle on the given surface
+	 * Needed by radar units
+	 *@author: eiko
+	 */
 	void drawOverlayAnimation (unsigned long long animationTime, SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor) const;
 	void drawOverlayAnimation (SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, int frameNr, int alpha = 254) const;
-    static void drawOverlayAnimation (SDL_Surface* surface, const SDL_Rect& dest,
-                                      float zoomFactor, const cVehicleData& vehicleData,
-                                      int frameNr = 0, int alpha = 254);
+	static void drawOverlayAnimation (SDL_Surface* surface, const SDL_Rect& dest,
+									  float zoomFactor, const cVehicleData& vehicleData,
+									  int frameNr = 0, int alpha = 254);
 
 	bool isUnitLoaded() const { return loaded; }
 
@@ -350,9 +352,7 @@ public:
 
 		if (!archive.isWriter)
 		{
-            vehicleData = std::dynamic_pointer_cast<cVehicleData>(staticData);
-            //archive.getPointerLoader()->get(data.getId(), vehicleData);
-            //uiData = UnitsUiData.getVehicleUI(data.getId());
+			vehicleData = std::dynamic_pointer_cast<cVehicleData>(staticData);
 		}
 	}
 private:

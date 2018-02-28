@@ -37,6 +37,19 @@
 
 using namespace std;
 
+bool cStaticUnitData::setGraphics(const std::string& layer, const cSpritePtr& sprite)
+{
+	if(layer == "main" || layer == "image")
+		image = sprite;
+	else if(layer == "shadow")
+		shadow = sprite;
+	else if(layer == "underlay")
+		underlay = sprite;
+	else
+		return false;
+	return true;
+}
+
 //------------------------------------------------------------------------------
 cUnit::cUnit (const cDynamicUnitData* unitData, cStaticUnitDataPtr _staticData, cPlayer* owner, unsigned int ID)
 	: iID (ID)
@@ -51,7 +64,7 @@ cUnit::cUnit (const cDynamicUnitData* unitData, cStaticUnitDataPtr _staticData, 
 	, attacking (false)
 	, beeingAttacked (false)
 	, beenAttacked (false)
-    , staticData(_staticData)
+	, staticData(_staticData)
 	, storageResCur(0)
 {
 	if (unitData != nullptr)
@@ -141,33 +154,33 @@ bool cUnit::isInWeaponRange (const cPosition& position) const
 
 cVector2 cUnit::getCenter() const
 {
-    float x = (float)position.x() + 0.5*cellSize;
-    float y = (float)position.y() + 0.5*cellSize;
-    return cVector2(x,y);
+	float x = (float)position.x() + 0.5*cellSize;
+	float y = (float)position.y() + 0.5*cellSize;
+	return cVector2(x,y);
 }
 //------------------------------------------------------------------------------
 bool cUnit::isNextTo (const cPosition& position, const cStaticUnitData& data) const
 {
-    return isNextTo(position, data.cellSize, data.cellSize);
+	return isNextTo(position, data.cellSize, data.cellSize);
 }
 
 //------------------------------------------------------------------------------
 bool cUnit::isNextTo (const cPosition& position, int w, int h) const
 {
-    cBox<cPosition> merged(position, position + cPosition(w,h));
-    merged.add(getArea());
+	cBox<cPosition> merged(position, position + cPosition(w,h));
+	merged.add(getArea());
 
-    // Boxes A and B are touching each other
-    // if (and only if) the size of a union of A+B
-    // is equal to the sum of each sizes
-    return merged.getSize() == cPosition(w+cellSize, h+cellSize);
+	// Boxes A and B are touching each other
+	// if (and only if) the size of a union of A+B
+	// is equal to the sum of each sizes
+	return merged.getSize() == cPosition(w+cellSize, h+cellSize);
 }
 
 bool cUnit::isNextTo (const cUnit& other) const
 {
-    cBox<cPosition> merged(other.getArea());
-    merged.add(getArea());
-    return merged.getSize() == cPosition(cellSize+other.cellSize, cellSize+other.cellSize);
+	cBox<cPosition> merged(other.getArea());
+	merged.add(getArea());
+	return merged.getSize() == cPosition(cellSize+other.cellSize, cellSize+other.cellSize);
 }
 
 //------------------------------------------------------------------------------
@@ -200,7 +213,7 @@ uint32_t cUnit::getChecksum(uint32_t crc) const
 	for (const auto& p : seenByPlayerList)
 		crc = calcCheckSum(p->getId(), crc);
 	for (const auto& p : detectedByPlayerList)
-		crc = calcCheckSum(p->getId(), crc); 
+		crc = calcCheckSum(p->getId(), crc);
 	crc = calcCheckSum(cellSize, crc);
 	crc = calcCheckSum(owner, crc);
 	crc = calcCheckSum(position, crc);
@@ -218,7 +231,7 @@ uint32_t cUnit::getChecksum(uint32_t crc) const
 
 bool cUnit::hasStaticFlag(UnitFlag flag) const
 {
-    return getStaticUnitData().hasFlag(flag);
+	return getStaticUnitData().hasFlag(flag);
 }
 
 //------------------------------------------------------------------------------
@@ -343,7 +356,7 @@ bool cUnit::canAttackObjectAt (const cPosition& position, const cMapView& map, b
 	if (isBeeingAttacked()) return false;
 	if (isAVehicle() && static_cast<const cVehicle*> (this)->isUnitLoaded()) return false;
 	if (map.isValidPosition (position) == false) return false;
-    if (checkRange && isInWeaponRange (position) == false) return false;
+	if (checkRange && isInWeaponRange (position) == false) return false;
 
 	if (staticData->muzzleType == cStaticUnitData::MUZZLE_TYPE_TORPEDO && map.isWaterOrCoast(position) == false)
 		return false;

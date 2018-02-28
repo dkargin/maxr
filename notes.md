@@ -16,18 +16,6 @@ My plan so far:
 		- fix unit projection
 	- Update unit sizes according to this change 	OK
 	- Update loading process to support multiple 'data' folders. Yeah, that means proper modding support.
-1. Lua AI in screeps style
-	- make lua bindings for
-		- unit control
-		- access to unit's state
-		- map access
-	- save AI state from lua
-	- extend network API to get script updates from the player
-1. Get rid of XML and replace it by LUA definitions. LUA is beautifull while XML is ugly
-1. Slight rework for radars: separate direct vision and 'radar highlight' vision
-1. Fuel storage for all units. That was a brilliant idea from rumaxclub.
-1. Rework for heavy missiles:
-	Large missile launchers (mobile, ship, building) should launch a special cruise missile unit. This unit should have a limited fuel storage just for one turn of flight. This unit can be shot down by AA. Cruise missiles should be built separately. Missile launchers should be loaded separately. This ammunition is not direct-conversible.
 
 # Notable problems I've created #
 
@@ -36,7 +24,10 @@ My plan so far:
  - Pathfinder ignores cells, that are occupied by another units. Seems like regular units do not block the map properly
  - Pathfinder tries to cross the angles
  - Rendering pipeline hopes that size of unit's graphics is consistent with actual unit's size. In fact - it is not consistent, and should not.
- - Icon rendering is broken. Look at unit selection dialog
+ - SubBase is broken. It was nullptr everywhere
+ - Save game is broken. We have not properly loaded graphics!
+ - Finish building job is broken. Markers are drawn in wrong places.
+ - 
 
 Broken functions. Should be fixed:
 
@@ -47,6 +38,8 @@ Broken functions. Should be fixed:
  can overspend
  - ActionFinishBuild
  - broken the rendering of building's underlay tiles. This shit should be specified from XML, not the code!
+ - void cGameMapWidget::drawExitPoints() generates wrong exit points
+ - Unit selection is broken
  std::pair<bool, cPosition> cMouseModeSelectBuildPosition::findNextBuildPosition seems like broken
 
 
@@ -117,23 +110,51 @@ size.y() *= float(refSize.y()) / float(srcRect.y())
 #ifdef FIX_BUILDING_UNDERLAY
 
 #ifdef VERY_BROKEN
-            // TODO: Get rid of this shit. Leave all data references to XML or scripts
-            // C++ should not keep so specific data. Really.
-            if (specialString == "mine")
-                UnitsDataGlobal.setSpecialIDMine(sID(1, IDList.back()));
-            else if (specialString == "energy")
-                UnitsDataGlobal.setSpecialIDSmallGen(sID(1, IDList.back()));
-            else if (specialString == "connector")
-                UnitsDataGlobal.setSpecialIDConnector(sID(1, IDList.back()));
-            else if (specialString == "landmine")
-                UnitsDataGlobal.setSpecialIDLandMine(sID(1, IDList.back()));
-            else if (specialString == "seamine")
-                UnitsDataGlobal.setSpecialIDSeaMine(sID(1, IDList.back()));
-            else if (specialString == "smallBeton") // Especially this one
-                UnitsDataGlobal.setSpecialIDSmallBeton(sID(1, IDList.back()));
+// TODO: Get rid of this shit. Leave all data references to XML or scripts
+// C++ should not keep so specific data. Really.
+else if (specialString == "energy")
+    UnitsDataGlobal.setSpecialIDSmallGen(sID(1, IDList.back()));
+else if (specialString == "connector")
+    UnitsDataGlobal.setSpecialIDConnector(sID(1, IDList.back()));
+else if (specialString == "landmine")
+    UnitsDataGlobal.setSpecialIDLandMine(sID(1, IDList.back()));
+else if (specialString == "seamine")
+    UnitsDataGlobal.setSpecialIDSeaMine(sID(1, IDList.back()));
+else if (specialString == "smallBeton") // Especially this one
+    UnitsDataGlobal.setSpecialIDSmallBeton(sID(1, IDList.back()));
 #endif
 
 Tag "Graphic" has block "Animations" with: "Build_Up", "Power_On"
 
-- SubBase is broken
-- Embark is broken 
+another cUnitsData is created 
+
+Landing to 50;86
+(II): Landed vehicle 00 19 to (47;83)
+(II): Landed vehicle 00 24 to (46;89)
+
+20200
+
+Graphic layers:
+ - shadow
+ - underlay - beton and so on
+ - main - main graphics
+ - effect - is drawn over main (or under?)
+ - overlay - is drawn over the rest modules
+
+Channels:
+ - animation 	- selected animation frame
+ - direction 	- where unit is facing
+ - clan			- selected clan
+
+TODO:
+1. Fix alpha
+	- add new attribute 'colorkey'. Be it either "r;g;b", or 'auto'. Auto = take color of left topmost pixel
+	- properly draw the stuff
+
+
+Render order:
+1. Player color to the cache
+2. Object's sprite. Set colormask = rgb{255,255,255}, dest=cache
+3. Draw object to main surface. Dest = screen, colorkey = rgb{255,0,255}
+
+Animations are generated from snprintf(sztmp, sizeof (sztmp), "img%d_%.2d.pcx", dir, frame);

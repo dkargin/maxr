@@ -30,8 +30,8 @@
 #include "utility/string/toString.h"
 
 //------------------------------------------------------------------------------
-cActionInitNewGame::cActionInitNewGame() : 
-    cAction(eActiontype::ACTION_INIT_NEW_GAME)
+cActionInitNewGame::cActionInitNewGame() :
+	cAction(eActiontype::ACTION_INIT_NEW_GAME)
 {}
 
 //------------------------------------------------------------------------------
@@ -45,18 +45,18 @@ cActionInitNewGame::cActionInitNewGame(cBinaryArchiveOut& archive)
 void cActionInitNewGame::execute(cModel& model) const
 {
 	//Note: this funktion handels incoming data from network. Make every possible sanity check!
-	
+
 	model.initGameId();
 
 	cPlayer& player = *model.getPlayer(playerNr);
 
 	const cUnitsData& unitsdata = *model.getUnitsData();
-    landingConfig.loadUnitsData(unitsdata);
+	landingConfig.loadUnitsData(unitsdata);
 
 	player.removeAllUnits();
 	Log.write(" GameId: " + toString(model.getGameId()), cLog::eLOG_TYPE_NET_DEBUG);
 
-    // init clan
+	// init clan
 	if (model.getGameSettings()->getClansEnabled())
 	{
 		if (clan < 0 || static_cast<size_t>(clan) >= unitsdata.getNrOfClans())
@@ -64,7 +64,7 @@ void cActionInitNewGame::execute(cModel& model) const
 			Log.write(" Landing failed. Invalid clan number.", cLog::eLOG_TYPE_NET_ERROR);
 			return;
 		}
-        player.setClan(clan, unitsdata);
+		player.setClan(clan, unitsdata);
 	}
 	else
 	{
@@ -72,17 +72,17 @@ void cActionInitNewGame::execute(cModel& model) const
 	}
 
 	// init landing position
-    if (!model.getMap()->isValidPosition(landingConfig.landingPosition))
+	if (!model.getMap()->isValidPosition(landingConfig.landingPosition))
 	{
 		Log.write(" Received invalid landing position", cLog::eLOG_TYPE_NET_ERROR);
 		return;
 	}
 
-    cPosition updatedLandingPosition = landingConfig.landingPosition;
+	cPosition updatedLandingPosition = landingConfig.landingPosition;
 	if (model.getGameSettings()->getBridgeheadType() == eGameSettingsBridgeheadType::Definite)
 	{
 		// Find place for mine if bridgehead is fixed
-        if (!findPositionForLayout(updatedLandingPosition, landingConfig.baseLayout, *model.getMap()->staticMap))
+		if (!findPositionForLayout(updatedLandingPosition, landingConfig.baseLayout, *model.getMap()->staticMap))
 		{
 			Log.write("couldn't place player start mine: " + player.getName(), cLog::eLOG_TYPE_NET_ERROR);
 			return;
@@ -96,7 +96,7 @@ void cActionInitNewGame::execute(cModel& model) const
 
 	// apply upgrades
 	int credits = model.getGameSettings()->getStartCredits();
-    for (const auto& upgrade : landingConfig.unitUpgrades)
+	for (const auto& upgrade : landingConfig.unitUpgrades)
 	{
 		const sID& unitId = upgrade.first;
 		const cUnitUpgrade& upgradeValues = upgrade.second;
@@ -106,7 +106,7 @@ void cActionInitNewGame::execute(cModel& model) const
 			Log.write(" Apply upgrades failed. Unknown sID: " + unitId.getText(), cLog::eLOG_TYPE_NET_ERROR);
 			return;
 		}
-        int costs = upgradeValues.calcTotalCosts(unitsdata.getDynamicData(unitId, player.getClan()), *player.getUnitDataCurrentVersion(unitId), player.getResearchState());
+		int costs = upgradeValues.calcTotalCosts(unitsdata.getDynamicData(unitId, player.getClan()), *player.getUnitDataCurrentVersion(unitId), player.getResearchState());
 		if (costs <= 0)
 		{
 			Log.write(" Apply upgrades failed. Couldn't calculate costs.", cLog::eLOG_TYPE_NET_ERROR);
@@ -121,9 +121,9 @@ void cActionInitNewGame::execute(cModel& model) const
 		upgradeValues.updateUnitData(*player.getUnitDataCurrentVersion(unitId));
 	}
 
-    // Recalculation of credits. Do we need it right here in such a way?
+	// Recalculation of credits. Do we need it right here in such a way?
 #ifdef FUCK_THIS
-    for (const auto& landing : landingConfig.landingUnits)
+	for (const auto& landing : landingConfig.landingUnits)
 	{
 		if (!unitsdata.isValidId(landing.unitID))
 		{
@@ -131,8 +131,8 @@ void cActionInitNewGame::execute(cModel& model) const
 			return;
 		}
 
-        auto it = std::find_if(initialLandingUnits.begin(), initialLandingUnits.end(),
-                               [landing](std::pair<sID, int> unit){ return unit.first == landing.unitID; });
+		auto it = std::find_if(initialLandingUnits.begin(), initialLandingUnits.end(),
+							   [landing](std::pair<sID, int> unit){ return unit.first == landing.unitID; });
 
 		if (it != initialLandingUnits.end())
 		{
@@ -154,7 +154,7 @@ void cActionInitNewGame::execute(cModel& model) const
 		return;
 	}
 
-    makeLanding(player, landingConfig, model);
+	makeLanding(player, landingConfig, model);
 
 	//transfer remaining credits to player
 	player.setCredits(credits);
@@ -206,23 +206,23 @@ bool cActionInitNewGame::isValidLandingPosition(cPosition position, const cStati
 
 	if (fixedBridgeHead)
 	{
-        bool found = findPositionForLayout(position, config.baseLayout, map);
+		bool found = findPositionForLayout(position, config.baseLayout, map);
 
 		if (!found)
 			return false;
 
-        for(const auto& item: config.baseLayout)
+		for(const auto& item: config.baseLayout)
 		{
-            blockedPositions.insert(item.pos + position, item.data->cellSize);
-        }
+			blockedPositions.insert(item.pos + position, item.data->cellSize);
+		}
 	}
 
 	int maxRaduis = 6;
 	float maxRadiusMult = 3.0; 	// 1.5
 
-    for (const auto& unit : config.landingUnits)
+	for (const auto& unit : config.landingUnits)
 	{
-        const cStaticUnitData& unitData = *unitsData.getUnit(unit.unitID);
+		const cStaticUnitData& unitData = *unitsData.getUnit(unit.unitID);
 		bool placed = false;
 		int landingRadius = 1;
 
@@ -230,8 +230,8 @@ bool cActionInitNewGame::isValidLandingPosition(cPosition position, const cStati
 		{
 			landingRadius += 1;
 
-			// prevent, that units are placed far away from the starting position 
-            if (landingRadius > maxRadiusMult*sqrt(config.landingUnits.size()) && landingRadius > maxRaduis)
+			// prevent, that units are placed far away from the starting position
+			if (landingRadius > maxRadiusMult*sqrt(config.landingUnits.size()) && landingRadius > maxRaduis)
 				return false;
 
 			for (int offY = -landingRadius; (offY < landingRadius) && !placed; ++offY)
@@ -239,7 +239,7 @@ bool cActionInitNewGame::isValidLandingPosition(cPosition position, const cStati
 				for (int offX = -landingRadius; (offX < landingRadius) && !placed; ++offX)
 				{
 					const cPosition place = position + cPosition(offX, offY);
-                    bool fitsMap = map.possiblePlace(unitData, place);
+					bool fitsMap = map.possiblePlace(unitData, place);
 
 					bool fitsBlocks = blockedPositions.fits(place, unitData.cellSize);
 					if(fitsMap && fitsBlocks)
@@ -264,14 +264,14 @@ void cActionInitNewGame::makeLanding(cPlayer& player, const sLandingConfig& land
 	if (model.getGameSettings()->getBridgeheadType() == eGameSettingsBridgeheadType::Definite)
 	{
 		// place buildings:
-        for(const auto& item: landingConfig.baseLayout)
-        {
-            if(item.data)
-                model.addBuilding(landingPosition + item.pos, item.data->ID, &player, true);
-        }
+		for(const auto& item: landingConfig.baseLayout)
+		{
+			if(item.data)
+				model.addBuilding(landingPosition + item.pos, item.data->ID, &player, true);
+		}
 	}
 
-    for (const sLandingUnit& landing: landingConfig.landingUnits)
+	for (const sLandingUnit& landing: landingConfig.landingUnits)
 	{
 		cVehicle* vehicle = nullptr;
 		int radius = 1;
@@ -285,11 +285,20 @@ void cActionInitNewGame::makeLanding(cPlayer& player, const sLandingConfig& land
 		while (!vehicle)
 		{
 			vehicle = landVehicle(landingPosition, radius, landing.unitID, player, model);
-			if(vehicle == nullptr)
+
+			if(vehicle)
 			{
-				Log.write(" Landing of unit failed. Invalid location", cLog::eLOG_TYPE_NET_ERROR);
+				std::stringstream ss;
+				cPosition pos = vehicle->getPosition() - landingPosition;
+				ss << "Landed vehicle " << landing.unitID.getText() << " to (" << pos.x() << ";" << pos.y() << ")";
+				Log.write(ss.str());
 			}
 			radius += 1;
+		}
+
+		if(vehicle == nullptr)
+		{
+			Log.write(" Landing of unit failed. Invalid location", cLog::eLOG_TYPE_NET_ERROR);
 		}
 
 		if (landing.cargo && vehicle)
@@ -303,24 +312,25 @@ void cActionInitNewGame::makeLanding(cPlayer& player, const sLandingConfig& land
 cVehicle* cActionInitNewGame::landVehicle(const cPosition& landingPosition, int radius, const sID& id, cPlayer& player, cModel& model) const
 {
 	const cMap& map = *model.getMap();
-    const cStaticUnitData& unitData = *model.getUnitsData()->getUnit(id);
+	const cStaticUnitData& unitData = *model.getUnitsData()->getUnit(id);
 
 	for (int offY = -radius; offY < radius; ++offY)
 	{
 		for (int offX = -radius; offX < radius; ++offX)
 		{
-			if (!map.possiblePlaceVehicle(unitData, landingPosition + cPosition(offX, offY), &player))
+			cPosition pos = landingPosition.relative(offX, offY);
+			if (!map.possiblePlaceVehicle(unitData, pos, &player))
 				continue;
 
-			return &model.addVehicle(landingPosition + cPosition(offX, offY), id, &player, true);
+			return &model.addVehicle(pos, id, &player, true);
 		}
 	}
 	return nullptr;
 }
 
 bool cActionInitNewGame::findPositionForLayout(cPosition& position,
-                                               const std::vector<cBaseLayoutItem>& layout,
-                                               const cStaticMap& map, int maxRadius)
+											   const std::vector<cBaseLayoutItem>& layout,
+											   const cStaticMap& map, int maxRadius)
 {
 	int radius = 0;
 
@@ -335,8 +345,8 @@ bool cActionInitNewGame::findPositionForLayout(cPosition& position,
 				bool allFit = true;
 				for(const auto& item: layout)
 				{
-                    assert(item.data != nullptr);
-                    if(!map.possiblePlace(*item.data, place+item.pos))
+					assert(item.data != nullptr);
+					if(!map.possiblePlace(*item.data, place+item.pos))
 					{
 						allFit = false;
 						break;

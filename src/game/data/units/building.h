@@ -50,17 +50,20 @@ struct cBuildingData : public cStaticUnitData
 	bool hasBetonUnderground;
 	bool isConnectorGraphic;
 
-    // Surfaces of the effects
-    AutoSurface img_effect, img_effect_original;
 	AutoSurface video;  // video
 
-    virtual UnitType getType() const
-    {
-        return UnitType::Building;
-    }
+	// Surfaces of the effects
+	cSpritePtr effect;
+
+	bool setGraphics(const std::string& layer, const cSpritePtr& sprite) override;
+
+	virtual UnitType getType() const
+	{
+		return UnitType::Building;
+	}
 };
 
-typedef std::shared_ptr<cBuildingData> sBuildingUIDataPtr;
+typedef std::shared_ptr<cBuildingData> sBuildingDataPtr;
 
 // enum for the upgrade symbols
 #ifndef D_eSymbols
@@ -121,14 +124,14 @@ class cBuilding : public cUnit
 public:
 	friend class cDebugOutputWidget;
 
-    cBuilding(sBuildingUIDataPtr data, const cDynamicUnitData* ddata, cPlayer* Owner, unsigned int ID);
+	cBuilding(sBuildingDataPtr data, const cDynamicUnitData* ddata, cPlayer* Owner, unsigned int ID);
 	virtual ~cBuilding();
 
 	virtual bool isAVehicle() const { return false; }
 	virtual bool isABuilding() const { return true; }
 	bool isRubble() const { return rubbleValue > 0; }
 
-    sBuildingUIDataPtr uiData;
+	sBuildingDataPtr uiData;
 	mutable int effectAlpha; // alpha value for the effect
 
 	cSubBase* subBase;     // the subbase to which this building belongs
@@ -197,7 +200,7 @@ public:
 	*/
 	void render (unsigned long long animationTime, SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, bool drawShadow, bool drawConcrete) const;
 	void render_simple(SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, unsigned long long animationTime = 0, int alpha = 254) const;
-    static void render_simple (SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, const cBuildingData& uiData, const cPlayer* owner, int frameNr = 0, int alpha = 254);
+	static void render_simple (SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, const cBuildingData& uiData, const cPlayer* owner, int frameNr = 0, int alpha = 254);
 
 	void executeUpdateBuildingCommmand (const cClient& client, bool updateAllOfSameType) const;
 
@@ -241,7 +244,7 @@ public:
 	cSignal<void()> buildSpeedChanged;
 	cSignal<void()> metalPerRoundChanged;
 	cSignal<void()> repeatBuildChanged;
-	
+
 	template <typename T>
 	void serialize(T& archive)
 	{
@@ -266,7 +269,7 @@ public:
 
 		if (!archive.isWriter)
 		{
-            /*
+			/*
 			if (isRubble())
 			{
 				if (cellSize > 1)
@@ -282,9 +285,9 @@ public:
 			}
 			else
 			{
+			}*/
 
-            }
-            uiData = UnitsUiData.getBuildingUI(data.getId());*/
+			uiData = std::dynamic_pointer_cast<cBuildingData>(staticData);
 			registerOwnerEvents();
 			connectFirstBuildListItem();
 		}
