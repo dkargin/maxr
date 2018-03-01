@@ -37,13 +37,14 @@
     <Has_Beton_Underground YN="No"/>
     <Has_Player_Color YN="Yes"/>
     <Has_Overlay YN="No"/>
-    <Animations>
-      <Build_Up YN="No"/>
-      <Movement YN="No"/>
-      <Power_On YN="No"/>
-      <Is_Animated YN="No"/>
-      <Makes_Tracks YN="No"/>
-    </Animations>
+    <Build_Up YN="No"/>
+    <Movement YN="No"/>
+    <Power_On YN="No"/>
+    <Is_Animated YN="No"/>
+    <Makes_Tracks YN="No"/>
+
+    <Sprite file="img.pcx" layer="image" colorkey="auto"/>
+    <Sprite file="shw.pcx" layer="shadow" colorkey="auto"/>
   </Graphic>
 </Building>
 

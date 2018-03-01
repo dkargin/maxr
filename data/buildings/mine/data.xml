@@ -47,8 +47,9 @@
     <!-- imp.pcx contains variants for every clan -->
     <MultiSprite file="img.pcx" frames="9" channel="clan" layer="image" colorkey="auto"/>
     <!-- Loading shadow sprite from shw.pcx -->
-    <!--<Sprite file="shw.pcx" layer="shadow" colorkey="auto"/>-->
-    <!--<Sprite file="effect.pcx" layer="effect"/>-->
+    <Sprite file="shw.pcx" layer="shadow" colorkey="auto"/>
+    <Sprite file="effect.pcx" layer="effect" colorkey="auto"/>
+    <Sprite file="../../gfx/big_beton.pcx" layer="underlay" colorkey="auto"/>
   
     <Has_Clan_Logos YN="Yes"/>
     <Has_Damage_Effect YN="Yes"/>

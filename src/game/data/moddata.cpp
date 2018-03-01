@@ -133,7 +133,9 @@ void LoadLegacyUnitGraphics(std::string srcPath,
 		if(FileExists(sTmpString))
 		{
 			data.image = tool.makeSprite(sTmpString, unitSize);
-			if(!data.image)
+			if(data.image)
+				data.image->setColorKeyAuto();
+			else
 			{
 				Log.write (" - can not load file " + sTmpString, cLog::eLOG_TYPE_ERROR);
 			}
@@ -141,8 +143,11 @@ void LoadLegacyUnitGraphics(std::string srcPath,
 		// load shadow
 		sTmpString = srcPath + PATH_DELIMITER + "shw.pcx";
 		if(FileExists(sTmpString))
-			data.shadow = tool.makeSprite(sTmpString, unitSize
-										  );
+		{
+			data.shadow = tool.makeSprite(sTmpString, unitSize);
+			if(data.shadow)
+				data.shadow->setColorKeyAuto();
+		}
 		// load overlay graphics, if necessary
 		sTmpString = srcPath + PATH_DELIMITER + "overlay.pcx";
 		if(FileExists(sTmpString))

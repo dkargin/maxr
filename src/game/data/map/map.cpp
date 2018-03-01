@@ -270,10 +270,12 @@ bool cStaticMap::isGround(const cPosition& position) const
 bool cStaticMap::possiblePlace(const cStaticUnitData& data, const cPosition& position) const
 {
 	int size = data.cellSize;
+
 	// Check if we are inside the borders
 	if (!isValidPosition(position))
 		return false;
-	// Check another corner
+
+	// Check if another corner fits the map
 	if (size > 1)
 	{
 		if (!isValidPosition(position + cPosition(size-1, size-1)))
@@ -1060,21 +1062,30 @@ void cMap::moveVehicle (cVehicle& vehicle, const cPosition& position, int height
 
 bool cMap::possiblePlace (const cVehicle& vehicle, const cPosition& position, bool checkPlayer, bool ignoreMovingVehicles) const
 {
-	return possiblePlaceVehicle (vehicle.getStaticUnitData(), position, checkPlayer ? vehicle.getOwner() : nullptr, ignoreMovingVehicles);
+	std::set<const cVehicle*> toIgnore;
+	toIgnore.insert(&vehicle);
+	return possiblePlaceVehicle (vehicle.getStaticUnitData(), position, checkPlayer ? vehicle.getOwner() : nullptr, toIgnore, ignoreMovingVehicles);
 }
 
-bool cMap::possiblePlaceVehicle (const cStaticUnitData& vehicleData, const cPosition& pos, const cPlayer* player, bool ignoreMovingVehicles) const
+bool cMap::possiblePlaceVehicle(const cStaticUnitData& vehicleData, const cPosition& pos, const cPlayer* player, bool ignoreMovingVehicles) const
+{
+	std::set<const cVehicle*> toIgnore;
+	return this->possiblePlaceVehicle(vehicleData, pos, player, toIgnore, ignoreMovingVehicles);
+}
+
+bool cMap::possiblePlaceVehicle(const cStaticUnitData& vehicleData, const cPosition& pos, const cPlayer* player, const std::set<const cVehicle*>& toIgnore, bool ignoreMovingVehicles) const
 {
 	// TODO: Split it to gathering of all obstacles in area and decision making
+	if(!staticMap->possiblePlace(vehicleData, pos))
+		return false;
+
 	int size = vehicleData.cellSize;
 	for(int y = 0; y < size; y++)
 	{
 		for(int x = 0; x < size; x++)
 		{
 			cPosition position = pos.relative(x,y);
-			if (isValidPosition (position) == false)
-				return false;
-
+			// This is player-related view
 			const auto field = cMapFieldView(getField(position), staticMap->getTerrain(position), player);
 
 			const std::vector<cBuilding*> buildings = field.getBuildings();
@@ -1087,6 +1098,7 @@ bool cMap::possiblePlaceVehicle (const cStaticUnitData& vehicleData, const cPosi
 
 			if (vehicleData.factorAir > 0)
 			{
+				// What? Teleport if we do not see?
 				if (player && !player->canSeeAt (position))
 					return true;
 
@@ -1110,15 +1122,14 @@ bool cMap::possiblePlaceVehicle (const cStaticUnitData& vehicleData, const cPosi
 						return false;
 				}
 			}
+
 			if (vehicleData.factorGround > 0)
 			{
-				if (isBlocked (position))
-					return false;
-
 				if ((isWater (position) && vehicleData.factorSea == 0) ||
 					(isCoast (position) && vehicleData.factorCoast == 0))
 				{
-					if (player && !player->canSeeAt (position)) return false;
+					if (player && !player->canSeeAt (position))
+						return false;
 
 					//vehicle can drive on water, if there is a bridge, platform or road
 					if (b_it == b_end)
@@ -1141,9 +1152,10 @@ bool cMap::possiblePlaceVehicle (const cStaticUnitData& vehicleData, const cPosi
 
 				if (player && !player->canSeeAt (position)) return true;
 
-				if (field.getVehicle() && (!ignoreMovingVehicles || !field.getVehicle()->isUnitMoving()))
+				if (const cVehicle* v = field.getVehicle())
 				{
-					return false;
+					if(!toIgnore.count(v) && (!ignoreMovingVehicles || !v->isUnitMoving()))
+						return false;
 				}
 				if (b_it != b_end)
 				{
@@ -1160,8 +1172,6 @@ bool cMap::possiblePlaceVehicle (const cStaticUnitData& vehicleData, const cPosi
 			}
 			else if (vehicleData.factorSea > 0)
 			{
-				if (isBlocked (position)) return false;
-
 				if (!isWater (position) &&
 					(!isCoast (position) || vehicleData.factorCoast == 0)) return false;
 
@@ -1175,11 +1185,13 @@ bool cMap::possiblePlaceVehicle (const cStaticUnitData& vehicleData, const cPosi
 					return false;
 				}
 
-				if (player && !player->canSeeAt (position)) return true;
+				if (player && !player->canSeeAt (position))
+					return true;
 
-				if (field.getVehicle() && (!ignoreMovingVehicles || !field.getVehicle()->isUnitMoving()))
+				if (const cVehicle* v = field.getVehicle())
 				{
-					return false;
+					if(!toIgnore.count(v) && (!ignoreMovingVehicles || !v->isUnitMoving()))
+						return false;
 				}
 
 				//only bridge and sea mine are allowed on the same field with a ship (connectors have been skiped, so doesn't matter here)
@@ -1193,7 +1205,8 @@ bool cMap::possiblePlaceVehicle (const cStaticUnitData& vehicleData, const cPosi
 						++b_it;
 						if (b_it == b_end || (*b_it)->getStaticUnitData().surfacePosition != cStaticUnitData::SURFACE_POS_ABOVE_SEA) return false;
 					}
-					else return false;
+					else
+						return false;
 				}
 			}
 		}

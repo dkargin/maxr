@@ -348,24 +348,16 @@ void cSprite::render(cRenderable::sContext& context)
 	{
 		int depth = surface->format->BitsPerPixel;
 		cache = AutoSurface(SDL_CreateRGBSurface (0, dst_rect.w, dst_rect.h, depth, 0, 0, 0, 0));
-
-		// Fill in background by something distinguishable.
-		// So we can easily see problems with sprite cache and proper resizing
-		int colorA = SDL_MapRGB(cache.get()->format, 0, 255, 0);
-		int colorB = SDL_MapRGB(cache.get()->format, 0, 0, 255);
-		drawCheckerPattern(cache.get(), 16, colorA, colorB);
 		refresh = true;
 	}
 
 	if(lastSize.x() != dst_rect.w || lastSize.y() != dst_rect.h)
 		refresh = true;
 
-	SDL_Rect rc{0,0, dst_rect.w, dst_rect.h};
-
 	if(refresh)
 	{
-		// TODO: Clear the surface
-		this->applyBlending(src);
+		SDL_Rect rc{0,0, dst_rect.w, dst_rect.h};
+		SDL_FillRect(cache.get(), &rc, colorkey);
 		SDL_BlitScaled(src, &srcRect, cache.get(), &rc);
 		lastSize = cPosition(dst_rect.w, dst_rect.h);
 		applyBlending(cache.get());
@@ -373,6 +365,7 @@ void cSprite::render(cRenderable::sContext& context)
 
 	applyBlending(dst);
 
+	SDL_Rect rc{0,0, dst_rect.w, dst_rect.h};
 	// Draw internal cache to the destination surface
 	SDL_BlitSurface(cache.get(), &rc, dst, &dst_rect);
 }
@@ -463,13 +456,6 @@ void cSpriteList::render(sContext& context)
 	{
 		int depth = surface->format->BitsPerPixel;
 		cache = AutoSurface(SDL_CreateRGBSurface (0, cacheWidth, dst_rect.h, depth, 0, 0, 0, 0));
-
-		// Fill in background by something distinguishable.
-		// So we can easily see problems with sprite cache and proper resizing
-		//int colorA = SDL_MapRGB(cache.get()->format, 0, 255, 0);
-		//int colorB = SDL_MapRGB(cache.get()->format, 0, 0, 255);
-		//drawCheckerPattern(cache.get(), 16, colorA, colorB);
-
 		refresh = true;
 	}
 

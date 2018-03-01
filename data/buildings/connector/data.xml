@@ -36,11 +36,9 @@
   <Graphic>
     <Has_Overlay YN="No"/>
     <Has_Damage_Effect YN="Yes"/>
-    <Animations>
-      <Build_Up YN="No"/>
-      <Movement YN="No"/>
-      <Power_On YN="No"/>
-    </Animations>
+    <Build_Up YN="No"/>
+    <Movement YN="No"/>
+    <Power_On YN="No"/>
   </Graphic>
 </Building>
 

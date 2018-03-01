@@ -43,9 +43,9 @@
   <Graphic>
     <Has_Damage_Effect YN="Yes"/>
     <Has_Player_Color YN="Yes"/>
-    <Animations>
-      <Build_Up YN="Yes"/>
-      <Makes_Tracks YN="Yes"/>
-    </Animations>
+    <Build_Up YN="Yes"/>
+    <Makes_Tracks YN="Yes"/>
+
+    <SpriteList pattern="img%d.pcx" frames="8" channel="direction" layer="main" colorkey="auto"/>
   </Graphic>
 </Vehicle>

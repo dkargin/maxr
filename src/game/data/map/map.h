@@ -24,6 +24,7 @@
 #include <memory>
 #include <vector>
 #include <utility>
+#include <set>
 
 #include "utility/autosurface.h"
 #include "defines.h"
@@ -155,6 +156,9 @@ private:
 	sTerrain& operator=(const sTerrain& other) MAXR_DELETE_FUNCTION;
 };
 
+/**
+ * Represents static map from the file
+ */
 class cStaticMap
 {
 public:
@@ -179,6 +183,7 @@ public:
 	bool isWater (const cPosition& position) const;
 	bool isGround (const cPosition& position) const;
 
+	// Check if it is possible to place unit at specified map position
 	bool possiblePlace(const cStaticUnitData& data, const cPosition& position) const;
 
 	const sTerrain& getTerrain (const cPosition& position) const;
@@ -284,7 +289,10 @@ public:
 	* if checkPlayer is passed, the function uses the players point of view, so it does not check for units that are not in sight
 	*/
 	bool possiblePlace (const cVehicle& vehicle, const cPosition& position, bool checkPlayer, bool ignoreMovingVehicles = false) const;
+
 	bool possiblePlaceVehicle (const cStaticUnitData& vehicleData, const cPosition& position, const cPlayer* player, bool ignoreMovingVehicles = false) const;
+
+	bool possiblePlaceVehicle (const cStaticUnitData& vehicleData, const cPosition& position, const cPlayer* player, const std::set<const cVehicle*>& toIgnore, bool ignoreMovingVehicles) const;
 
 	/**
 	* checks, whether the given field is an allowed place for the building
