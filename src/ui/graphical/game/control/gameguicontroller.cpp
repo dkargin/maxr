@@ -111,6 +111,8 @@
 #include "game/data/report/unit/savedreportpathinterrupted.h"
 #include "game/data/map/mapview.h"
 #include "game/logic/action/actionchangebuildlist.h"
+#include "game/logic/action/actionload.h"
+#include "game/logic/action/actionactivate.h"
 
 //------------------------------------------------------------------------------
 cGameGuiController::cGameGuiController (cApplication& application_, std::shared_ptr<const cStaticMap> staticMap) :
@@ -236,7 +238,7 @@ void cGameGuiController::setClients (std::vector<std::shared_ptr<cClient>> clien
 		allClientsSignalConnectionManager.connect (client->guiSaveInfoReceived, [this, client] (const cNetMessageGUISaveInfo & guiInfo)
 		{
 			if (guiInfo.playerNr != client->getActivePlayer().getId()) return;
-			
+
 			const cMap& map = *client->getModel().getMap();
 
 			for (size_t i = 0; i < savedPositions.size(); i++)
@@ -793,7 +795,7 @@ void cGameGuiController::connectClient (cClient& client)
 	});
 	clientSignalConnectionManager.connect (activateAtTriggered, [&] (const cUnit & unit, size_t index, const cPosition & position)
 	{
-		sendWantActivate (client, unit.iID, unit.isAVehicle(), unit.storedUnits[index]->iID, position);
+		client.sendNetMessage(cActionActivate(unit, *unit.storedUnits[index], position));
 	});
 	clientSignalConnectionManager.connect (reloadTriggered, [&] (const cUnit & sourceUnit, const cUnit & destinationUnit)
 	{
@@ -911,7 +913,7 @@ void cGameGuiController::connectClient (cClient& client)
 			if (vehicle->getMoveJob() && !vehicle->isUnitMoving())
 			{
 				resumeMoveJobTriggered(*vehicle);
-			}		
+			}
 		}
 		doneList.push_back(unit.getId());
 	});
@@ -941,7 +943,7 @@ void cGameGuiController::connectClient (cClient& client)
 	});
 	clientSignalConnectionManager.connect (gameGui->getGameMap().triggeredActivateAt, [&] (const cUnit & unit, size_t index, const cPosition & position)
 	{
-		sendWantActivate (client, unit.iID, unit.isAVehicle(), unit.storedUnits[index]->iID, position);
+		client.sendNetMessage(cActionActivate(unit, *unit.storedUnits[index], position));
 	});
 	clientSignalConnectionManager.connect (gameGui->getGameMap().triggeredExitFinishedUnit, [&] (const cBuilding & building, const cPosition & position)
 	{
@@ -957,15 +959,18 @@ void cGameGuiController::connectClient (cClient& client)
 			const auto& vehicle = static_cast<const cVehicle&> (unit);
 			if (vehicle.getStaticUnitData().factorAir > 0 && overVehicle)
 			{
-				if (overVehicle->getPosition() == vehicle.getPosition()) sendWantLoad (client, vehicle.iID, true, overVehicle->iID);
+				if (overVehicle->getPosition() == vehicle.getPosition())
+				{
+					client.sendNetMessage(cActionLoad(unit, *overVehicle));
+				}
 				else
 				{
 					cPathCalculator pc (vehicle, *mapView, position, false);
 					const auto path = pc.calcPath();
 					if (!path.empty())
 					{
-						activeClient->sendNetMessage(cActionStartMove(vehicle, path));
-						sendEndMoveAction (client, vehicle.iID, overVehicle->iID, EMAT_LOAD);
+						cEndMoveAction emat(*overVehicle, unit, eEndMoveActionType::EMAT_LOAD);
+						activeClient->sendNetMessage(cActionStartMove(vehicle, path, emat));
 					}
 					else
 					{
@@ -975,17 +980,19 @@ void cGameGuiController::connectClient (cClient& client)
 			}
 			else if (overVehicle)
 			{
-                if (vehicle.isNextTo (*overVehicle))
-                    sendWantLoad (client, vehicle.iID, true, overVehicle->iID);
+				if (vehicle.isNextTo(*overVehicle))
+				{
+					client.sendNetMessage(cActionLoad(unit, *overVehicle));
+				}
 				else
 				{
-					cPathCalculator pc (vehicle, *mapView, *overVehicle, true);
+					cPathCalculator pc (*overVehicle, *mapView, vehicle, true);
 					const auto path = pc.calcPath();
 					if (!path.empty())
 					{
-						activeClient->sendNetMessage(cActionStartMove(vehicle, path));
-						sendEndMoveAction (client, overVehicle->iID, vehicle.iID, EMAT_GET_IN);
-						}
+						cEndMoveAction emat(*overVehicle, unit, eEndMoveActionType::EMAT_LOAD);
+						activeClient->sendNetMessage(cActionStartMove(*overVehicle, path, emat));
+					}
 					else
 					{
 						soundManager->playSound (std::make_shared<cSoundEffectVoice> (eSoundEffectType::VoiceNoPath, getRandom (VoiceData.VOINoPath)));
@@ -998,16 +1005,18 @@ void cGameGuiController::connectClient (cClient& client)
 			const auto& building = static_cast<const cBuilding&> (unit);
 			if (overVehicle && building.canLoad (overVehicle, false))
 			{
-                if (building.isNextTo (*overVehicle))
-                    sendWantLoad (client, building.iID, false, overVehicle->iID);
+				if (building.isNextTo(*overVehicle))
+				{
+					client.sendNetMessage(cActionLoad(unit, *overVehicle));
+				}
 				else
 				{
 					cPathCalculator pc (*overVehicle, *mapView, building, true);
 					const auto path = pc.calcPath();
 					if (!path.empty())
 					{
-						activeClient->sendNetMessage(cActionStartMove(*overVehicle, path));
-						sendEndMoveAction (client, overVehicle->iID, building.iID, EMAT_GET_IN);
+						cEndMoveAction emat(*overVehicle, unit, eEndMoveActionType::EMAT_LOAD);
+						activeClient->sendNetMessage(cActionStartMove(*overVehicle, path, emat));
 					}
 					else
 					{
@@ -1017,16 +1026,18 @@ void cGameGuiController::connectClient (cClient& client)
 			}
 			else if (overPlane && building.canLoad (overPlane, false))
 			{
-                if (building.isNextTo (*overPlane))
-                    sendWantLoad (client, building.iID, false, overPlane->iID);
+				if (building.isNextTo(*overPlane))
+				{
+					client.sendNetMessage(cActionLoad(unit, *overPlane));
+				}
 				else
 				{
 					cPathCalculator pc (*overPlane, *mapView, building, true);
 					const auto path = pc.calcPath();
 					if (!path.empty())
 					{
-						activeClient->sendNetMessage(cActionStartMove(*overPlane, path));
-						sendEndMoveAction (client, overPlane->iID, building.iID, EMAT_GET_IN);
+						cEndMoveAction emat(*overPlane, unit, eEndMoveActionType::EMAT_LOAD);
+						activeClient->sendNetMessage(cActionStartMove(*overPlane, path, emat));;
 					}
 					else
 					{
@@ -1074,7 +1085,7 @@ void cGameGuiController::connectClient (cClient& client)
 		else if (unit.isABuilding())
 		{
 			const auto& building = static_cast<const cBuilding&> (unit);
-			
+
 			cUnit* target = cAttackJob::selectTarget (position, building.getStaticUnitData().canAttack, *mapView, building.getOwner());
 
 			activeClient->sendNetMessage(cActionAttack(building, position, target));
@@ -1227,7 +1238,7 @@ void cGameGuiController::connectClient (cClient& client)
 		}
 	});
 
-	clientSignalConnectionManager.connect (client.unitStored, [&] (const cUnit & storingUnit, const cUnit& /*storedUnit*/)
+	clientSignalConnectionManager.connect (model.unitStored, [&] (const cUnit & storingUnit, const cUnit& /*storedUnit*/)
 	{
 		if (mapView->canSeeUnit(storingUnit))
 		{
@@ -1235,7 +1246,7 @@ void cGameGuiController::connectClient (cClient& client)
 		}
 	});
 
-	clientSignalConnectionManager.connect (client.unitActivated, [&] (const cUnit & storingUnit, const cUnit& /*storedUnit*/)
+	clientSignalConnectionManager.connect (model.unitActivated, [&] (const cUnit & storingUnit, const cUnit& /*storedUnit*/)
 	{
 		if (mapView->canSeeUnit(storingUnit))
 		{
@@ -1305,16 +1316,16 @@ void cGameGuiController::connectClient (cClient& client)
 
 	clientSignalConnectionManager.connect (mapView->unitAppeared, [&] (const cUnit & unit)
 	{
-        if (getActivePlayer().get() != unit.getOwner())
-            return;
+		if (getActivePlayer().get() != unit.getOwner())
+			return;
 #ifdef MOVE_IT_TO_XML
-        // I am getting rid of direct unit IDS in all parts of the code
-        // This sounds should be moved to XML
-        if (unit.data.getId() == client.getModel().getUnitsData()->getSpecialIDSeaMine())
-            soundManager->playSound(std::make_shared<cSoundEffectUnit>(eSoundEffectType::EffectPlaceMine, SoundData.SNDSeaMinePlace, unit));
+		// I am getting rid of direct unit IDS in all parts of the code
+		// This sounds should be moved to XML
+		if (unit.data.getId() == client.getModel().getUnitsData()->getSpecialIDSeaMine())
+			soundManager->playSound(std::make_shared<cSoundEffectUnit>(eSoundEffectType::EffectPlaceMine, SoundData.SNDSeaMinePlace, unit));
 
-        else if (unit.data.getId() == client.getModel().getUnitsData()->getSpecialIDLandMine())
-            soundManager->playSound(std::make_shared<cSoundEffectUnit>(eSoundEffectType::EffectPlaceMine, SoundData.SNDLandMinePlace, unit));
+		else if (unit.data.getId() == client.getModel().getUnitsData()->getSpecialIDLandMine())
+			soundManager->playSound(std::make_shared<cSoundEffectUnit>(eSoundEffectType::EffectPlaceMine, SoundData.SNDLandMinePlace, unit));
 #endif
 	});
 
@@ -1322,11 +1333,11 @@ void cGameGuiController::connectClient (cClient& client)
 	{
 		if (getActivePlayer().get() != unit.getOwner()) return;
 #ifdef MOVE_IT_TO_XML
-        if (unit.data.getId() == client.getModel().getUnitsData()->getSpecialIDLandMine())
-            soundManager->playSound(std::make_shared<cSoundEffectUnit>(eSoundEffectType::EffectClearMine, SoundData.SNDLandMineClear, unit));
+		if (unit.data.getId() == client.getModel().getUnitsData()->getSpecialIDLandMine())
+			soundManager->playSound(std::make_shared<cSoundEffectUnit>(eSoundEffectType::EffectClearMine, SoundData.SNDLandMineClear, unit));
 
-        else if (unit.data.getId() == client.getModel().getUnitsData()->getSpecialIDSeaMine())
-            soundManager->playSound(std::make_shared<cSoundEffectUnit>(eSoundEffectType::EffectClearMine, SoundData.SNDSeaMineClear, unit));
+		else if (unit.data.getId() == client.getModel().getUnitsData()->getSpecialIDSeaMine())
+			soundManager->playSound(std::make_shared<cSoundEffectUnit>(eSoundEffectType::EffectClearMine, SoundData.SNDSeaMineClear, unit));
 #endif
 	});
 
@@ -1495,7 +1506,7 @@ void cGameGuiController::showPreferencesDialog()
 {
 	application.show (std::make_shared<cDialogPreferences> ());
 }
- 
+
 //------------------------------------------------------------------------------
 void cGameGuiController::showReportsWindow()
 {
@@ -1547,8 +1558,8 @@ void cGameGuiController::showBuildBuildingsWindow (const cVehicle& vehicle)
 		{
 			const sID buildingId = *buildWindow->getSelectedUnitId();
 			const auto& model = activeClient->getModel();
-            const auto& buildingData = model.getUnitsData()->getUnit(buildingId);
-            if (buildingData->cellSize > 1)
+			const auto& buildingData = model.getUnitsData()->getUnit(buildingId);
+			if (buildingData->cellSize > 1)
 			{
 				const auto& map = model.getMap();
 				if (!gameGui->getGameMap().startFindBuildPosition(buildingId))
@@ -1781,7 +1792,7 @@ void cGameGuiController::showStorageWindow (const cUnit& unit)
 //------------------------------------------------------------------------------
 void cGameGuiController::showSelfDestroyDialog (const cUnit& unit)
 {
-    if (unit.getStaticUnitData().hasFlag(UnitFlag::CanSelfDestroy))
+	if (unit.getStaticUnitData().hasFlag(UnitFlag::CanSelfDestroy))
 	{
 		auto selfDestroyDialog = application.show (std::make_shared<cDialogSelfDestruction> (unit, animationTimer));
 		signalConnectionManager.connect (selfDestroyDialog->triggeredDestruction, [this, selfDestroyDialog, &unit]()
@@ -2058,7 +2069,7 @@ void cGameGuiController::sendStartGroupMoveAction(std::vector<cVehicle*> group, 
 		RemoveEmpty(paths);
 	}
 
-	// start remaining movements. This is necessary, when there are group members, that have no path 
+	// start remaining movements. This is necessary, when there are group members, that have no path
 	// to destination, or not enough movement points.
 	for (size_t i = 0; i < group.size(); i++)
 	{
@@ -2084,9 +2095,9 @@ void cGameGuiController::updateEndButtonState()
 	const cFreezeModes& freezeModes = activeClient->getFreezeModes();
 	const auto& model = activeClient->getModel();
 
-	if (freezeModes.isEnabled(eFreezeMode::WAIT_FOR_TURNEND) || 
+	if (freezeModes.isEnabled(eFreezeMode::WAIT_FOR_TURNEND) ||
 	   (activeClient->getModel().getActiveTurnPlayer() != getActivePlayer().get() && model.getGameSettings()->getGameType() == eGameSettingsGameType::Turns) ||
-	    getActivePlayer()->getHasFinishedTurn())
+		getActivePlayer()->getHasFinishedTurn())
 	{
 		gameGui->getHud().lockEndButton();
 	}
