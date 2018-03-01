@@ -151,6 +151,7 @@ void LoadLegacyUnitGraphics(std::string srcPath,
 		if (data.hasFlag(UnitFlag::HasAnimationMovement))
 		{
 	#ifdef FIX_ANIMATIONS_LATER
+			// TODO: Animations should be merged inside new cRenderable system
 			SDL_Rect rcDest;
 			for (int dir = 0; dir < 8; dir++)
 			{
@@ -217,6 +218,7 @@ void LoadLegacyUnitGraphics(std::string srcPath,
 		// load other vehicle graphics
 		else
 		{
+			// TODO: Directions should be merged inside new cRenderable system
 			for (int n = 0; n < 8; n++)
 			{
 				// load image
@@ -418,6 +420,35 @@ void ModData::parseBuilding(tinyxml2::XMLElement* source, sID id, const std::str
 	sTmpString += PATH_DELIMITER"video.pcx";
 	if (FileExists (sTmpString))
 		object->video = LoadPCX (sTmpString);
+
+#ifdef VERY_BROKEN
+	// I will send connectors to a separate special layer
+	// Get Ptr if necessary:
+	if (staticData.ID == UnitsDataGlobal.getSpecialIDConnector())
+	{
+		ui.isConnectorGraphic = true;
+		UnitsUiData.ptr_connector = ui.img.get();
+		UnitsUiData.ptr_connector_org = ui.img_org.get();
+		SDL_SetColorKey (UnitsUiData.ptr_connector, SDL_TRUE, 0xFF00FF);
+		UnitsUiData.ptr_connector_shw = ui.img_shadow.get();
+		UnitsUiData.ptr_connector_shw_org = ui.img_shadow_original.get();
+		SDL_SetColorKey(UnitsUiData.ptr_connector_shw, SDL_TRUE, 0xFF00FF);
+	}
+	else if (staticData.ID == UnitsDataGlobal.getSpecialIDSmallBeton())
+	{
+		UnitsUiData.ptr_small_beton = ui.img.get();
+		UnitsUiData.ptr_small_beton_org = ui.img_org.get();
+		SDL_SetColorKey(UnitsUiData.ptr_small_beton, SDL_TRUE, 0xFF00FF);
+	}
+
+
+	// Check if there is more than one frame
+	// use 129 here because some images from the res_installer are one pixel to large
+	if (ui.img_org->w > 129 && !ui.isConnectorGraphic && !ui.hasClanLogos)
+		ui.hasFrames = ui.img_org->w / ui.img_org->h;
+	else
+		ui.hasFrames = 0;
+#endif
 }
 
 void ModData::parseDataFile(const char* path, const char* directory)
@@ -624,6 +655,7 @@ int ModData::LoadBuildings(const char* buldings_folder)
 		}
 
 		#ifdef VERY_BROKEN
+		// Will be deleted when explosive stuff moves completely to XML fields
 		const char* spezial = xmlElement->Attribute ("special");
 		if (spezial != nullptr)
 		{
@@ -647,6 +679,7 @@ int ModData::LoadBuildings(const char* buldings_folder)
 	}
 
 	/*
+	// Will be deleted when explosive stuff moves completely to XML fields
 	if (UnitsDataGlobal.getSpecialIDConnector().secondPart  == 0)
 		Log.write("special \"connector\" missing in buildings.xml", cLog::eLOG_TYPE_WARNING);
 	if (UnitsDataGlobal.getSpecialIDLandMine().secondPart   == 0)
@@ -669,39 +702,6 @@ int ModData::LoadBuildings(const char* buldings_folder)
 			Log.mark();
 	}
 
-#ifdef VERY_BROKEN
-	for (size_t i = 0; i != directories.size(); ++i)
-	{
-		// I will send connectors to a separate special layer
-#ifdef DISABLE_THIS
-		// Get Ptr if necessary:
-		if (staticData.ID == UnitsDataGlobal.getSpecialIDConnector())
-		{
-			ui.isConnectorGraphic = true;
-			UnitsUiData.ptr_connector = ui.img.get();
-			UnitsUiData.ptr_connector_org = ui.img_org.get();
-			SDL_SetColorKey (UnitsUiData.ptr_connector, SDL_TRUE, 0xFF00FF);
-			UnitsUiData.ptr_connector_shw = ui.img_shadow.get();
-			UnitsUiData.ptr_connector_shw_org = ui.img_shadow_original.get();
-			SDL_SetColorKey(UnitsUiData.ptr_connector_shw, SDL_TRUE, 0xFF00FF);
-		}
-		else if (staticData.ID == UnitsDataGlobal.getSpecialIDSmallBeton())
-		{
-			UnitsUiData.ptr_small_beton = ui.img.get();
-			UnitsUiData.ptr_small_beton_org = ui.img_org.get();
-			SDL_SetColorKey(UnitsUiData.ptr_small_beton, SDL_TRUE, 0xFF00FF);
-		}
-
-
-		// Check if there is more than one frame
-		// use 129 here because some images from the res_installer are one pixel to large
-		if (ui.img_org->w > 129 && !ui.isConnectorGraphic && !ui.hasClanLogos)
-			ui.hasFrames = ui.img_org->w / ui.img_org->h;
-		else
-			ui.hasFrames = 0;
-#endif
-	}
-#endif
 	// Dirtsurfaces
 	if (!DEDICATED_SERVER)
 	{
@@ -918,10 +918,11 @@ void ModData::loadUnitData (tinyxml2::XMLElement* unitDataXml, cStaticUnitData& 
 		staticData.isStorageType = getValueString(storage, "Is_Storage_Type", "String");
 	}
 
-	spriteTool.reset();
+	// Parsing all <Graphic> blocks
 	bool foundCustomGraphics = false;
 	for(tinyxml2::XMLElement* graphic = unitDataXml->FirstChildElement("Graphic"); graphic; graphic = graphic->NextSiblingElement("Graphic"))
 	{
+		spriteTool->reset();
 		// Set up base sprite size for all custom sprites
 		if(graphic->Attribute("refsize"))
 		{
@@ -965,12 +966,16 @@ void ModData::loadUnitData (tinyxml2::XMLElement* unitDataXml, cStaticUnitData& 
 
 bool ModData::loadGraphicObject(tinyxml2::XMLElement* gobj, cStaticUnitData& staticData, const char* directory)
 {
+	// TODO: This loader is still not complete. Complete version should support recursive graphic objects
+
 	/*
 	<VariantSprite file="img.pcx" frames="9" channel="clan" layer="main"/>
 	<Sprite file="shw.pcx" layer="shadow"/>
 	 */
 	std::string dir = std::string(directory) + PATH_DELIMITER;
 	std::string name = gobj->Name();
+
+	XmlColor color;
 
 	std::string file;
 	if(const char* attr = gobj->Attribute("file"))
@@ -982,22 +987,34 @@ bool ModData::loadGraphicObject(tinyxml2::XMLElement* gobj, cStaticUnitData& sta
 
 	if(name == "Sprite")
 	{
-		if(file.empty())
+		if(file.empty() || !FileExists(dir+file))
 		{
 			Log.write (" - <Sprite> should contain proper \"file\" attribute", cLog::eLOG_TYPE_DEBUG);
 		}
 		else
 		{
-			file = dir + file;
-			if(FileExists(file.c_str()))
+			cSpritePtr gobject = spriteTool->makeSprite(dir+file);
+
+			// Set color key
+			if(const char* attr = gobj->Attribute("colorkey"))
 			{
-				cSpritePtr gobject = spriteTool->makeSprite(file);
-				staticData.setGraphics(layer, gobject);
+				if(parseColor(attr, color))
+				{
+					if(color.isAuto)
+					{
+						gobject->setColorKeyAuto();
+					}
+					else
+					{
+						int clr = SDL_MapRGB(gobject->getFormat(), color.r, color.g, color.b);
+						gobject->setColorKey(clr);
+					}
+				}
 			}
-			else
-			{
-				Log.write (" - <Sprite> file " + file + " not found", cLog::eLOG_TYPE_DEBUG);
-			}
+
+			// TODO: should return this gobject instead of adding it to the unit.
+			// Caller function will handle the rest.
+			staticData.setGraphics(layer, gobject);
 		}
 		return true;
 	}
@@ -1007,29 +1024,36 @@ bool ModData::loadGraphicObject(tinyxml2::XMLElement* gobj, cStaticUnitData& sta
 		if(frames < 1)
 			frames = 1;
 
-		std::string channel;
-		if(const char* attr = gobj->Attribute("channel"))
-			channel = attr;
-
-		if(file.empty())
+		if(file.empty() || !FileExists(dir+file))
 		{
 			Log.write (" - <MultiSprite> should contain proper \"file\" attribute", cLog::eLOG_TYPE_DEBUG);
 		}
 		else
 		{
-			file = dir + file;
-			if(FileExists(file.c_str()))
-			{
-				cSpriteListPtr gobject = spriteTool->makeVariantSprite(file, frames);
-				if(!channel.empty())
-					gobject->setChannel(channel);
+			cSpriteListPtr gobject = spriteTool->makeVariantSprite(dir + file, frames);
 
-				staticData.setGraphics(layer, gobject);
-			}
-			else
+			if(const char* attr = gobj->Attribute("channel"))
+				gobject->setChannel(attr);
+
+			// Set color key
+			if(const char* attr = gobj->Attribute("colorkey"))
 			{
-				Log.write (" - <MultiSprite> file " + file + " not found", cLog::eLOG_TYPE_DEBUG);
+				if(parseColor(attr, color))
+				{
+					if(color.isAuto)
+					{
+						gobject->setColorKeyAuto();
+					}
+					else
+					{
+						int clr = SDL_MapRGB(gobject->getFormat(), color.r, color.g, color.b);
+						gobject->setColorKey(clr);
+					}
+				}
 			}
+			// TODO: should return this gobject instead of adding it to the unit.
+			// Caller function will handle the rest.
+			staticData.setGraphics(layer, gobject);
 		}
 		return true;
 	}
@@ -1144,7 +1168,7 @@ int ModData::LoadClans()
 }
 
 // Tries to parse color attribute
-/*static*/ bool ModData::parseColor(const char* rawdata, XmlColor& color)
+/*static*/ bool ModData::parseColor(const char* rawdata, XmlColor& color, const char* delim)
 {
 	std::vector<std::string> parts;
 	std::string value = rawdata;
@@ -1155,7 +1179,6 @@ int ModData::LoadClans()
 		return true;
 	}
 
-	const auto delim = ";";
 	// Splitting the string to 3 or more parts
 	size_t start = 0;
 	size_t delim_pos = 0;
@@ -1179,13 +1202,11 @@ int ModData::LoadClans()
 	return false;
 }
 
-bool ModData::parseSID(const char* rawvalue, sID& id)
+/*static*/ bool ModData::parseSID(const char* rawvalue, sID& id, const char* delim)
 {
 	std::string value = rawvalue;
 	if(value.empty())
 		return false;
-
-	const auto delim = ";";
 
 	auto delim_pos = value.find (delim, 0);
 	if(delim_pos != std::string::npos)

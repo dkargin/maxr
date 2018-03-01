@@ -136,7 +136,13 @@ public:
 
 	operator SDL_Surface*();
 
+	const SDL_PixelFormat* getFormat();
+
+	// Set colorkey
 	void setColorKey(int key);
+	// Set colorkey based on color of left topmost pixel
+	void setColorKeyAuto();
+	// Set alpha blending value
 	void setAlphaKey(int alpha = -1);
 	// Blit this sprite to output surface
 	// Will do rescaling, if necessary
@@ -184,7 +190,7 @@ protected:
 	int frames;
 };
 
-// A tool to load and wrap sprites
+// A factory for renderable objects
 class cSpriteTool
 {
 public:
@@ -194,6 +200,9 @@ public:
 	// It is 'intended' unit size in pixels
 	void setRefSize(const cPosition& size);
 	void resetRefSize();
+
+	// Set pixel format for all created objects
+	void setPixelFormat(const SDL_PixelFormat& format);
 
 	// Set cell size
 	void setCellSize(int size);
@@ -215,14 +224,20 @@ public:
 	// @size - size of the sprite in world coordinates
 	cSpriteListPtr makeVariantSprite(const std::string& path, int variants, const cVector2& size = cVector2(1,1), FitMode mode = FitMode::Scale);
 
-	// Reset current flags
+	// Reset current flags (except pixel format)
 	void reset();
 protected:
 	bool hasRefSize = false;
 	cPosition refSize;
+
 	bool hasLayer;
 	int layer = -1;
+
+	// Reference cell size. Is it deprecated?
 	int cellSize;
+
+	// Pixel format used for surfaces
+	SDL_PixelFormat format;
 };
 
 // Renderable group

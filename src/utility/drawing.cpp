@@ -405,6 +405,19 @@ void cSprite::setColorKey(int key)
 	}
 }
 
+void cSprite::setColorKeyAuto()
+{
+	if(!surface)
+		return;
+
+	//if(SDL_LockSurface(surface.get()))
+	{
+		auto color = getPixel(*surface.get(), cPosition(0,0));
+		//SDL_UnlockSurface(surface.get());
+		setColorKey(color);
+	}
+}
+
 void cSprite::setAlphaKey(int key)
 {
 	if(key == this->alpha)
@@ -419,6 +432,11 @@ void cSprite::setAlphaKey(int key)
 		else
 			SDL_SetSurfaceAlphaMod(surface.get(), 255);
 	}
+}
+
+const SDL_PixelFormat* cSprite::getFormat()
+{
+	return surface ? nullptr : surface->format;
 }
 
 //------------------------------------------------------------------------------
@@ -508,11 +526,17 @@ SDL_Rect cSpriteList::getSrcRect(int frame)
 cSpriteTool::cSpriteTool()
 {
 	cellSize = 64;
+
 }
 
 void cSpriteTool::setCellSize(int size)
 {
 	cellSize = size;
+}
+
+void cSpriteTool::setPixelFormat(const SDL_PixelFormat& format)
+{
+	memcpy(&this->format, &format, sizeof(SDL_PixelFormat));
 }
 
 void cSpriteTool::setRefSize(const cPosition& size)
@@ -551,7 +575,6 @@ cSpritePtr cSpriteTool::makeSprite(const std::string& path, const cVector2& size
 	sprite->setSize(size);
 	sprite->mode = mode;
 	sprite->file = path;
-	//sprite->setColorKey(0xFFFFFF);
 
 	return cSpritePtr(sprite);
 }

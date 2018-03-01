@@ -80,9 +80,9 @@ protected:
 	 * @param color - output color
 	 * @returns true if color is parsed
 	 */
-	static bool parseColor(const char* value, XmlColor& color);
+	static bool parseColor(const char* value, XmlColor& color, const char* delim=";");
 	// Get attribute value from specified xml block
-	static bool parseSID(const char* value, sID& sid);
+	static bool parseSID(const char* value, sID& sid, const char* delim=" ");
 	//static sID getAttribSID(tinyxml2::XMLElement* element, const char* name, sID default_ = sID());
 	static cPosition getAttribPos(tinyxml2::XMLElement* element, const char* name, cPosition default_ = cPosition(0,0));
 	static int getValueInt (tinyxml2::XMLElement* block, const char* name, int default_ = 0);
