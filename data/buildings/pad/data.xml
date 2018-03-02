@@ -27,7 +27,7 @@
     <Can_Be_Landed_On YN="Yes"/>
   </Abilities>
 
-  <Graphic>
+  <Graphic refsize="64;64">
     <Has_Damage_Effect YN="Yes"/>
     <Has_Player_Color YN="Yes"/>
     <Power_On YN="Yes"/>

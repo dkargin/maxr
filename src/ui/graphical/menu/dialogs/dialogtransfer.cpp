@@ -129,25 +129,15 @@ void cNewDialogTransfer::initUnitImage (cImage& image, const cUnit& unit)
 	const int unitImageWidth = 64;
 	const int unitImageHeight = 64;
 
-	//const auto zoom = (float)unitImageWidth / (unit.getIsBig() ? cStaticMap::tilePixelWidth * 2 : cStaticMap::tilePixelWidth);
-	const auto zoom = (float)unitImageWidth / (unit.getCellSize() * cStaticMap::tilePixelWidth);
-
 	AutoSurface unitImageSurface (SDL_CreateRGBSurface (0, unitImageWidth, unitImageHeight, Video.getColDepth(), 0, 0, 0, 0));
 	SDL_FillRect (unitImageSurface.get(), nullptr, 0xFF00FF);
 	SDL_SetColorKey (unitImageSurface.get(), SDL_TRUE, 0xFF00FF);
 
-	SDL_Rect dest = {0, 0, 0, 0};
+	cRenderable::sContext context;
+	context.surface = unitImageSurface.get();
+	context.dstRect = SDL_Rect{0, 0, unitImageWidth, unitImageHeight};
 
-	if (unit.isABuilding())
-	{
-		const auto& building = static_cast<const cBuilding&> (unit);
-		building.render (0, unitImageSurface.get(), dest, zoom, false, false);
-	}
-	else if (unit.isAVehicle())
-	{
-		const auto& vehicle = static_cast<const cVehicle&> (unit);
-		vehicle.render (nullptr, 0, nullptr, unitImageSurface.get(), dest, zoom, false);
-	}
+	unit.getStaticUnitData().render(context, cStaticUnitData::sRenderOps{});
 
 	image.setImage (unitImageSurface.get());
 }

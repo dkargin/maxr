@@ -96,7 +96,10 @@ void cUnitDrawingEngine::drawBuilding(const cBuilding& building, SDL_Rect destin
 
 	if (bDraw)
 	{
-		building.render(animationTime, drawingSurface, dest, zoomFactor, cSettings::getInstance().isShadows(), true);
+		cStaticUnitData::sRenderOps ops;
+		ops.shadow = true;//cSettings::getInstance().isShadows();
+		ops.underlay = true;
+		building.render(animationTime, drawingSurface, dest, ops);
 	}
 
 	// now check, whether the image has to be blitted to screen buffer
@@ -109,8 +112,10 @@ void cUnitDrawingEngine::drawBuilding(const cBuilding& building, SDL_Rect destin
 		dest = destination;
 	}
 
-	if (building.isRubble()) return;
+	if (building.isRubble())
+		return;
 
+#ifdef DISABLE_THIS
 	// draw the effect if necessary
 	if (building.uiData->powerOnGraphic && cSettings::getInstance().isAnimations() && (building.isUnitWorking() || !building.getStaticUnitData().hasFlag(UnitFlag::CanWork)))
 	{
@@ -128,7 +133,7 @@ void cUnitDrawingEngine::drawBuilding(const cBuilding& building, SDL_Rect destin
 			sprite->render_simple(cVideo::buffer, tmp);
 		}
 	}
-
+#endif
 	// draw the mark, when a build order is finished
 	if (building.getOwner() == player && ((!building.isBuildListEmpty() && !building.isUnitWorking() && building.getBuildListItem (0).getRemainingMetal() <= 0) ||
 		(building.getStaticUnitData().hasFlag(UnitFlag::CanResearch) && building.getOwner()->isCurrentTurnResearchAreaFinished(building.getResearchArea()))))
@@ -166,7 +171,6 @@ void cUnitDrawingEngine::drawVehicle(const cVehicle& vehicle, SDL_Rect destinati
 	unsigned long long animationTime = animationTimer->getAnimationTime(); //call getAnimationTime only once in this method and save the result,
 	//to avoid a changing time within this method
 
-	int cellSize = vehicle.getCellSize();
 	// calculate screen position
 	int ox = (int) (vehicle.getMovementOffset().x() * zoomFactor);
 	int oy = (int) (vehicle.getMovementOffset().y() * zoomFactor);
@@ -200,8 +204,11 @@ void cUnitDrawingEngine::drawVehicle(const cVehicle& vehicle, SDL_Rect destinati
 
 	if (bDraw)
 	{
-		bool shadows = cSettings::getInstance().isShadows();
-		vehicle.render (&map, animationTime, player, drawingSurface, dest, zoomFactor, shadows);
+		cStaticUnitData::sRenderOps ops;
+		ops.shadow = true;//cSettings::getInstance().isShadows();
+		ops.underlay = true;
+		//ops.shadow = cSettings::getInstance().isShadows();
+		vehicle.render (&map, animationTime, player, drawingSurface, dest, ops);
 	}
 
 	// now check, whether the image has to be blitted to screen buffer
@@ -210,9 +217,6 @@ void cUnitDrawingEngine::drawVehicle(const cVehicle& vehicle, SDL_Rect destinati
 		dest = destination;
 		SDL_BlitSurface (drawingSurface, nullptr, cVideo::buffer, &dest);
 	}
-
-	// draw overlay if necessary:
-	vehicle.drawOverlayAnimation (animationTime, cVideo::buffer, destination, zoomFactor);
 
 	// remove the dithering for the following operations
 	if (vehicle.getFlightHeight() > 0)
@@ -278,13 +282,14 @@ void cUnitDrawingEngine::drawHealthBar (const cUnit& unit, SDL_Rect destination)
 	r1.x = destination.x + destination.w / 10 + 1;
 	r1.y = destination.y + destination.h / 10;
 	r1.w = destination.w * 8 / 10;
-	r1.h = destination.h / 8;
+	r1.h = std::max(destination.h / 8, 6);
 
+	/*
 	if (unit.getCellSize() > 1)
 	{
 		r1.w += destination.w*(unit.getCellSize()-1);
 		r1.h *= 2;
-	}
+	}*/
 
 	if (r1.h <= 2)
 		r1.h = 3;

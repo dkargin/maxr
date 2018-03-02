@@ -34,30 +34,41 @@ cUnitListViewItem::cUnitListViewItem (unsigned int width, const sID& unitId_, co
 	AutoSurface surface (SDL_CreateRGBSurface (0, unitImageSize, unitImageSize, Video.getColDepth(), 0, 0, 0, 0));
 	SDL_SetColorKey (surface.get(), SDL_TRUE, 0x00FF00FF);
 	SDL_FillRect (surface.get(), nullptr, 0x00FF00FF);
-    SDL_Rect dest = {0, 0, unitImageSize, unitImageSize};
+	SDL_Rect dest = {0, 0, unitImageSize, unitImageSize};
 
-    const auto& data = unitsData.getUnit(unitId);
-    auto type = data->getType();
-    if (type == UnitType::Vehicle)
+	const auto& data = unitsData.getUnit(unitId);
+	auto type = data->getType();
+
+	cRenderable::sContext context;
+
+	context.surface = surface.get();
+	context.dstRect = dest;
+	context.channels["animation"] = 0;
+	context.channels["direction"] = 0;
+
+	data->render(context, cStaticUnitData::sRenderOps{});
+
+	/*
+	if (type == UnitType::Vehicle)
 	{
-        const float zoomFactor = unitImageSize / (data->cellSize * 64.0f);
-        auto vdata = unitsData.getVehicle(unitId);
-        cVehicle::render_simple (surface.get(), dest, zoomFactor, *vdata, &owner);
-        cVehicle::drawOverlayAnimation (surface.get(), dest, zoomFactor, *vdata);
+		const float zoomFactor = unitImageSize / (data->cellSize * 64.0f);
+		auto vdata = unitsData.getVehicle(unitId);
+		cVehicle::render_simple (surface.get(), dest, zoomFactor, *vdata, &owner);
+		cVehicle::drawOverlayAnimation (surface.get(), dest, zoomFactor, *vdata);
 	}
-    else if (type == UnitType::Building)
+	else if (type == UnitType::Building)
 	{
-        auto bdata = unitsData.getBuilding(unitId);
-        const float zoomFactor = unitImageSize / (data->cellSize * 64.0f);
-        cBuilding::render_simple (surface.get(), dest, zoomFactor, *bdata, &owner);
+		auto bdata = unitsData.getBuilding(unitId);
+		bdata->renderSimple(context);
 	}
 	else surface = nullptr;
+	*/
 
 	unitImage = addChild (std::make_unique<cImage> (cPosition (0, 0), surface.get()));
 	unitImage->setConsumeClick (false);
 
-    cBox<cPosition> box(cPosition (unitImage->getEndPosition().x() + 3, 0), cPosition (width, unitImage->getEndPosition().y()));
-    nameLabel = addChild (std::make_unique<cLabel> (box, data->getName(), FONT_LATIN_SMALL_WHITE, toEnumFlag (eAlignmentType::Left) | eAlignmentType::CenterVerical));
+	cBox<cPosition> box(cPosition (unitImage->getEndPosition().x() + 3, 0), cPosition (width, unitImage->getEndPosition().y()));
+	nameLabel = addChild (std::make_unique<cLabel> (box, data->getName(), FONT_LATIN_SMALL_WHITE, toEnumFlag (eAlignmentType::Left) | eAlignmentType::CenterVerical));
 	nameLabel->setWordWrap (true);
 	nameLabel->setConsumeClick (false);
 

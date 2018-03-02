@@ -27,6 +27,7 @@
 #include "game/data/units/building.h"
 #include "utility/drawing.h"
 #include "utility/color.h"
+#include "game/data/player/player.h"
 
 //------------------------------------------------------------------------------
 cReportUnitListViewItem::cReportUnitListViewItem (cUnit& unit_, const cUnitsData& unitsData) :
@@ -37,8 +38,17 @@ cReportUnitListViewItem::cReportUnitListViewItem (cUnit& unit_, const cUnitsData
 	AutoSurface surface (SDL_CreateRGBSurface (0, unitImageSize, unitImageSize, Video.getColDepth(), 0, 0, 0, 0));
 	SDL_SetColorKey (surface.get(), SDL_TRUE, 0x00FF00FF);
 	SDL_FillRect (surface.get(), nullptr, 0x00FF00FF);
-	SDL_Rect dest = {0, 0, 0, 0};
 
+	SDL_Rect dest = {0, 0, unitImageSize, unitImageSize};
+
+	cRenderable::sContext context;
+	context.surface = surface.get();
+	context.dstRect = dest;
+	context.channels["animation"] = 0;
+	context.channels["clan"] = unit.getOwner()->getClan()+1;
+	unit.getStaticUnitData().render(context, cStaticUnitData::sRenderOps{});
+
+	/*
 	if (unit.data.getId().isAVehicle())
 	{
 		const auto& vehicle = static_cast<const cVehicle&> (unit);
@@ -53,7 +63,7 @@ cReportUnitListViewItem::cReportUnitListViewItem (cUnit& unit_, const cUnitsData
 		building.render_simple (surface.get(), dest, zoomFactor, 0);
 	}
 	else surface = nullptr;
-
+*/
 	auto unitDetails = addChild (std::make_unique<cUnitDetailsHud> (cBox<cPosition> (cPosition (unitImageSize + 3 + 75 + 3, 0), cPosition (unitImageSize + 3 + 75 + 3 + 155, 48)), true));
 	unitDetails->setPlayer (unit.getOwner());
 	unitDetails->setUnit (&unit);

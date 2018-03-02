@@ -99,7 +99,9 @@ struct cVehicleData : public cStaticUnitData
 	cRenderablePtr clear;
 	cRenderablePtr clear_shadow;
 
-	bool setGraphics(const std::string& layer, const cSpritePtr& sprite) override;
+	bool setGraphics(const std::string& layer, const cRenderablePtr& sprite) override;
+
+	void render(cRenderable::sContext& context, const sRenderOps& ops) const;
 
 	virtual UnitType getType() const
 	{
@@ -239,21 +241,7 @@ public:
 	/**
 	* draws the main image of the vehicle onto the passed surface
 	*/
-	void render (const cMapView* map, unsigned long long animationTime, const cPlayer* activePlayer, SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, bool drawShadow) const;
-	void render_simple (SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, int alpha = 254) const;
-	static void render_simple (SDL_Surface* surface, const SDL_Rect& dest,
-							   float zoomFactor, const cVehicleData& vehicleData,
-							   const cPlayer* owner, int dir = 0, int walkFrame = 0, int alpha = 254);
-	/**
-	 * draws the overlay animation of the vehicle on the given surface
-	 * Needed by radar units
-	 *@author: eiko
-	 */
-	void drawOverlayAnimation (unsigned long long animationTime, SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor) const;
-	void drawOverlayAnimation (SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, int frameNr, int alpha = 254) const;
-	static void drawOverlayAnimation (SDL_Surface* surface, const SDL_Rect& dest,
-									  float zoomFactor, const cVehicleData& vehicleData,
-									  int frameNr = 0, int alpha = 254);
+	void render (const cMapView* map, unsigned long long animationTime, const cPlayer* activePlayer, SDL_Surface* surface, const SDL_Rect& dest, const cStaticUnitData::sRenderOps& ops) const;
 
 	bool isUnitLoaded() const { return loaded; }
 
@@ -357,7 +345,7 @@ private:
 
 	void render_BuildingOrBigClearing (const cMapView& map, unsigned long long animationTime, SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, bool drawShadow) const;
 	void render_smallClearing (unsigned long long animationTime, SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, bool drawShadow) const;
-	void render_shadow (const cMapView& map, SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor) const;
+	//void render_shadow (const cMapView& map, SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor) const;
 
 	//---- sentry and reaction fire helpers ------------------------------------
 	/**

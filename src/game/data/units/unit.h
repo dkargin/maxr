@@ -129,7 +129,7 @@ public:
 	uint32_t getChecksum(uint32_t crc) const;
 
 	// Set graphics layer
-	virtual bool setGraphics(const std::string& layer, const cSpritePtr& sprite);
+	virtual bool setGraphics(const std::string& layer, const cRenderablePtr& sprite);
 
 	// Main
 	sID ID;
@@ -154,23 +154,19 @@ public:
 	/**
 	 * Local UI data. Not synchronized between the players
 	 */
-	// Sprite to be used
+	// Unit info
 	AutoSurface info;
 	// Additional overlay, like radar dish
-	cSpritePtr overlay;
-	// Directed sprites
-	std::array<cSpritePtr, 8> directed_image;
-	// Directed shadow sprites
-	std::array<cSpritePtr, 8> directed_shadow;
-
-	// Non-directed sprite
-	cSpritePtr image;
-	cSpritePtr shadow;
+	cRenderablePtr overlay;
+	// Main graphics
+	cRenderablePtr image;
+	// Shadow graphics
+	cRenderablePtr shadow;
 	// Image for 'dead' state
-	cSpritePtr corpse_image;
+	cRenderablePtr corpse;
 
 	// Sprite that will be rendered below the unit, on the ground
-	cSpritePtr underlay;
+	cRenderablePtr underlay;
 
 	// Some common flags
 	bool hasDamageEffect = false;
@@ -330,6 +326,18 @@ public:
 	}
 
 	// Graphics part
+
+	/**
+	 * Structure describes render options for a unit
+	 */
+	struct sRenderOps
+	{
+		bool shadow = false;
+		bool underlay = false;
+		bool overlay = true;
+	};
+
+	virtual void render(cRenderable::sContext& context, const sRenderOps& ops) const;
 private:
 	std::string description; //untranslated data from unit xml. Will be used, when translation for the unit is not available
 	std::string name;        //untranslated data from unit xml. Will be used, when translation for the unit is not available
@@ -484,7 +492,7 @@ public:
 
 	void storeVehicle(cVehicle& vehicle, cMap& map);
 	void exitVehicleTo(cVehicle& vehicle, const cPosition& position, cMap& map);
-	
+
 	virtual void makeReport (cSoundManager& soundManager) const = 0;
 
 	virtual const cPosition& getMovementOffset() const { static const cPosition dummy (0, 0); return dummy; }

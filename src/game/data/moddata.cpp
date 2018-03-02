@@ -132,9 +132,12 @@ void LoadLegacyUnitGraphics(std::string srcPath,
 
 		if(FileExists(sTmpString))
 		{
-			data.image = tool.makeSprite(sTmpString, unitSize);
-			if(data.image)
-				data.image->setColorKeyAuto();
+			auto sprite = tool.makeSprite(sTmpString, unitSize);
+			if(sprite)
+			{
+				sprite->setColorKeyAuto();
+				data.image = sprite;
+			}
 			else
 			{
 				Log.write (" - can not load file " + sTmpString, cLog::eLOG_TYPE_ERROR);
@@ -144,9 +147,12 @@ void LoadLegacyUnitGraphics(std::string srcPath,
 		sTmpString = srcPath + PATH_DELIMITER + "shw.pcx";
 		if(FileExists(sTmpString))
 		{
-			data.shadow = tool.makeSprite(sTmpString, unitSize);
-			if(data.shadow)
-				data.shadow->setColorKeyAuto();
+			auto sprite = tool.makeSprite(sTmpString, unitSize);
+			if(sprite)
+			{
+				sprite->setColorKeyAuto();
+				data.shadow = sprite;
+			}
 		}
 		// load overlay graphics, if necessary
 		sTmpString = srcPath + PATH_DELIMITER + "overlay.pcx";
@@ -223,6 +229,7 @@ void LoadLegacyUnitGraphics(std::string srcPath,
 		// load other vehicle graphics
 		else
 		{
+#ifdef FUCK_THIS
 			// TODO: Directions should be merged inside new cRenderable system
 			for (int n = 0; n < 8; n++)
 			{
@@ -258,6 +265,7 @@ void LoadLegacyUnitGraphics(std::string srcPath,
 					}
 				}
 			}
+#endif
 		}
 	}
 }
@@ -274,7 +282,7 @@ void ModData::parseVehicle(tinyxml2::XMLElement* source, sID id, const std::stri
 {
 	auto object = unitsData->makeVehicle(id);
 	object->setName(name);
-	loadUnitData (source, *object, directory);
+	parseUnitData (source, *object, directory);
 
 	for(tinyxml2::XMLElement* graphic = source->FirstChildElement("Graphic"); graphic; graphic = graphic->NextSiblingElement("Graphic"))
 	{
@@ -411,7 +419,7 @@ void ModData::parseBuilding(tinyxml2::XMLElement* source, sID id, const std::str
 {
 	auto object = this->unitsData->makeBuilding(id);
 	object->setName(name);
-	this->loadUnitData (source, *object, directory);
+	this->parseUnitData (source, *object, directory);
 
 	for(tinyxml2::XMLElement* graphic = source->FirstChildElement("Graphic"); graphic; graphic = graphic->NextSiblingElement("Graphic"))
 	{
@@ -526,6 +534,7 @@ void ModData::parseDataFile(const char* path, const char* directory)
 		}
 		catch(std::runtime_error& e)
 		{
+			Log.write("Got an exception while loading an object", cLog::eLOG_TYPE_ERROR);
 			return;
 		}
 	}while((element = element->NextSiblingElement()) != nullptr);
@@ -730,7 +739,7 @@ int ModData::LoadBuildings(const char* buldings_folder)
 }
 
 //------------------------------------------------------------------------------
-void ModData::loadUnitData (tinyxml2::XMLElement* unitDataXml, cStaticUnitData& staticData, const char* directory)
+void ModData::parseUnitData (tinyxml2::XMLElement* unitDataXml, cStaticUnitData& staticData, const char* directory)
 {
 	cDynamicUnitData& dynamicData = unitsData->getDynamicData(staticData.ID);
 	dynamicData.setId(staticData.ID);
@@ -947,7 +956,7 @@ void ModData::loadUnitData (tinyxml2::XMLElement* unitDataXml, cStaticUnitData& 
 		/// Iterate through custom graphic elements
 		for(XMLElement* gobj = graphic->FirstChildElement(); gobj; gobj = gobj->NextSiblingElement())
 		{
-			if(loadGraphicObject(gobj, staticData, directory))
+			if(parseGraphicObject(gobj, staticData, (std::string(directory)+PATH_DELIMITER).c_str()))
 				foundCustomGraphics = true;
 		}
 	}
@@ -969,97 +978,140 @@ void ModData::loadUnitData (tinyxml2::XMLElement* unitDataXml, cStaticUnitData& 
 	LoadUnitSoundfile (staticData.Running, directory, "running.ogg");
 }
 
-bool ModData::loadGraphicObject(tinyxml2::XMLElement* gobj, cStaticUnitData& staticData, const char* directory)
+std::shared_ptr<cSprite> ModData::makeSprite(tinyxml2::XMLElement* xml, const char* directory)
 {
-	// TODO: This loader is still not complete. Complete version should support recursive graphic objects
-
-	/*
-	<VariantSprite file="img.pcx" frames="9" channel="clan" layer="main"/>
-	<Sprite file="shw.pcx" layer="shadow"/>
-	 */
-	std::string dir = std::string(directory) + PATH_DELIMITER;
-	std::string name = gobj->Name();
-
-	XmlColor color;
-
+	std::string dir = directory;
 	std::string file;
-	if(const char* attr = gobj->Attribute("file"))
+	if(const char* attr = xml->Attribute("file"))
 		file = attr;
 
-	std::string layer;
-	if(const char* attr = gobj->Attribute("layer"))
-		layer = attr;
-
-	if(name == "Sprite")
+	// Example tag: <Sprite file="shw.pcx" layer="shadow"/>
+	if(file.empty() || !FileExists(dir+file))
 	{
-		if(file.empty() || !FileExists(dir+file))
-		{
-			Log.write (" - <Sprite> should contain proper \"file\" attribute", cLog::eLOG_TYPE_DEBUG);
-		}
-		else
-		{
-			cSpritePtr gobject = spriteTool->makeSprite(dir+file);
-
-			// Set color key
-			if(const char* attr = gobj->Attribute("colorkey"))
-			{
-				if(parseColor(attr, color))
-				{
-					if(color.isAuto)
-					{
-						gobject->setColorKeyAuto();
-					}
-					else
-					{
-						int clr = SDL_MapRGB(gobject->getFormat(), color.r, color.g, color.b);
-						gobject->setColorKey(clr);
-					}
-				}
-			}
-
-			// TODO: should return this gobject instead of adding it to the unit.
-			// Caller function will handle the rest.
-			staticData.setGraphics(layer, gobject);
-		}
-		return true;
+		Log.write (" - <Sprite> should contain proper \"file\" attribute", cLog::eLOG_TYPE_DEBUG);
+		return nullptr;
 	}
-	else if(name == "MultiSprite")
+	cSpritePtr gobject = spriteTool->makeSprite(dir+file);
+
+	parseSpriteAttributes(xml, *gobject);
+	return gobject;
+}
+
+std::shared_ptr<cSpriteList> ModData::makeSpriteList(tinyxml2::XMLElement* xml, const char* directory)
+{
+	// Example tags: <SpriteList pattern="img%d.pcx" frames="8" channel="direction" layer="main" colorkey="auto"/>
+	std::string dir = directory;
+	int frames = xml->IntAttribute("frames");
+	if(frames < 1)
+		frames = 1;
+
+	std::string pattern;
+	if(const char* attr = xml->Attribute("pattern"))
+		pattern = attr;
+	else
 	{
-		int frames = gobj->IntAttribute("frames");
-		if(frames < 1)
-			frames = 1;
+		Log.write (" - <MultiSprite> should contain proper \"pattern\" attribute", cLog::eLOG_TYPE_DEBUG);
+		return nullptr;
+	}
 
-		if(file.empty() || !FileExists(dir+file))
+	std::list<std::string> files;
+	char tmp[255];
+	for(int i = 0; i < frames; i++)
+	{
+		snprintf(tmp, 254, pattern.c_str(), i);
+		std::string file = dir + tmp;
+		files.push_back(file);
+	}
+
+	cSpriteListPtr gobject = spriteTool->makeSpriteList(files);
+
+	if(const char* attr = xml->Attribute("channel"))
+		gobject->setChannel(attr);
+
+	// Set color key
+	parseSpriteAttributes(xml, *gobject);
+	return gobject;
+}
+
+std::shared_ptr<cSpriteList> ModData::makeSpriteSheet(tinyxml2::XMLElement* xml, const char* directory)
+{
+	// Example tag: <VariantSprite file="img.pcx" frames="9" channel="clan" layer="main"/>
+
+	std::string dir = directory;
+	std::string file;
+	if(const char* attr = xml->Attribute("file"))
+		file = attr;
+
+	int frames = xml->IntAttribute("frames");
+	if(frames < 1)
+		frames = 1;
+
+	if(file.empty() || !FileExists(dir+file))
+	{
+		Log.write (" - <MultiSprite> should contain proper \"file\" attribute", cLog::eLOG_TYPE_DEBUG);
+		return nullptr;
+	}
+
+	cSpriteListPtr gobject = spriteTool->makeSpriteSheet(directory + file, frames);
+
+	if(const char* attr = xml->Attribute("channel"))
+		gobject->setChannel(attr);
+
+	parseSpriteAttributes(xml, *gobject);
+	return gobject;
+}
+
+// Parses common graphic attributes
+bool ModData::parseSpriteAttributes(tinyxml2::XMLElement* gobj, cSprite& sprite)
+{
+	XmlColor color;
+	// Set color key
+	if(const char* attr = gobj->Attribute("colorkey"))
+	{
+		if(parseColor(attr, color))
 		{
-			Log.write (" - <MultiSprite> should contain proper \"file\" attribute", cLog::eLOG_TYPE_DEBUG);
-		}
-		else
-		{
-			cSpriteListPtr gobject = spriteTool->makeVariantSprite(dir + file, frames);
-
-			if(const char* attr = gobj->Attribute("channel"))
-				gobject->setChannel(attr);
-
-			// Set color key
-			if(const char* attr = gobj->Attribute("colorkey"))
+			if(color.isAuto)
 			{
-				if(parseColor(attr, color))
-				{
-					if(color.isAuto)
-					{
-						gobject->setColorKeyAuto();
-					}
-					else
-					{
-						int clr = SDL_MapRGB(gobject->getFormat(), color.r, color.g, color.b);
-						gobject->setColorKey(clr);
-					}
-				}
+				sprite.setColorKeyAuto();
 			}
-			// TODO: should return this gobject instead of adding it to the unit.
-			// Caller function will handle the rest.
-			staticData.setGraphics(layer, gobject);
+			else
+			{
+				int clr = SDL_MapRGB(sprite.getFormat(), color.r, color.g, color.b);
+				sprite.setColorKey(clr);
+			}
+			return true;
 		}
+	}
+	return false;
+}
+
+bool ModData::parseGraphicObject(tinyxml2::XMLElement* xml, cStaticUnitData& staticData, const char* directory)
+{
+	// TODO: This loader is still not complete. Complete version should support recursive graphic objects
+	//std::string dir = std::string(directory) + PATH_DELIMITER;
+	std::string type = xml->Name();
+	cRenderablePtr gobject;
+
+	if(type == "Sprite")
+	{
+		gobject = this->makeSprite(xml, directory);
+	}
+	else if(type == "SpriteSheet")
+	{
+		gobject = this->makeSpriteSheet(xml, directory);
+	}
+	else if(type == "SpriteList")
+	{
+		gobject = this->makeSpriteList(xml, directory);
+	}
+
+	// Add graphic object to the unit
+	if(gobject)
+	{
+		std::string layer;
+		if(const char* attr = xml->Attribute("layer"))
+			layer = attr;
+		staticData.setGraphics(layer, gobject);
 		return true;
 	}
 	return false;
@@ -1226,7 +1278,7 @@ int ModData::LoadClans()
 	return true;
 }
 
-cPosition ModData::getAttribPos(tinyxml2::XMLElement* element, const char* name, cPosition default_)
+/*static*/ cPosition ModData::getAttribPos(tinyxml2::XMLElement* element, const char* name, cPosition default_)
 {
 	if (element->Attribute(name))
 	{
@@ -1247,7 +1299,7 @@ cPosition ModData::getAttribPos(tinyxml2::XMLElement* element, const char* name,
 	return default_;
 }
 
-int ModData::getValueInt(tinyxml2::XMLElement* block, const char* name, int default_)
+/*static*/ int ModData::getValueInt(tinyxml2::XMLElement* block, const char* name, int default_)
 {
 	if(XMLElement* element = block->FirstChildElement(name))
 	{
@@ -1260,7 +1312,7 @@ int ModData::getValueInt(tinyxml2::XMLElement* block, const char* name, int defa
 	return default_;
 }
 
-float ModData::getValueFloat(tinyxml2::XMLElement* block, const char* name, float default_)
+/*static*/ float ModData::getValueFloat(tinyxml2::XMLElement* block, const char* name, float default_)
 {
 	if(XMLElement* element = block->FirstChildElement(name))
 	{
@@ -1273,7 +1325,7 @@ float ModData::getValueFloat(tinyxml2::XMLElement* block, const char* name, floa
 	return default_;
 }
 
-std::string ModData::getValueString(tinyxml2::XMLElement* block, const char* name, const char* attrib, const char* default_)
+/*static*/ std::string ModData::getValueString(tinyxml2::XMLElement* block, const char* name, const char* attrib, const char* default_)
 {
 	if(XMLElement* element = block->FirstChildElement(name))
 	{
@@ -1286,7 +1338,7 @@ std::string ModData::getValueString(tinyxml2::XMLElement* block, const char* nam
 	return default_;
 }
 
-bool ModData::getValueBool(tinyxml2::XMLElement* block, const char* name, bool default_)
+/*static*/ bool ModData::getValueBool(tinyxml2::XMLElement* block, const char* name, bool default_)
 {
 	if(XMLElement* element = block->FirstChildElement(name))
 	{

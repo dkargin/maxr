@@ -39,22 +39,12 @@ cReportDisadvantagesListViewItem::cReportDisadvantagesListViewItem (const cStati
 	AutoSurface unitSurface (SDL_CreateRGBSurface (0, unitImageWidth, unitImageHeight, Video.getColDepth(), 0, 0, 0, 0));
 	SDL_SetColorKey (unitSurface.get(), SDL_TRUE, 0x00FF00FF);
 	SDL_FillRect (unitSurface.get(), nullptr, 0x00FF00FF);
-	SDL_Rect dest = {0, 0, 0, 0};
 
-	const float zoomFactor = unitImageWidth / (data.cellSize *64.0f);
+	cRenderable::sContext context;
+	context.surface = unitSurface.get();
+	context.dstRect = SDL_Rect{0, 0, unitImageWidth, unitImageHeight};
+	data.render(context, cStaticUnitData::sRenderOps{});
 
-    auto type = data.getType();
-    if (type == UnitType::Vehicle)
-    {
-        const auto vdata = std::dynamic_pointer_cast<const cVehicleData>(data.shared_from_this());
-        cVehicle::render_simple (unitSurface.get(), dest, zoomFactor, *vdata, nullptr);
-        cVehicle::drawOverlayAnimation (unitSurface.get(), dest, zoomFactor, *vdata);
-	}
-    else if (type == UnitType::Building)
-	{
-        const auto bdata = std::dynamic_pointer_cast<const cBuildingData>(data.shared_from_this());
-        cBuilding::render_simple (unitSurface.get(), dest, zoomFactor, *bdata, nullptr);
-	}
 	auto unitImage = addChild (std::make_unique<cImage> (cPosition (0, (totalHeight - unitImageHeight) / 2), unitSurface.get()));
 
 	auto nameLabel = addChild (std::make_unique<cLabel> (cBox<cPosition> (cPosition (unitImage->getEndPosition().x(), 0), cPosition (unitImage->getEndPosition().x() + unitNameWidth, totalHeight)), data.getName(), FONT_LATIN_NORMAL, toEnumFlag (eAlignmentType::Left) | eAlignmentType::CenterVerical));

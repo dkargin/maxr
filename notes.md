@@ -110,3 +110,12 @@ Render order:
 3. Draw object to main surface. Dest = screen, colorkey = rgb{255,0,255}
 
 Animations are generated from snprintf(sztmp, sizeof (sztmp), "img%d_%.2d.pcx", dir, frame);
+
+Local plan
+
+1. Fix unit/building lists. Move rendering function to cStaticUnitData		OK
+2. Implement a loader for sprite lists										OK
+3. Fix shadow scaling and rendering options
+4. Complete the basic rendering (except faction colors)
+
+5. Exit points are so borken

@@ -30,7 +30,7 @@
     <Surface_Position Const="AboveSea"/>
   </Abilities>
 
-  <Graphic>
+  <Graphic refsize="64;64">
     <Has_Clan_Logos YN="No"/>
     <Has_Corpse YN="No"/>
     <Has_Damage_Effect YN="No"/>

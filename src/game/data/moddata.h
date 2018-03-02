@@ -51,7 +51,6 @@ public:
 		int a = -1;
 	};
 
-
 	/**
 	 * Loads the clan values and stores them in the cUnitData class
 	 * @return 1 on success
@@ -64,15 +63,32 @@ protected:
 	 * @param staticData - reference to static unit data we fill in
 	 * @param directory - current directory
 	 */
-	void loadUnitData(tinyxml2::XMLElement* source, cStaticUnitData& staticData, const char* directory);
-	bool loadGraphicObject(tinyxml2::XMLElement* gobj, cStaticUnitData& staticData, const char* directory);
-	void LoadVehicleGraphicProperties (tinyxml2::XMLElement* source, cVehicleData& data);
-	void LoadBuildingGraphicProperties (tinyxml2::XMLElement* source, cBuildingData& data);
+	void parseUnitData(tinyxml2::XMLElement* source, cStaticUnitData& staticData, const char* directory);
+	/**
+	 * @brief loadGraphicObject
+	 * Parses XML contents for graphic object and adds it to the unit
+	 * @param gobj - pointer to XML element that contains graphic object
+	 * @param staticData - reference to a unit, which will get this object
+	 * @param directory - current working directory
+	 * @return if graphic object was properly generated
+	 */
+	bool parseGraphicObject(tinyxml2::XMLElement* gobj, cStaticUnitData& staticData, const char* dir);
 
+	// Factory method to create a sprite object from XML data
+	std::shared_ptr<cSprite> makeSprite(tinyxml2::XMLElement* gobj, const char* directory);
+	// Factory method to create a sprite list object from XML data
+	std::shared_ptr<cSpriteList> makeSpriteList(tinyxml2::XMLElement* gobj, const char* directory);
+	// Factory method to create a sprite sheet object from XML data
+	std::shared_ptr<cSpriteList> makeSpriteSheet(tinyxml2::XMLElement* gobj, const char* directory);
+
+	// Parses common graphic attributes
+	bool parseSpriteAttributes(tinyxml2::XMLElement* gobj, cSprite& sprite);
 
 	// Try to obain ID by unique string name
 	sID getVehicleId(const std::string& sid);
 
+protected:
+	// XML and generic parsing stuff is here
 	/**
 	 * Tries to parse color value
 	 * It expects format like "134;343;245" or special keywords, like "auto", "red", "green", ...
@@ -89,6 +105,7 @@ protected:
 	static float getValueFloat (tinyxml2::XMLElement* block, const char* name, float default_ = 0);
 	static std::string getValueString (tinyxml2::XMLElement* block, const char* name, const char* attrib, const char* default_ = "");
 	static bool getValueBool(tinyxml2::XMLElement* block, const char* name, bool default_ = false);
+
 protected:
 	std::unique_ptr<cSpriteTool> spriteTool;
 	// Database for units.

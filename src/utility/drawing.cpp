@@ -284,16 +284,6 @@ cBox<cVector2> cRenderable::getRect() const
 }
 
 //------------------------------------------------------------------------------
-void cRenderable::render_simple(SDL_Surface* surf, SDL_Rect rect)
-{
-	sContext context;
-	context.surface = surf;
-	context.dstRect = rect;
-	context.cache = true;
-	context.layer = 0;
-	render(context);
-}
-
 void cRenderable::setColorKey(int key)
 {
 
@@ -332,10 +322,17 @@ cSprite::operator SDL_Surface*()
 	return cache.get();
 }
 
-void cSprite::render(cRenderable::sContext& context)
+void cSprite::render(cRenderable::sContext& context) const
 {
 	SDL_Surface* dst = context.surface;
+
+	cPosition desiredSize(ceil(context.dstRect.w * size.x()),
+						  ceil(context.dstRect.h * size.y()));
+
 	SDL_Rect dst_rect = context.dstRect;
+	// Some shadow sprites could be larger than intended
+	dst_rect.w = desiredSize.x();
+	dst_rect.h = desiredSize.y();
 
 	if(!this->surface)
 		return;
@@ -354,9 +351,10 @@ void cSprite::render(cRenderable::sContext& context)
 	if(lastSize.x() != dst_rect.w || lastSize.y() != dst_rect.h)
 		refresh = true;
 
+
 	if(refresh)
 	{
-		SDL_Rect rc{0,0, dst_rect.w, dst_rect.h};
+		SDL_Rect rc{0, 0, dst_rect.w, dst_rect.h};
 		SDL_FillRect(cache.get(), &rc, colorkey);
 		SDL_BlitScaled(src, &srcRect, cache.get(), &rc);
 		lastSize = cPosition(dst_rect.w, dst_rect.h);
@@ -364,9 +362,8 @@ void cSprite::render(cRenderable::sContext& context)
 	}
 
 	applyBlending(dst);
-
-	SDL_Rect rc{0,0, dst_rect.w, dst_rect.h};
 	// Draw internal cache to the destination surface
+	SDL_Rect rc{0, 0, dst_rect.w, dst_rect.h};
 	SDL_BlitSurface(cache.get(), &rc, dst, &dst_rect);
 }
 
@@ -438,7 +435,7 @@ cSpriteList::cSpriteList(SurfacePtr surf, SDL_Rect rect)
 {
 }
 
-void cSpriteList::render(sContext& context)
+void cSpriteList::render(sContext& context) const
 {
 	SDL_Surface* dst = context.surface;
 	SDL_Rect dst_rect = context.dstRect;
@@ -498,7 +495,7 @@ void cSpriteList::render(sContext& context)
 }
 
 
-SDL_Rect cSpriteList::getSrcRect(int frame)
+SDL_Rect cSpriteList::getSrcRect(int frame) const
 {
 	SDL_Rect result;
 	result.x = lastSize.x() * frame;
@@ -554,18 +551,28 @@ cSpritePtr cSpriteTool::makeSprite(const std::string& path, const cVector2& size
 	if(!surface)
 		return nullptr;
 
+	cVector2 adjustedSize = size;
+	// Adjusting reference size
+	if(hasRefSize)
+	{
+		if(refSize.x() > 0)
+			adjustedSize.x() *= double(surface->w) / double(refSize.x());
+		if(refSize.y() > 0)
+			adjustedSize.y() *= double(surface->h) / double(refSize.y());
+	}
+
 	SDL_Rect rect = SDL_Rect{0, 0, surface->w, surface->h};
 
 	cSprite* sprite = new cSprite(SurfacePtr(surface.release(), detail::SdlSurfaceDeleter()), rect);
 
-	sprite->setSize(size);
+	sprite->setSize(adjustedSize);
 	sprite->mode = mode;
 	sprite->file = path;
 
 	return cSpritePtr(sprite);
 }
 
-cSpriteListPtr cSpriteTool::makeVariantSprite(const std::string& path, int frames, const cVector2& size, FitMode mode)
+cSpriteListPtr cSpriteTool::makeSpriteSheet(const std::string& path, int frames, const cVector2& size, FitMode mode)
 {
 	if (!FileExists (path.c_str()))
 		return nullptr;
@@ -577,15 +584,27 @@ cSpriteListPtr cSpriteTool::makeVariantSprite(const std::string& path, int frame
 	if(frames < 1)
 		frames = 1;
 
+	cVector2 adjustedSize = size;
+
+	// Adjusting reference size
+	if(hasRefSize)
+	{
+		if(refSize.x() > 0)
+			adjustedSize.x() *= double(surface->w/frames) / double(refSize.x());
+		if(refSize.y() > 0)
+			adjustedSize.y() *= double(surface->h) / double(refSize.y());
+	}
+
 	SDL_Rect rect = SDL_Rect{0, 0, surface->w, surface->h};
 	cSpriteList* sprite = new cSpriteList(SurfacePtr(surface.release(), detail::SdlSurfaceDeleter()), rect);
 	sprite->frames = frames;
 	sprite->file = path;
+	sprite->setSize(adjustedSize);
 
 	return cSpriteListPtr(sprite);
 }
 
-cSpriteListPtr cSpriteTool::makeVariantSprite(const std::list<std::string>& paths, const cVector2& size, FitMode mode)
+cSpriteListPtr cSpriteTool::makeSpriteList(const std::list<std::string>& paths, const cVector2& size, FitMode mode)
 {
 	if(paths.empty())
 		return nullptr;
@@ -604,7 +623,7 @@ cSpriteListPtr cSpriteTool::makeVariantSprite(const std::list<std::string>& path
 	if(!src.empty())
 	{
 		int w = src[0]->w;
-		int h=  src[0]->h;
+		int h = src[0]->h;
 		int depth = src[0]->format->BitsPerPixel;
 		SDL_Rect rect = {0, 0, int(w * src.size()), h};
 		SDL_Surface* surface = SDL_CreateRGBSurface (0, rect.w, rect.h, depth, 0, 0, 0, 0);
@@ -618,10 +637,22 @@ cSpriteListPtr cSpriteTool::makeVariantSprite(const std::list<std::string>& path
 			SDL_BlitSurface(surf, &src_rect, surface, &dst_rect);
 		}
 
+		cVector2 adjustedSize = size;
+
+		// Adjusting reference size
+		if(hasRefSize)
+		{
+			if(refSize.x() > 0)
+				adjustedSize.x() *= double(w) / double(refSize.x());
+			if(refSize.y() > 0)
+				adjustedSize.y() *= double(h) / double(refSize.y());
+		}
+
 		cSpriteList* sprite = new cSpriteList(SurfacePtr(surface, detail::SdlSurfaceDeleter()), rect);
 		sprite->frames = src.size();
 		sprite->mode = mode;
 		sprite->file = paths.front();
+		sprite->setSize(adjustedSize);
 		return cSpriteListPtr(sprite);
 	}
 

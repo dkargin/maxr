@@ -57,7 +57,7 @@ cVehicleData::cVehicleData()
 
 }
 
-bool cVehicleData::setGraphics(const std::string& layer, const cSpritePtr& sprite)
+bool cVehicleData::setGraphics(const std::string& layer, const cRenderablePtr& sprite)
 {
 	if(layer == "build")
 		build = sprite;
@@ -71,6 +71,12 @@ bool cVehicleData::setGraphics(const std::string& layer, const cSpritePtr& sprit
 		return cStaticUnitData::setGraphics(layer, sprite);
 	return true;
 }
+
+void cVehicleData::render(cRenderable::sContext& context, const sRenderOps& ops) const
+{
+	cStaticUnitData::render(context, ops);
+}
+
 
 //-----------------------------------------------------------------------------
 // cVehicle Class Implementation
@@ -98,7 +104,6 @@ cVehicle::cVehicle (sVehicleDataPtr sdata, const cDynamicUnitData& dynamicData, 
 	bandPosition(0, 0),
 	moveJob(nullptr)
 {
-	//uiData = UnitsUiData.getVehicleUI (staticData.ID);
 	ditherX = 0;
 	ditherY = 0;
 	flightHeight = 0;
@@ -128,46 +133,6 @@ cVehicle::~cVehicle()
 sVehicleDataPtr cVehicle::getVehicleData() const
 {
 	return this->vehicleData;
-}
-
-void cVehicle::drawOverlayAnimation (SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, int frameNr, int alpha) const
-{
-	drawOverlayAnimation (surface, dest, zoomFactor, *vehicleData, frameNr, alpha);
-}
-
-/*static*/ void cVehicle::drawOverlayAnimation (SDL_Surface* surface, const SDL_Rect& dest,
-												float zoomFactor, const cVehicleData& data, int frameNr, int alpha)
-{
-#ifdef OVERLAYS_TO_BE_FIXED
-	if (uiData.hasOverlay == false || cSettings::getInstance().isAnimations() == false)
-		return;
-
-	const Uint16 size = (Uint16) (uiData.overlay_org->h * zoomFactor);
-	const Uint16 srcX = Round((uiData.overlay_org->h * frameNr) * zoomFactor);
-	SDL_Rect src = {srcX, 0, size, size};
-
-	SDL_Rect tmp = dest;
-	const int offset = Round (64.0f * zoomFactor) / 2 - src.h / 2;
-	tmp.x += offset;
-	tmp.y += offset;
-
-	SDL_SetSurfaceAlphaMod (uiData.overlay.get(), alpha);
-	blitWithPreScale (uiData.overlay_org.get(), uiData.overlay.get(), &src, surface, &tmp, zoomFactor);
-#endif
-}
-
-void cVehicle::drawOverlayAnimation (unsigned long long animationTime, SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor) const
-{
-#ifdef OVERLAYS_TO_BE_FIXED
-	if (uiData->hasOverlay == false || cSettings::getInstance().isAnimations() == false) return;
-	int frameNr = 0;
-	if (isDisabled() == false)
-	{
-		frameNr = animationTime % (uiData->overlay_org->w / uiData->overlay_org->h);
-	}
-
-	drawOverlayAnimation(surface, dest, zoomFactor, frameNr, alphaEffectValue && cSettings::getInstance().isAlphaEffects() ? alphaEffectValue : 254);
-#endif
 }
 
 void cVehicle::render_BuildingOrBigClearing (const cMapView& map, unsigned long long animationTime, SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, bool drawShadow) const
@@ -233,136 +198,17 @@ void cVehicle::render_smallClearing (unsigned long long animationTime, SDL_Surfa
 #endif
 }
 
-void cVehicle::render_shadow (const cMapView& map, SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor) const
+void cVehicle::render (const cMapView* map, unsigned long long animationTime, const cPlayer* activePlayer, SDL_Surface* surface, const SDL_Rect& dest, const cStaticUnitData::sRenderOps& ops) const
 {
-	if (map.isWater (getPosition()) && (staticData->isStealthOn & TERRAIN_SEA))
-		return;
+	cRenderable::sContext context;
+	context.surface = surface;
+	context.dstRect = dest;
+	context.cache = true;
+	context.channels["clan"] = this->getOwner()->getClan()+1;
+	context.channels["animation"] = animationTime;
+	context.channels["direction"] = dir;
 
-	cSpritePtr sprite = vehicleData->directed_shadow[dir];
-	if(!sprite)
-		sprite = vehicleData->shadow;
-
-	if(!sprite)
-		return;
-#ifdef FIX_SHADOW
-	//if(!uiData->shadow && uiData)
-	SDL_Surface* sprite = uiData->shw[dir].get();
-	SDL_Surface* sprite_org = uiData->shw_org[dir].get();
-	if (!sprite_org)
-		return;
-
-	if (alphaEffectValue && cSettings::getInstance().isAlphaEffects())
-		SDL_SetSurfaceAlphaMod (sprite, alphaEffectValue / 5);
-	else
-		SDL_SetSurfaceAlphaMod (sprite, 50);
-	SDL_Rect tmp = dest;
-
-	int size = getCellSize();
-	int totalSize = 64 * size;
-	int spriteSize = std::max(sprite_org->w, sprite_org->h);
-
-	if (totalSize != spriteSize)
-	{
-		float upscale = double(totalSize) / double(sprite_org->w);
-		zoomFactor *= upscale;
-	}
-
-	// draw shadow
-	if (getFlightHeight() > 0)
-	{
-		int high = ((int) (Round (sprite_org->w * zoomFactor) * (getFlightHeight() / 64.0f)));
-		tmp.x += high;
-		tmp.y += high;
-
-		blitWithPreScale (sprite_org, sprite, nullptr, surface, &tmp, zoomFactor);
-	}
-	else if (uiData->animationMovement)
-	{
-		const Uint16 size = (int) (uiData->img_org[dir]->h * zoomFactor);
-		SDL_Rect r = {Sint16 (WalkFrame * size), 0, size, size};
-		blitWithPreScale (sprite_org, sprite, &r, surface, &tmp, zoomFactor);
-	}
-	else
-		blitWithPreScale (sprite_org, sprite, nullptr, surface, &tmp, zoomFactor);
-#endif
-}
-
-void cVehicle::render_simple (SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, int alpha) const
-{
-	render_simple (surface, dest, zoomFactor, *vehicleData, getOwner(), dir, WalkFrame, alpha);
-}
-
-/*static*/ void cVehicle::render_simple (SDL_Surface* surface, const SDL_Rect& dest_base,
-										 float zoomFactor, const cVehicleData& data,
-										 const cPlayer* owner, int dir, int walkFrame, int alpha)
-{
-	SDL_Surface* sprite_dest = GraphicsData.gfx_tmp.get();
-	// draw player color
-	if (owner)
-	{
-		SDL_BlitSurface (owner->getColor().getTexture(), nullptr, sprite_dest, nullptr);
-	}
-
-	cSpritePtr sprite = data.directed_image[dir];
-	if(!sprite)
-		sprite = data.image;
-
-	if(!sprite)
-		return;
-
-	sprite->render_simple(surface, dest_base);
-
-	/*
-
-	SDL_Surface* sprite = uiData.img[dir].get();
-	SDL_Surface* sprite_org = uiData.img_org[dir].get();
-	if (!sprite_org)
-		return;
-
-	int size = unitData.cellSize;
-	int totalSize = 64 * size;
-	int spriteSize = std::max(sprite_org->w, sprite_org->h);
-	float upscale = 1.0;
-
-	if (totalSize != spriteSize)
-	{
-		upscale = double(totalSize) / double(sprite_org->w);
-	}
-
-	// read the size:
-	SDL_Rect src;
-	src.w = totalSize;
-	src.h = totalSize;
-	//src.w = (int) (sprite_org->w * zoomFactor);
-	//src.h = (int) (sprite_org->h * zoomFactor);
-
-	SDL_Rect prescaleRect = {0, 0, totalSize, totalSize};
-
-	if (uiData.animationMovement)
-	{
-		SDL_Rect tmp;
-		src.w = src.h = tmp.h = tmp.w = (int) (sprite_org->h * zoomFactor);
-		tmp.x = walkFrame * tmp.w;
-		tmp.y = 0;
-		blitWithPreScale (sprite_org, sprite, &tmp, sprite_dest, &prescaleRect, zoomFactor*upscale);
-	}
-	else
-		blitWithPreScale (sprite_org, sprite, nullptr, sprite_dest, &prescaleRect, zoomFactor*upscale);
-
-	// draw the vehicle
-	src.x = 0;
-	src.y = 0;
-	SDL_Rect tmp = dest;
-
-	SDL_SetSurfaceAlphaMod (sprite_dest, alpha);
-	blittAlphaSurface (sprite_dest, &src, surface, &tmp);
-	*/
-}
-
-void cVehicle::render (const cMapView* map, unsigned long long animationTime, const cPlayer* activePlayer, SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, bool drawShadow) const
-{
-	// Note: when changing something in this function,
-	// make sure to update the caching rules!
+	float zoomFactor = 1.0;
 
 	// draw working engineers and bulldozers:
 	if (map && job == nullptr)
@@ -370,24 +216,17 @@ void cVehicle::render (const cMapView* map, unsigned long long animationTime, co
 		/// TODO: Make a proper rendering
 		if (isUnitBuildingABuilding() || (isUnitClearing() && cellSize > 1))
 		{
-			render_BuildingOrBigClearing (*map, animationTime, surface, dest, zoomFactor, drawShadow);
+			render_BuildingOrBigClearing (*map, animationTime, surface, dest, zoomFactor, ops.shadow);
 			return;
 		}
 		if (isUnitClearing() && !cellSize == 1)
 		{
-			render_smallClearing (animationTime, surface, dest, zoomFactor, drawShadow);
+			render_smallClearing (animationTime, surface, dest, zoomFactor, ops.shadow);
 			return;
 		}
 	}
 
 	// draw all other vehicles:
-
-	// draw shadow
-	if (drawShadow && map)
-	{
-		render_shadow (*map, surface, dest, zoomFactor);
-	}
-
 	int alpha = 254;
 	if (map)
 	{
@@ -412,13 +251,16 @@ void cVehicle::render (const cMapView* map, unsigned long long animationTime, co
 
 		if (water && (staticData->isStealthOn & TERRAIN_SEA) && detectedByPlayerList.empty() && getOwner() == activePlayer)
 			alpha = std::min (alpha, 100);
+
+		context.channels["alphaeffect"] = alpha;
 	}
-	render_simple (surface, dest, zoomFactor, alpha);
+	vehicleData->render(context, ops);
 }
 
 void cVehicle::proceedBuilding (cModel& model)
 {
-	if (isUnitBuildingABuilding() == false || getBuildTurns() == 0) return;
+	if (isUnitBuildingABuilding() == false || getBuildTurns() == 0)
+		return;
 
 	setStoredResources (getStoredResources() - (getBuildCosts() / getBuildTurns()));
 	setBuildCosts (getBuildCosts() - (getBuildCosts() / getBuildTurns()));

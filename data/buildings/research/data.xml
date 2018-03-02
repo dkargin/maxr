@@ -37,7 +37,7 @@
     <Can_Self_Destroy YN="Yes"/>
   </Abilities>
 
-  <Graphic>
+  <Graphic refsize="64;64">
     <Has_Damage_Effect YN="Yes"/>
     <Has_Beton_Underground YN="Yes"/>
     <Has_Player_Color YN="Yes"/>

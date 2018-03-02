@@ -153,12 +153,12 @@
       <Vehicle ID="0 0" Size="0"/>
     </Can_Use_Unit_As_Garage>
   </Storage>
-  <Graphic>
+  <Graphic refsize="64;64">
     <Has_Overlay YN="No"/>
-    <Animations>
-      <Build_Up YN="No"/>
-      <Movement YN="No"/>
-      <Power_On YN="No"/>
-    </Animations>
+    
+    <Build_Up YN="No"/>
+    <Movement YN="No"/>
+    <Power_On YN="No"/>
+  
   </Graphic>
 </Vehicle>

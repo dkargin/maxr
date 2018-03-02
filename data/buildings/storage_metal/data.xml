@@ -32,7 +32,7 @@
     <Capacity_Res_Type Const="Metal"/>
   </Storage>
   
-  <Graphic>
+  <Graphic refsize="64;64">
     <Has_Player_Color YN="Yes"/>
     <Has_Damage_Effect YN="Yes"/>
     <Has_Beton_Underground YN="Yes"/>

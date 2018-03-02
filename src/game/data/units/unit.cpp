@@ -38,7 +38,7 @@
 
 using namespace std;
 
-bool cStaticUnitData::setGraphics(const std::string& layer, const cSpritePtr& sprite)
+bool cStaticUnitData::setGraphics(const std::string& layer, const cRenderablePtr& sprite)
 {
 	if(layer == "main" || layer == "image")
 		image = sprite;
@@ -49,6 +49,18 @@ bool cStaticUnitData::setGraphics(const std::string& layer, const cSpritePtr& sp
 	else
 		return false;
 	return true;
+}
+
+void cStaticUnitData::render(cRenderable::sContext& context, const sRenderOps& ops) const
+{
+	if(ops.underlay && underlay)
+		underlay->render(context);
+
+	if(ops.shadow && shadow)
+		shadow->render(context);
+
+	if(image)
+		image->render(context);
 }
 
 //------------------------------------------------------------------------------
@@ -219,9 +231,13 @@ bool cUnit::isNextTo (const cPosition& position, int w, int h) const
 
 bool cUnit::isNextTo (const cUnit& other) const
 {
-	cBox<cPosition> merged(other.getArea());
-	merged.add(getArea());
-	return merged.getSize() == cPosition(cellSize+other.cellSize, cellSize+other.cellSize);
+	int left = std::min(position.x(), other.position.x());
+	int top = std::min(position.y(), other.position.y());
+	int right = std::max(position.x() + cellSize, other.position.x() + other.cellSize);
+	int bottom = std::max(position.y() + cellSize, other.position.y() + other.cellSize);
+
+	return (right - left) == cellSize + other.cellSize ||
+			(bottom - top) == cellSize + other.cellSize;
 }
 
 //------------------------------------------------------------------------------

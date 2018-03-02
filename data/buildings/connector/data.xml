@@ -33,7 +33,7 @@
     <Can_Be_Overbuild Const="YesNRemove"/>
   </Abilities>
   
-  <Graphic>
+  <Graphic refsize="64;64">
     <Has_Overlay YN="No"/>
     <Has_Damage_Effect YN="Yes"/>
     <Build_Up YN="No"/>

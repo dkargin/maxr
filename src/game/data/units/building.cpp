@@ -47,13 +47,18 @@
 
 using namespace std;
 
-bool cBuildingData::setGraphics(const std::string& layer, const cSpritePtr& sprite)
+bool cBuildingData::setGraphics(const std::string& layer, const cRenderablePtr& sprite)
 {
 	if(layer == "effect")
 		this->effect = sprite;
 	else
 		return cStaticUnitData::setGraphics(layer, sprite);
 	return true;
+}
+
+void cBuildingData::render(cRenderable::sContext& context, const sRenderOps& ops) const
+{
+	cStaticUnitData::render(context, ops);
 }
 
 //--------------------------------------------------------------------------
@@ -417,54 +422,6 @@ void cBuilding::render_rubble (SDL_Surface* surface, const SDL_Rect& dest, float
 }
 
 //------------------------------------------------------------------------------
-void cBuilding::render_beton (SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor) const
-{
-	SDL_Rect tmp = dest;
-	/* TODO: Properly fill in the whole area
-	 * This place is likely a good reason to implement proper tiling templates
-	 */
-#ifdef FIX_BUILDING_UNDERLAY
-	int size = cellSize;
-	SDL_Surface* underlay_surface = nullptr;
-	int step = 0;
-	if (size & 1)	// if size is even - fill land by 1x1 floor tiles
-	{
-		if(!UnitsUiData.ptr_small_beton)
-			return;
-		CHECK_SCALING (*UnitsUiData.ptr_small_beton, *UnitsUiData.ptr_small_beton_org, zoomFactor);
-
-		step = 1;
-		underlay_surface = UnitsUiData.ptr_small_beton;
-	}
-	else // or use 2x2 tiles
-	{
-		if(!GraphicsData.gfx_big_beton)
-			return;
-
-		CHECK_SCALING (*GraphicsData.gfx_big_beton, *GraphicsData.gfx_big_beton_org, zoomFactor);
-		step = 2;
-		underlay_surface = GraphicsData.gfx_big_beton.get();
-	}
-
-	if (alphaEffectValue && cSettings::getInstance().isAlphaEffects())
-		SDL_SetSurfaceAlphaMod(underlay_surface, alphaEffectValue);
-	else
-		SDL_SetSurfaceAlphaMod(underlay_surface, 254);
-
-
-	for(int y = 0; y < size; y += step)
-		for(int x = 0; x < size;  x+= step)
-		{
-			SDL_Rect tmp = dest;
-			tmp.x += (x * 64 * zoomFactor);
-			tmp.y += (y * 64 * zoomFactor);
-
-			SDL_BlitSurface(underlay_surface, nullptr, surface, &tmp);
-		}
-#endif
-}
-
-//------------------------------------------------------------------------------
 void cBuilding::connectFirstBuildListItem()
 {
 	buildListFirstItemSignalConnectionManager.disconnectAll();
@@ -476,85 +433,39 @@ void cBuilding::connectFirstBuildListItem()
 }
 
 //------------------------------------------------------------------------------
-void cBuilding::render_simple (SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, unsigned long long animationTime, int alpha) const
+void cBuilding::render (unsigned long long animationTime, SDL_Surface* surface, const SDL_Rect& dest, const cStaticUnitData::sRenderOps& ops) const
 {
-	int frameNr = animationTime;//dir;
-	if (uiData->hasFrames && cSettings::getInstance().isAnimations() &&
-		isDisabled() == false)
-	{
-		//frameNr = (animationTime % uiData->hasFrames);
-	}
-
-	render_simple (surface, dest, zoomFactor, *uiData, getOwner(), frameNr, alpha);
-}
-
-/*static*/ void cBuilding::render_simple (SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, const cBuildingData& uiData, const cPlayer* owner, int frameNr, int alpha)
-{
-	// read the size:
-	SDL_Surface* sprite_dest = GraphicsData.gfx_tmp.get();
-	// draw player color
-	if (owner)
-	{
-		SDL_BlitSurface (owner->getColor().getTexture(), nullptr, sprite_dest, nullptr);
-	}
-
-	cSpritePtr sprite = uiData.directed_image[0];
-	if(!sprite)
-		sprite = uiData.image;
-
-	if(!sprite)
-		return;
+	// Note: when changing something in this function,
+	// make sure to update the caching rules!
 
 	cRenderable::sContext context;
 	context.surface = surface;
 	context.dstRect = dest;
 	context.cache = true;
-	context.channels["clan"] = owner->getClan()+1;
-	context.channels["animation"] = frameNr;
-
-	sprite->render(context);
-}
-
-
-void cBuilding::render (unsigned long long animationTime, SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, bool drawShadow, bool drawConcrete) const
-{
-	// Note: when changing something in this function,
-	// make sure to update the caching rules!
+	context.channels["clan"] = this->getOwner()->getClan()+1;
+	context.channels["animation"] = animationTime;
 
 	// check, if it is dirt:
+#ifdef FIX_RUBBLE
 	if (isRubble())
 	{
 		render_rubble (surface, dest, zoomFactor, drawShadow);
 		return;
 	}
+#endif
 
-	// draw the concrete
-	if (uiData->hasBetonUnderground && drawConcrete)
-	{
-		render_beton (surface, dest, zoomFactor);
-	}
+#ifdef FIX_CONNECTORS
 	// draw the connector slots:
 	if ((this->subBase && !alphaEffectValue) || uiData->isConnectorGraphic)
 	{
 		drawConnectors (surface, dest, zoomFactor, drawShadow);
 		if (uiData->isConnectorGraphic) return;
 	}
+#endif
+	uiData->render(context, ops);
 
-	// draw the shadows
-	if (drawShadow)
-	{
-	#ifdef FIX_SHADOW
-		SDL_Rect tmp = dest;
-		if (alphaEffectValue && cSettings::getInstance().isAlphaEffects())
-			SDL_SetSurfaceAlphaMod (uiData->img_shadow.get(), alphaEffectValue / 5);
-		else
-			SDL_SetSurfaceAlphaMod (uiData->img_shadow.get(), 50);
-
-		CHECK_SCALING (*uiData->img_shadow, *uiData->img_shadow_original, zoomFactor);
-		blittAlphaSurface (uiData->img_shadow.get(), nullptr, surface, &tmp);
-	#endif
-	}
-	render_simple (surface, dest, zoomFactor, animationTime, alphaEffectValue && cSettings::getInstance().isAlphaEffects() ? alphaEffectValue : 254);
+	if(isUnitWorking() && uiData->effect)
+		uiData->effect->render(context);
 }
 
 //--------------------------------------------------------------------------

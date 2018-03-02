@@ -1518,6 +1518,7 @@ void cGameMapWidget::drawExitPoints()
 
 	if (selectedVehicle && !selectedVehicle->isDisabled())
 	{
+		// Unit has completed a construction process
 		if (mapView && selectedVehicle->getOwner() == player.get() &&
 			(
 				(selectedVehicle->isUnitBuildingABuilding() && selectedVehicle->getBuildTurns() == 0) ||
@@ -1527,6 +1528,8 @@ void cGameMapWidget::drawExitPoints()
 			unit = selectedVehicle;
 			predicate = [&] (const cPosition & position) { return mapView->possiblePlace (*selectedVehicle, position); };
 		}
+
+		// Unloading a unit from another unit (transport)
 		if (mouseMode->getType() == eMouseModeType::Activate && selectedVehicle->getOwner() == player.get())
 		{
 			auto activateMouseMode = static_cast<cMouseModeActivateLoaded*> (mouseMode.get());
@@ -1537,6 +1540,7 @@ void cGameMapWidget::drawExitPoints()
 	}
 	else if (selectedBuilding && !selectedBuilding->isDisabled())
 	{
+		// This one for for a building that has completed a production order
 		if (!selectedBuilding->isBuildListEmpty() &&
 			!selectedBuilding->isUnitWorking() &&
 			selectedBuilding->getBuildListItem (0).getRemainingMetal() <= 0 &&
@@ -1547,6 +1551,7 @@ void cGameMapWidget::drawExitPoints()
 			predicate = [&] (const cPosition & position) { return selectedBuilding->canExitTo (position, *mapView, *unitToExit); };
 			//drawExitPointsIf (*selectedBuilding, );
 		}
+		// This one for for a building that wants to unload a unit
 		if (mouseMode->getType() == eMouseModeType::Activate && selectedBuilding->getOwner() == player.get())
 		{
 			unit = selectedBuilding;

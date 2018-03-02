@@ -49,21 +49,16 @@ cReportMessageListViewItem::cReportMessageListViewItem (const cSavedReport& repo
 		SDL_FillRect (unitSurface.get(), nullptr, 0x00FF00FF);
 		SDL_Rect dest = {0, 0, 0, 0};
 
-        const cStaticUnitData& data = *unitsData.getUnit(unitId);
+		const cStaticUnitData& data = *unitsData.getUnit(unitId);
 
 		const float zoomFactor = unitImageSize / (data.cellSize*64.0f);
-        auto type = data.getType();
-        if (type == UnitType::Vehicle)
-		{
-            auto vdata = unitsData.getVehicle(unitId);
-            cVehicle::render_simple (unitSurface.get(), dest, zoomFactor, *vdata, nullptr);
-            cVehicle::drawOverlayAnimation (unitSurface.get(), dest, zoomFactor, *vdata);
-		}
-        else if (type == UnitType::Building)
-		{
-            auto bdata = unitsData.getBuilding(unitId);
-            cBuilding::render_simple (unitSurface.get(), dest, zoomFactor, *bdata, nullptr);
-		}
+
+		auto type = data.getType();
+		cRenderable::sContext context;
+		context.surface = unitSurface.get();
+		context.dstRect = SDL_Rect{0, 0, unitImageSize, unitImageSize};
+		data.render(context, cStaticUnitData::sRenderOps{});
+
 		addChild (std::make_unique<cImage> (cPosition (0, (totalHeight - unitImageSize) / 2), unitSurface.get()));
 	}
 

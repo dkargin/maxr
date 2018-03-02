@@ -83,11 +83,8 @@ public:
 	virtual cBox<cVector2> getRect() const; 	// Get bounding rectangle
 
 	// Runs actual rendering process
-	virtual void render(sContext& context) = 0;
+	virtual void render(sContext& context) const = 0;
 
-	// Simplified rendering function
-	// TODO: Remove it later
-	virtual void render_simple(SDL_Surface* surf, SDL_Rect rect);
 	// Set logical size
 	void setSize(const cVector2& newSize);
 	// Set channel
@@ -147,15 +144,15 @@ public:
 	// Blit this sprite to output surface
 	// Will do rescaling, if necessary
 	//void blit_and_cache(SDL_Surface* surface, SDL_Rect rect) override;
-	virtual void render(sContext& context) override;
+	virtual void render(sContext& context) const override;
 
 	// Applies blending settings to specified surface
 	void applyBlending(SDL_Surface* surface) const;
 protected:
 	// Cached surface. We update this cache every time
-	SurfaceUPtr cache;
+	mutable SurfaceUPtr cache;
 	// Last used scale
-	cPosition lastSize;
+	mutable cPosition lastSize;
 
 	int colorkey = -1;
 	int alpha = -1;
@@ -182,9 +179,9 @@ public:
 	// Blit this sprite to output surface
 	// Will do rescaling, if necessary
 	//void blit_and_cache(SDL_Surface* surface, SDL_Rect rect) override;
-	virtual void render(sContext& context) override;
+	virtual void render(sContext& context) const override;
 
-	SDL_Rect getSrcRect(int frame);
+	SDL_Rect getSrcRect(int frame) const;
 protected:
 	// Number of frames stored
 	int frames;
@@ -217,12 +214,12 @@ public:
 	// Creates a sprite object, that has several variants
 	// @paths - a list of paths to an images
 	// @size - size of the sprite in world coordinates
-	cSpriteListPtr makeVariantSprite(const std::list<std::string>& paths, const cVector2& size = cVector2(1,1), FitMode mode = FitMode::Scale);
+	cSpriteListPtr makeSpriteList(const std::list<std::string>& paths, const cVector2& size = cVector2(1,1), FitMode mode = FitMode::Scale);
 
 	// Creates a sprite object, that has several variants
 	// @path - path to an image
 	// @size - size of the sprite in world coordinates
-	cSpriteListPtr makeVariantSprite(const std::string& path, int variants, const cVector2& size = cVector2(1,1), FitMode mode = FitMode::Scale);
+	cSpriteListPtr makeSpriteSheet(const std::string& path, int variants, const cVector2& size = cVector2(1,1), FitMode mode = FitMode::Scale);
 
 	// Reset current flags (except pixel format)
 	void reset();

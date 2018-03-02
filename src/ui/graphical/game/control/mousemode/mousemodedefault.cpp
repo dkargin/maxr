@@ -150,7 +150,8 @@ std::unique_ptr<cMouseAction> cMouseModeDefault::getMouseAction (const cPosition
 //------------------------------------------------------------------------------
 cMouseModeDefault::eActionType cMouseModeDefault::selectAction (const cPosition& mapPosition, const cUnitsData& unitsData) const
 {
-	if (!map) return eActionType::Unknown;
+	if (!map)
+		return eActionType::Unknown;
 
 	const auto& field = map->getField (mapPosition);
 
@@ -212,7 +213,7 @@ cMouseModeDefault::eActionType cMouseModeDefault::selectAction (const cPosition&
 								 (
 									 field.getTopBuilding() &&
 									 field.getTopBuilding()->getStaticUnitData().surfacePosition != cStaticUnitData::SURFACE_POS_ABOVE &&
-                                     !field.getTopBuilding()->getStaticUnitData().hasFlag(UnitFlag::CanBeLandedOn)
+									 !field.getTopBuilding()->getStaticUnitData().hasFlag(UnitFlag::CanBeLandedOn)
 								 )
 							 )
 						 )
@@ -251,11 +252,11 @@ cMouseModeDefault::eActionType cMouseModeDefault::selectAction (const cPosition&
 		}
 		else if (selectedVehicle->isUnitBuildingABuilding() || selectedVehicle->isUnitClearing())
 		{
-            bool isBuildJob =
-                    (selectedVehicle->isUnitBuildingABuilding() && selectedVehicle->getBuildTurns() == 0) ||
-                    (selectedVehicle->isUnitClearing() && selectedVehicle->getClearingTurns() == 0);
-            if (isBuildJob &&
-                map->possiblePlace (*selectedVehicle, mapPosition) && selectedVehicle->isNextTo (mapPosition, 1, 1))
+			bool isBuildJob =
+					(selectedVehicle->isUnitBuildingABuilding() && selectedVehicle->getBuildTurns() == 0) ||
+					(selectedVehicle->isUnitClearing() && selectedVehicle->getClearingTurns() == 0);
+			if (isBuildJob &&
+				map->possiblePlace (*selectedVehicle, mapPosition) && selectedVehicle->isNextTo (mapPosition, 1, 1))
 			{
 				//exit from construction site
 				return eActionType::Move;
@@ -267,13 +268,14 @@ cMouseModeDefault::eActionType cMouseModeDefault::selectAction (const cPosition&
 			}
 		}
 	}
+	// Clicking exit point for a unit out of the building
 	else if (selectedBuilding && selectedBuilding->getOwner() == player &&
 			 !selectedBuilding->isBuildListEmpty() &&
 			 !selectedBuilding->isUnitWorking() &&
 			 selectedBuilding->getBuildListItem (0).getRemainingMetal() <= 0)
 	{
-        auto unitData = unitsData.getUnit(selectedBuilding->getBuildListItem (0).getType());
-        if (selectedBuilding->canExitTo (mapPosition, *map, *unitData) && selectedUnit->isDisabled() == false)
+		auto unitData = unitsData.getUnit(selectedBuilding->getBuildListItem (0).getType());
+		if (selectedBuilding->canExitTo (mapPosition, *map, *unitData) && selectedUnit->isDisabled() == false)
 		{
 			return eActionType::ActivateFinished;
 		}

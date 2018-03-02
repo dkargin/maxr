@@ -150,7 +150,7 @@
       <Building ID="0 0" Size="1"/>
     </Can_Use_Unit_As_Garage>
   </Storage>
-  <Graphic>
+  <Graphic refsize="128;128">
     <Has_Overlay YN="No"/>
     <Animations>
       <Build_Up YN="No"/>

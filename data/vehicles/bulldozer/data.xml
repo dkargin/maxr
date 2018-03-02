@@ -36,11 +36,15 @@
     <Is_Storage_Type String="Ground"/>
   </Storage>
 
-  <Graphic>
+  <Graphic refsize="64;64">
     <Has_Damage_Effect YN="Yes"/>
     <Has_Player_Color YN="Yes"/>
-    <Animations>
-      <Makes_Tracks YN="Yes"/>
-    </Animations>
+    <Makes_Tracks YN="Yes"/>
+
+    <SpriteList pattern="img%d.pcx" frames="8" channel="direction" layer="main" colorkey="auto"/>
+    <SpriteList pattern="shw%d.pcx" frames="8" channel="direction" layer="shadow" colorkey="auto"/>
+
+    <SpriteSheet file="clear_small.pcx" frames="4" channel="animation" layer="clear" colorkey="auto"/>
+    <Sprite file="clear_small_shw.pcx" layer="clear_shadow" colorkey="auto"/>
   </Graphic>
 </Vehicle>

@@ -53,14 +53,16 @@ struct cBuildingData : public cStaticUnitData
 	AutoSurface video;  // video
 
 	// Surfaces of the effects
-	cSpritePtr effect;
+	cRenderablePtr effect;
 
-	bool setGraphics(const std::string& layer, const cSpritePtr& sprite) override;
+	bool setGraphics(const std::string& layer, const cRenderablePtr& sprite) override;
 
 	virtual UnitType getType() const
 	{
 		return UnitType::Building;
 	}
+
+	virtual void render(cRenderable::sContext& context, const sRenderOps& ops) const override;
 };
 
 typedef std::shared_ptr<cBuildingData> sBuildingDataPtr;
@@ -196,9 +198,10 @@ public:
 	/**
 	* draws the main image of the building onto the given surface
 	*/
-	void render (unsigned long long animationTime, SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, bool drawShadow, bool drawConcrete) const;
-	void render_simple(SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, unsigned long long animationTime = 0, int alpha = 254) const;
-	static void render_simple (SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, const cBuildingData& uiData, const cPlayer* owner, int frameNr = 0, int alpha = 254);
+	void render (unsigned long long animationTime, SDL_Surface* surface, const SDL_Rect& dest, const cStaticUnitData::sRenderOps& ops) const;
+
+	//void render_simple(SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, unsigned long long animationTime = 0, int alpha = 254) const;
+	//static void render_simple (SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, const cBuildingData& uiData, const cPlayer* owner, int frameNr = 0, int alpha = 254);
 
 	void executeUpdateBuildingCommmand (const cClient& client, bool updateAllOfSameType) const;
 
@@ -301,7 +304,6 @@ private:
 	void drawConnectors (SDL_Surface* surface, SDL_Rect dest, float zoomFactor, bool drawShadow) const;
 
 	void render_rubble (SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, bool drawShadow) const;
-	void render_beton (SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor) const;
 	void connectFirstBuildListItem();
 
 	bool isWorking;  // is the building currently working?

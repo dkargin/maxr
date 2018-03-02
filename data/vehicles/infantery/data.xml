@@ -44,11 +44,9 @@
     <Is_Storage_Type String="Human"/>
   </Storage>
 
-  <Graphic>
+  <Graphic refsize="64;64">
     <Has_Corpse YN="Yes"/>
     <Has_Player_Color YN="Yes"/>
-    <Animations>
-      <Movement YN="Yes"/>
-    </Animations>
+    <Movement YN="Yes"/>
   </Graphic>
 </Vehicle>

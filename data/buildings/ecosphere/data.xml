@@ -35,7 +35,7 @@
     <Can_Score YN="Yes"/>
   </Abilities>
 
-  <Graphic>
+  <Graphic refsize="128;128">
     <Has_Damage_Effect YN="Yes"/>
     <Has_Beton_Underground YN="Yes"/>
     <Has_Player_Color YN="Yes"/>

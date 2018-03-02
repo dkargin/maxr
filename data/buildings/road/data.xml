@@ -32,7 +32,7 @@
     <Surface_Position Const="Base"/>
   </Abilities>
 
-  <Graphic>
+  <Graphic refsize="64;64">
     <Sprite file="img.pcx" layer="image" colorkey="auto"/>
     <Sprite file="shw.pcx" layer="shadow" colorkey="auto"/>
   </Graphic>

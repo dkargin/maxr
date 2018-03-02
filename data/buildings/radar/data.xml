@@ -34,7 +34,7 @@
   <Graphic refsize="64x64">
     <!-- All the sprites from this block are added to 'image' layer -->
     <!-- You can add sprites directly, and add parameter layer="image" -->
-    <MultiSprite file="img.pcx" frames="25" channel="animation" layer="image" colorkey="auto"/>
+    <SpriteSheet file="img.pcx" frames="25" channel="animation" layer="image" colorkey="auto"/>
     <Sprite file="shw.pcx" layer="shadow" colorkey="auto"/>
   </Graphic>
 

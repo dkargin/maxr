@@ -30,7 +30,7 @@
     <Explodes_On_Contact YN="Yes"/>
   </Abilities>
 
-  <Graphic>
+  <Graphic refsize="64;64">
     <Has_Player_Color YN="Yes"/>
 
     <Sprite file="img.pcx" layer="image" colorkey="auto"/>

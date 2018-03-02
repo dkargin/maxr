@@ -250,7 +250,7 @@
 
   </Storage>
 
-  <Graphic>
+  <Graphic refsize="64;64">
     <Has_Clan_Logos YN="No"/>
     <!-- Werden Clanlogos auf der Einheit abgebildet? -->
     <Has_Corpse YN="No"/>
@@ -263,17 +263,18 @@
     <!-- Muss für diese Einheit die Spielerfarbe geblittet werden -->
     <Has_Overlay YN="No"/>
     <!-- Gibt an ob eine overlay.pcx geladen werden soll -->
-    <Animations>
-      <Build_Up YN="No"/>
-      <!-- Gibt an ob baugrafiken geladen werden sollen -->
-      <Movement YN="No"/>
-      <!-- Gibt für die Bewegung speziele Animationsgrafiken benötigt werden. (Bodentruppen) -->
-      <Power_On YN="No"/>
-      <!-- Gibt bei Gebäuden an, ob sie eine speziele Grafik bei eingesaltetem Status haben. (effect.pcx) -->
-      <Is_Animated YN="No"/>
-      <!-- Gibt bei Gebäuden an, ob sie animiert ist.(Radar) -->
-      <Makes_Tracks YN="No"/>
-      <!-- Werden Spuren hinterlassen -->
-    </Animations>
+    
+    <Build_Up YN="No"/>
+    <!-- Gibt an ob baugrafiken geladen werden sollen -->
+    <Movement YN="No"/>
+    <!-- Gibt für die Bewegung speziele Animationsgrafiken benötigt werden. (Bodentruppen) -->
+    <Power_On YN="No"/>
+    <!-- Gibt bei Gebäuden an, ob sie eine speziele Grafik bei eingesaltetem Status haben. (effect.pcx) -->
+    <Is_Animated YN="No"/>
+    <!-- Gibt bei Gebäuden an, ob sie animiert ist.(Radar) -->
+    <Makes_Tracks YN="No"/>
+    <!-- Werden Spuren hinterlassen -->
+    <SpriteList pattern="img%d.pcx" frames="8" channel="direction" layer="main" colorkey="auto"/>
+    <SpriteList pattern="shw%d.pcx" frames="8" channel="direction" layer="shadow" colorkey="auto"/>
   </Graphic>
 </Vehicle>
