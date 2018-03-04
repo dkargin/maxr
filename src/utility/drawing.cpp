@@ -509,7 +509,7 @@ SDL_Rect cSpriteList::getSrcRect(int frame) const
 cSpriteTool::cSpriteTool()
 {
 	cellSize = 64;
-
+	// TODO: Make a proper pixel format. Maybe by creatung a dummy surface
 }
 
 void cSpriteTool::setCellSize(int size)
@@ -540,6 +540,10 @@ void cSpriteTool::reset()
 }
 
 
+int cSpriteTool::mapRGB(int r, int g, int b)
+{
+	return SDL_MapRGB(&format, r, g, b);
+}
 // @path - path to an image
 // @size - size of the sprite in world coordinates
 cSpritePtr cSpriteTool::makeSprite(const std::string& path, const cVector2& size, FitMode mode)

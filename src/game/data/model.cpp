@@ -387,6 +387,9 @@ void cModel::addRubble(const cPosition& position, int value, int size)
 	value = std::max(1, value);
 	bool big = size > 1;
 
+	// We should split rubble to several tiles
+	// if the building is partly at the coast and above the water
+
 	if (map->isWaterOrCoast(position))
 	{
 		if (big)
@@ -447,7 +450,6 @@ void cModel::addRubble(const cPosition& position, int value, int size)
 		rubble->setRubbleValue(value, randomGenerator);
 
 		map->addBuilding(*rubble, position);
-
 
 		neutralBuildings.insert(std::move(rubble));
 	}

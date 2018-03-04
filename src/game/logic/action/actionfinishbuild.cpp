@@ -87,8 +87,11 @@ void cActionFinishBuild::finishABuilding(cModel &model, cVehicle& vehicle) const
 	{
 		int x = vehicle.getPosition().x();
 		int y = vehicle.getPosition().y();
-		if (escapePosition.x() > vehicle.getPosition().x()) x++;
-		if (escapePosition.y() > vehicle.getPosition().y()) y++;
+
+		if (escapePosition.x() > vehicle.getPosition().x())
+			x++;
+		if (escapePosition.y() > vehicle.getPosition().y())
+			y++;
 		map->moveVehicle(vehicle, cPosition(x, y));
 	}
 

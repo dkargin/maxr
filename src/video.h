@@ -172,6 +172,8 @@ public:
 	// Screenbuffers ///////////////////////////////////
 	static SDL_Surface* buffer; // Der Bildschirm-Buffer
 
+	const SDL_PixelFormat* getPixelFormat() const;
+
 private:
 
 	/**

@@ -37,8 +37,8 @@
     <Has_Damage_Effect YN="Yes"/>
     <Has_Beton_Underground YN="Yes"/>
 
-    <Sprite file="img.pcx" layer="image" colorkey="auto"/>
-    <Sprite file="shw.pcx" layer="shadow" colorkey="auto"/>
+    <Sprite file="img.pcx" layer="image" colorkey="255;0;255"/>
+    <Sprite file="shw.pcx" layer="shadow" colorkey="255;0;255"/>
   </Graphic>
 </Building>
 

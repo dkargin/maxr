@@ -700,9 +700,6 @@ void cGameMapWidget::draw (SDL_Surface& destination, const cBox<cPosition>& clip
 			}
 		}
 
-		if(shouldDrawResourceGrid)
-			drawResources(rc);
-
 		// Draw everything stored in render queue
 		rq.for_each([this, &rc](RenderQueue::RenderLayer layer, cUnit* unit)
 		{
@@ -761,6 +758,9 @@ void cGameMapWidget::draw (SDL_Surface& destination, const cBox<cPosition>& clip
 				unitDrawingEngine.drawStatus (*unit, dstRect);
 			}
 		});
+
+		if(shouldDrawResourceGrid)
+			drawResources(rc);
 	}
 
 	if (selectedVehicle && ((selectedVehicle->getMoveJob() && !selectedVehicle->isUnitMoving()) || selectedVehicle->BuildPath))
@@ -1733,6 +1733,7 @@ void cGameMapWidget::drawBuildPath (const cVehicle& vehicle, sRenderContext& rc)
 //------------------------------------------------------------------------------
 void cGameMapWidget::drawPath (const cVehicle& vehicle, sRenderContext& rc)
 {
+	// TODO: Offset path to a vehicle center
 	const auto moveJob = vehicle.getMoveJob();
 
 	if (!moveJob || vehicle.getOwner() != player.get())

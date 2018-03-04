@@ -41,6 +41,8 @@ void cLocalSingleplayerGameSaved::start (cApplication& application)
 	client = std::make_shared<cClient> (connectionManager);
 	auto staticMap = server->getModel().getMap()->staticMap;
 	client->setMap(staticMap);
+	// Hope it helps keeping unit data
+	client->setUnitsData(getUnitsData());
 	client->loadModel(saveGameNumber); //TODO: resync model from server
 
 	//use player 0 as local player
@@ -66,6 +68,6 @@ void cLocalSingleplayerGameSaved::start (cApplication& application)
 }
 
 cLocalSingleplayerGameSaved::cLocalSingleplayerGameSaved(int saveGameNumber)
-    :saveGameNumber(saveGameNumber)
+	:saveGameNumber(saveGameNumber)
 {}
 

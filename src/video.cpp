@@ -420,6 +420,11 @@ void cVideo::applyShadow (const SDL_Rect* rect, SDL_Surface& destination)
 	SDL_BlitSurface (GraphicsData.gfx_shadow.get(), &src, &destination, &dest);
 }
 
+const SDL_PixelFormat* cVideo::getPixelFormat() const
+{
+	return buffer ? buffer->format : nullptr;
+}
+
 void blittPerSurfaceAlphaToAlphaChannel (SDL_Surface* src, SDL_Rect* srcrect, SDL_Surface* dst, SDL_Rect* dstrect)
 {
 	SDL_Rect temp1, temp2;

@@ -3,16 +3,17 @@
 ## Notable problems I've created ##
 
  - Rendering connector's attachments to the buildings is broken now. I've cut this part of code from the buildings. Connectors themselves should deal with it, not the buildings
- - Pathfinder ignores cells, that are occupied by another units. Seems like regular units do not block the map properly.
- - Pathfinder tries to cross the angles
  - Rendering pipeline hopes that size of unit's graphics is consistent with actual unit's size. In fact - it is not consistent, and should not.
- - Save game is broken. We have not properly loaded graphics!
- - Finish building job is broken. Markers are drawn in wrong places.
+ - Finish building job is broken:
+ 	- Markers are drawn in wrong places.
+ 	- Exit build area is broken
  - Pick building position
  - Building a series of structures, aka 'path building' should be reworked for new grid sizes
  - All exit points are broken
  - All range calculations are broken
  - UI interaction for move orders should be updated for multitile units.
+ - Shadows are cropped. Should provide a larger area to render shadows
+ - Render order for shadows is broken. All shadows should be rendered at once
 
 Broken functions. Should be fixed:
 
@@ -22,9 +23,8 @@ Broken functions. Should be fixed:
  - `void cActionInitNewGame::execute(cModel& model) const` - disabled check for credits. Players 
  can overspend
  - ActionFinishBuild - exit points are wrong
- - broken the rendering of building's underlay tiles. This shit should be specified from XML, not the code!
- - void cGameMapWidget::drawExitPoints() generates wrong exit points
- - Unit selection is broken
+ - void cGameMapWidget::drawExitPoints() is not consistent with actual exit points. Rendering code should be coupled with actual logic code
+ - Unit selection is broken. 
  std::pair<bool, cPosition> cMouseModeSelectBuildPosition::findNextBuildPosition seems like broken
 
 
@@ -115,7 +115,7 @@ Local plan
 
 1. Fix unit/building lists. Move rendering function to cStaticUnitData		OK
 2. Implement a loader for sprite lists										OK
-3. Fix shadow scaling and rendering options
+3. Fix shadow scaling and rendering options 
 4. Complete the basic rendering (except faction colors)
 
 5. Exit points are so borken

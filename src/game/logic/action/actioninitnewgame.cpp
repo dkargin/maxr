@@ -122,15 +122,16 @@ void cActionInitNewGame::execute(cModel& model) const
 	}
 
 	// Recalculation of credits. Do we need it right here in such a way?
-#ifdef FUCK_THIS
 	for (const auto& landing : landingConfig.landingUnits)
 	{
+
 		if (!unitsdata.isValidId(landing.unitID))
 		{
 			Log.write(" Landing failed. Unknown sID: " + landing.unitID.getText(), cLog::eLOG_TYPE_NET_ERROR);
 			return;
 		}
 
+		#ifdef FUCK_THIS
 		auto it = std::find_if(initialLandingUnits.begin(), initialLandingUnits.end(),
 							   [landing](std::pair<sID, int> unit){ return unit.first == landing.unitID; });
 
@@ -146,8 +147,9 @@ void cActionInitNewGame::execute(cModel& model) const
 			credits -= landing.cargo / 5;
 			credits -= unitsdata.getDynamicUnitData(landing.unitID, clan).getBuildCost();
 		}
+		#endif
 	}
-#endif
+
 	if (credits < 0)
 	{
 		Log.write(" Landing failed. Used more than the available credits", cLog::eLOG_TYPE_ERROR);
@@ -268,6 +270,27 @@ void cActionInitNewGame::makeLanding(cPlayer& player, const sLandingConfig& land
 		{
 			if(item.data)
 				model.addBuilding(landingPosition + item.pos, item.data->ID, &player, true);
+		}
+
+		// Explore area under created buildings
+		if(landingConfig.exploreLanding >= 0)
+		{
+			for(const auto& item: landingConfig.baseLayout)
+			{
+				cPosition pos = landingPosition + item.pos;
+				cPosition min = pos - landingConfig.exploreLanding;
+				cPosition max = pos + item.data->cellSize + landingConfig.exploreLanding;
+
+				for(int y = min.y(); y < max.y(); y++)
+					for(int x = min.x(); x < max.x(); x++)
+					{
+						cPosition toSurvey(x,y);
+						if(map.isValidPosition(toSurvey))
+						{
+							player.exploreResource(toSurvey);
+						}
+					}
+			}
 		}
 	}
 

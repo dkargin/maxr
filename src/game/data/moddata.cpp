@@ -274,6 +274,8 @@ ModData::ModData(const char * _path, cUnitsData* _unitsData)
 	:spriteTool(new cSpriteTool()), unitsData(_unitsData), path(_path)
 {
 	const int tileSize = 64;
+	if(auto format = Video.getPixelFormat())
+		spriteTool->setPixelFormat(*format);
 	spriteTool->setCellSize(tileSize);
 	loadMedia = true;
 }
@@ -1076,7 +1078,8 @@ bool ModData::parseSpriteAttributes(tinyxml2::XMLElement* gobj, cSprite& sprite)
 			}
 			else
 			{
-				int clr = SDL_MapRGB(sprite.getFormat(), color.r, color.g, color.b);
+				assert(spriteTool);
+				auto clr = spriteTool->mapRGB(color.r, color.g, color.b);
 				sprite.setColorKey(clr);
 			}
 			return true;
@@ -1239,15 +1242,29 @@ int ModData::LoadClans()
 	// Splitting the string to 3 or more parts
 	size_t start = 0;
 	size_t delim_pos = 0;
+	size_t delim_len = delim ? strlen(delim) : 0;
+
+	if(!delim || !delim_len)
+	{
+		throw std::runtime_error("ModData::parseColor - invalid delimiter");
+	}
+
 	do
 	{
 		delim_pos = value.find(delim, start);
 		if(delim_pos != std::string::npos)
 		{
-			parts.push_back(value.substr(start, delim_pos));
-			start = delim_pos;
+			std::string part(value.begin() + start, value.begin() + delim_pos);
+			parts.push_back(part);
+			start = delim_pos + delim_len;
 		}
-	}while(delim_pos != std::string::npos);
+		else
+		{
+			// That was the last one
+			std::string part(value.begin() + start, value.end());
+			parts.push_back(part);
+		}
+	}while(delim_pos != std::string::npos && start < value.size());
 
 	if(parts.size() == 3)
 	{

@@ -31,23 +31,23 @@
 struct sLandingUnit
 {
 	sID unitID;
-    unsigned cargo = 0;
+	unsigned cargo = 0;
 	cPosition position;
 
-    int minCredits = 0;
+	int minCredits = 0;
 
-    // If unit is provided by default settings, and can not be removed from unit selection
-    bool isDefault = false;
+	// If unit is provided by default settings, and can not be removed from unit selection
+	bool isDefault = false;
 
-    static sLandingUnit make(sID id, unsigned cargo, bool isDefault = false)
-    {
-        sLandingUnit unit;
-        unit.unitID = id;
-        unit.cargo = cargo;
-        unit.position = cPosition(0,0);
-        unit.isDefault = isDefault;
-        return unit;
-    }
+	static sLandingUnit make(sID id, unsigned cargo, bool isDefault = false)
+	{
+		sLandingUnit unit;
+		unit.unitID = id;
+		unit.cargo = cargo;
+		unit.position = cPosition(0,0);
+		unit.isDefault = isDefault;
+		return unit;
+	}
 
 	template<typename T>
 	void serialize(T& archive)
@@ -55,8 +55,8 @@ struct sLandingUnit
 		archive & unitID;
 		archive & cargo;
 		archive & position;
-        archive & minCredits;
-        archive & isDefault;
+		archive & minCredits;
+		archive & isDefault;
 	}
 };
 
@@ -64,36 +64,40 @@ struct sLandingUnit
 struct cBaseLayoutItem
 {
 	cPosition pos;
-    sID ID;
+	sID ID;
 
-    // This mutable one is bad
-    mutable cStaticUnitDataPtr data = nullptr;
+	// This mutable one is bad
+	mutable cStaticUnitDataPtr data = nullptr;
 
 
 	template<typename T>
 	void serialize(T& archive)
 	{
 		archive & pos;
-        archive & ID;
+		archive & ID;
 	}
 };
 
 // Contains the data for embark
 struct sLandingConfig
 {
-    // Landing state
-    int state = 0;
+	// Landing state
+	int state = 0;
 	// Units that player have picked
 	std::vector<sLandingUnit> landingUnits;
-    // Upgrades that player has picked
-    // TODO: should it be here?
+	// Upgrades that player has picked
+	// TODO: should it be here?
 	std::vector<std::pair<sID, cUnitUpgrade>> unitUpgrades;
 	cPosition landingPosition;
 
 	// Initial layout of the base. Should be filled in XML
-    std::vector<cBaseLayoutItem> baseLayout;
+	std::vector<cBaseLayoutItem> baseLayout;
 
-    void loadUnitsData(const cUnitsData& unitsData) const;
+	// Size of landing area to be automatically surveyed
+	// Set to -1 to disable
+	int exploreLanding = 1;
+
+	void loadUnitsData(const cUnitsData& unitsData) const;
 
 	template<typename T>
 	void serialize(T& archive)
@@ -101,7 +105,8 @@ struct sLandingConfig
 		archive & landingUnits;
 		archive & landingPosition;
 		archive & unitUpgrades;
-        archive & baseLayout;
+		archive & baseLayout;
+		archive & exploreLanding;
 	}
 };
 

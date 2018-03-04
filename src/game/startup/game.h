@@ -28,32 +28,30 @@
 class cUnitsData;
 class cClanData;
 
+/**
+ * cGame clas
+ * @brief Base class for game instance. Keeps database of units and clans
+ * There are child classes for each game setup: local, hotseat, host, client
+ */
 class cGame : public cRunnable, public std::enable_shared_from_this<cGame>
 {
 public:
 	cGame() :
 		terminate (false)
 	{}
+
 	virtual ~cGame() {}
 
-	virtual bool wantsToTerminate() const MAXR_OVERRIDE_FUNCTION
-	{
-		return terminate;
-	}
-	void exit()
-	{
-		terminate = true;
-		terminated();
-	}
-	void resetTerminating()
-	{
-		terminate = false;
-	}
+	virtual bool wantsToTerminate() const MAXR_OVERRIDE_FUNCTION;
 
-	void setUnitsData(std::shared_ptr<const cUnitsData> unitsData_) { unitsData = std::move(unitsData_); }
-	std::shared_ptr<const cUnitsData> getUnitsData() const { return unitsData; }
-	void setClanData(std::shared_ptr<const cClanData> clanData_) { clanData = std::move(clanData_); }
-	std::shared_ptr<const cClanData> getClanData() const { return clanData; }
+	void exit();
+
+	void resetTerminating();
+
+	void setUnitsData(std::shared_ptr<const cUnitsData> unitsData_);
+	std::shared_ptr<const cUnitsData> getUnitsData() const;
+	void setClanData(std::shared_ptr<const cClanData> clanData_);
+	std::shared_ptr<const cClanData> getClanData() const;
 
 	mutable cSignal<void()> terminated;
 protected:

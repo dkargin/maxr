@@ -67,50 +67,53 @@ cWindowSinglePlayer::~cWindowSinglePlayer()
 
 void sLandingConfig::loadUnitsData(const cUnitsData &unitsData) const
 {
-    for(auto& item: this->baseLayout)
-    {
-        item.data = unitsData.getUnit(item.ID);
-    }
+	for(auto& item: this->baseLayout)
+	{
+		item.data = unitsData.getUnit(item.ID);
+	}
 }
 
 //------------------------------------------------------------------------------
 void cWindowSinglePlayer::newGameClicked()
 {
-    if (!getActiveApplication())
-        return;
+	if (!getActiveApplication())
+		return;
 
-    application = getActiveApplication();
+	application = getActiveApplication();
 
-    cLocalSingleplayerGameNew* newGame = new cLocalSingleplayerGameNew();
-    game.reset(newGame);
+	cLocalSingleplayerGameNew* newGame = new cLocalSingleplayerGameNew();
+	game.reset(newGame);
 	//initialize copy of unitsData that will be used in game
-    newGame->setUnitsData(std::make_shared<const cUnitsData>(UnitsDataGlobal));
-    newGame->setClanData(std::make_shared<const cClanData>(ClanDataGlobal));
+	newGame->setUnitsData(std::make_shared<const cUnitsData>(UnitsDataGlobal));
+	newGame->setClanData(std::make_shared<const cClanData>(ClanDataGlobal));
 
-    windowGameSettings.reset(new cWindowGameSettings());
+	windowGameSettings.reset(new cWindowGameSettings());
 	windowGameSettings->applySettings (cGameSettings());
 
-    windowGameSettings->done.connect ([this]()
-    {
-        game->setGameSettings (std::make_shared<cGameSettings> (windowGameSettings->getGameSettings()));
-        stateSelectMap();
+	windowGameSettings->done.connect ([this]()
+	{
+		game->setGameSettings (std::make_shared<cGameSettings> (windowGameSettings->getGameSettings()));
+		stateSelectMap();
 	});
 
-    application->show (windowGameSettings);
+	application->show (windowGameSettings);
 }
 
 //------------------------------------------------------------------------------
 void cWindowSinglePlayer::loadGameClicked()
 {
-    if (!getActiveApplication())
-        return;
+	if (!getActiveApplication())
+		return;
 
-    application = getActiveApplication();
+	application = getActiveApplication();
 
-    windowLoad.reset(new cWindowLoad());
-    windowLoad->load.connect ([this] (const cSaveGameInfo& saveInfo)
+	windowLoad.reset(new cWindowLoad());
+	windowLoad->load.connect ([this] (const cSaveGameInfo& saveInfo)
 	{
-        auto game = std::make_shared<cLocalSingleplayerGameSaved>(saveInfo.number);
+		auto game = std::make_shared<cLocalSingleplayerGameSaved>(saveInfo.number);
+
+		game->setUnitsData(std::make_shared<const cUnitsData>(UnitsDataGlobal));
+		game->setClanData(std::make_shared<const cClanData>(ClanDataGlobal));
 
 		try
 		{
@@ -127,124 +130,124 @@ void cWindowSinglePlayer::loadGameClicked()
 		windowLoad->close();
 	});
 
-    application->show (windowLoad);
+	application->show (windowLoad);
 }
 
 void cWindowSinglePlayer::stateSelectMap()
 {
-    windowMapSelection.reset(new cWindowMapSelection());
-    windowMapSelection->done.connect ([this]()
-    {
-        auto gameSettings = game->getGameSettings();
-        auto staticMap = std::make_shared<cStaticMap>();
+	windowMapSelection.reset(new cWindowMapSelection());
+	windowMapSelection->done.connect ([this]()
+	{
+		auto gameSettings = game->getGameSettings();
+		auto staticMap = std::make_shared<cStaticMap>();
 
-        if (!windowMapSelection->loadSelectedMap (*staticMap))
-        {
-            // TODO: error dialog: could not load selected map!
-            return;
-        }
+		if (!windowMapSelection->loadSelectedMap (*staticMap))
+		{
+			// TODO: error dialog: could not load selected map!
+			return;
+		}
 
-        game->setStaticMap (staticMap);
+		game->setStaticMap (staticMap);
 
-        if (gameSettings->getClansEnabled())
-        {
-            this->stateSelectClan();
-        }
-        else
-        {
-            this->stateSetupUnits();
-        }
-    });
+		if (gameSettings->getClansEnabled())
+		{
+			this->stateSelectClan();
+		}
+		else
+		{
+			this->stateSetupUnits();
+		}
+	});
 
-    application->show(windowMapSelection);
+	application->show(windowMapSelection);
 }
 
 void cWindowSinglePlayer::stateSelectClan()
 {
-    windowClanSelection.reset(new cWindowClanSelection(game->getUnitsData(), game->getClanData()));
+	windowClanSelection.reset(new cWindowClanSelection(game->getUnitsData(), game->getClanData()));
 
-    signalConnectionManager.connect (windowClanSelection->canceled, [this]() { windowClanSelection->close(); });
-    windowClanSelection->done.connect ([this]()
-    {
-        auto gameSettings = game->getGameSettings();
-        int clan = windowClanSelection->getSelectedClan();
-        game->setPlayerClan (clan);
+	signalConnectionManager.connect (windowClanSelection->canceled, [this]() { windowClanSelection->close(); });
+	windowClanSelection->done.connect ([this]()
+	{
+		auto gameSettings = game->getGameSettings();
+		int clan = windowClanSelection->getSelectedClan();
+		game->setPlayerClan (clan);
 
-        stateSetupUnits();
-    });
+		stateSetupUnits();
+	});
 
-    application->show(windowClanSelection);
+	application->show(windowClanSelection);
 }
 
 void cWindowSinglePlayer::stateSetupUnits()
 {
-    auto gameSettings = game->getGameSettings();
-    auto config = game->getLandingConfig();
+	auto gameSettings = game->getGameSettings();
+	auto config = game->getLandingConfig();
 
 
-    int clanIndex = game->getPlayerClan();
-    if(clanIndex >= 0)
-    {
-        cClan* clan = game->getClanData()->getClan(clanIndex);
-        clan->createLanding(*config, *gameSettings, *game->getUnitsData());
-    }
-    else
-    {
-        // We should select a clan!
-        assert(false);
-    }
-    //createInitial(*config, *gameSettings, *game->getUnitsData());
+	int clanIndex = game->getPlayerClan();
+	if(clanIndex >= 0)
+	{
+		cClan* clan = game->getClanData()->getClan(clanIndex);
+		clan->createLanding(*config, *gameSettings, *game->getUnitsData());
+	}
+	else
+	{
+		// We should select a clan!
+		assert(false);
+	}
+	//createInitial(*config, *gameSettings, *game->getUnitsData());
 
-    windowLandingUnitSelection.reset(
-            new cWindowLandingUnitSelection(
-                    cPlayerColor(),
-                    windowClanSelection->getSelectedClan(),
-                    *config,
-                    gameSettings->getStartCredits(),
-                    game->getUnitsData()));
+	windowLandingUnitSelection.reset(
+			new cWindowLandingUnitSelection(
+					cPlayerColor(),
+					windowClanSelection->getSelectedClan(),
+					*config,
+					gameSettings->getStartCredits(),
+					game->getUnitsData()));
 
-    signalConnectionManager.connect (windowLandingUnitSelection->canceled,
-                                     [this]() { windowLandingUnitSelection->close(); });
-    windowLandingUnitSelection->done.connect ([this]()
-    {
-        windowLandingUnitSelection->updateConfig(game->getLandingConfig());
-        stateSelectLanding();
-    });
+	signalConnectionManager.connect (windowLandingUnitSelection->canceled,
+									 [this]() { windowLandingUnitSelection->close(); });
+	windowLandingUnitSelection->done.connect ([this]()
+	{
+		windowLandingUnitSelection->updateConfig(game->getLandingConfig());
+		stateSelectLanding();
+	});
 
-    application->show (windowLandingUnitSelection);
+	application->show (windowLandingUnitSelection);
 }
 
 void cWindowSinglePlayer::stateSelectLanding()
 {
-    auto gameSettings = game->getGameSettings();
-    bool fixedBridgeHead = gameSettings->getBridgeheadType() == eGameSettingsBridgeheadType::Definite;
-    //auto landingUnits = windowLandingUnitSelection->getLandingUnits();
-    auto unitsdata = game->getUnitsData();
-    // Make sure our base layout has proper pointers to static unit data
-    game->getLandingConfig()->loadUnitsData(*unitsdata);
+	auto gameSettings = game->getGameSettings();
+	bool fixedBridgeHead = gameSettings->getBridgeheadType() == eGameSettingsBridgeheadType::Definite;
+	//auto landingUnits = windowLandingUnitSelection->getLandingUnits();
+	auto unitsdata = game->getUnitsData();
+	// Make sure our base layout has proper pointers to static unit data
+	game->getLandingConfig()->loadUnitsData(*unitsdata);
 
-    windowLandingPositionSelection.reset(new cWindowLandingPositionSelection(
-                    game->getStaticMap(),
-                    fixedBridgeHead,
-                    game->getLandingConfig(),
-                    unitsdata, false));
+	windowLandingPositionSelection.reset(new cWindowLandingPositionSelection(
+					game->getStaticMap(),
+					fixedBridgeHead,
+					game->getLandingConfig(),
+					unitsdata, false));
 
-    signalConnectionManager.connect (windowLandingPositionSelection->canceled,
-                                     [this]() { windowLandingPositionSelection->close(); });
+	signalConnectionManager.connect (windowLandingPositionSelection->canceled,
+									 [this]() { windowLandingPositionSelection->close(); });
 
-    windowLandingPositionSelection->selectedPosition.connect([this] (cPosition landingPosition)
-    {
-        game->getLandingConfig()->landingPosition = landingPosition;
-        game->start (*application);
+	windowLandingPositionSelection->selectedPosition.connect([this] (cPosition landingPosition)
+	{
+		game->getLandingConfig()->landingPosition = landingPosition;
+		game->start (*application);
 
-        windowLandingPositionSelection->close();
-        windowLandingUnitSelection->close();
-        if(windowClanSelection)
-            windowClanSelection->close();
-        windowMapSelection->close();
-        windowGameSettings->close();
-    });
-    application->show (windowLandingPositionSelection);
+		windowLandingPositionSelection->close();
+		windowLandingUnitSelection->close();
+		if(windowClanSelection)
+			windowClanSelection->close();
+		windowMapSelection->close();
+		windowGameSettings->close();
+	});
+	application->show (windowLandingPositionSelection);
 }
 
 //------------------------------------------------------------------------------

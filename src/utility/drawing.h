@@ -207,6 +207,8 @@ public:
 	// Set default layer for creates sprites
 	void setLayer(int layer);
 
+	// Maps RGB to raw color, using default pixel format
+	int mapRGB(int r, int g, int b);
 	// @path - path to an image
 	// @size - size of the sprite in world coordinates
 	cSpritePtr makeSprite(const std::string& path, const cVector2& size = cVector2(1,1), FitMode mode = FitMode::Scale);

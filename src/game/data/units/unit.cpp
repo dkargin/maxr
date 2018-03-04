@@ -218,15 +218,15 @@ bool cUnit::isNextTo (const cPosition& position, const cStaticUnitData& data) co
 }
 
 //------------------------------------------------------------------------------
-bool cUnit::isNextTo (const cPosition& position, int w, int h) const
+bool cUnit::isNextTo (const cPosition& pos, int w, int h) const
 {
-	cBox<cPosition> merged(position, position + cPosition(w,h));
-	merged.add(getArea());
+	int left = std::min(position.x(), pos.x());
+	int top = std::min(position.y(), pos.y());
+	int right = std::max(position.x() + cellSize, pos.x() + w);
+	int bottom = std::max(position.y() + cellSize, pos.y() + h);
 
-	// Boxes A and B are touching each other
-	// if (and only if) the size of a union of A+B
-	// is equal to the sum of each sizes
-	return merged.getSize() == cPosition(w+cellSize, h+cellSize);
+	return (right - left) == cellSize + w ||
+			(bottom - top) == cellSize + h;
 }
 
 bool cUnit::isNextTo (const cUnit& other) const
