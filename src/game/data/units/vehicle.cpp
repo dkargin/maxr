@@ -18,7 +18,7 @@
  ***************************************************************************/
 #include <cmath>
 
-#include "game/data/units/vehicle.h"
+#include "vehicle.h"
 
 #include "game/logic/attackjob.h"
 #include "game/logic/automjobs.h"
@@ -44,11 +44,15 @@
 #include "ui/graphical/menu/windows/windowbuildbuildings/windowbuildbuildings.h"
 #include "ui/sound/soundmanager.h"
 #include "ui/sound/effects/soundeffectvoice.h"
+
+#include "utility/drawing.h"
 #include "utility/random.h"
 #include "utility/crc.h"
+
 #include "game/logic/jobs/startbuildjob.h"
 #include "game/data/map/mapview.h"
 #include "game/data/map/mapfieldview.h"
+
 
 using namespace std;
 

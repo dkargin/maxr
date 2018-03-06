@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Building ID="1 7" name="Energy_Big">
+  <Header>
+    <Author name="Someone">
+      <Editor name="Someone" time="2007-09-30 13:05:00"/>
+    </Author>
+    <Game_Version text="0.2.5"/>
+  </Header>
+  <Description lang="ENG">
+    Power Station\n\nA power station consumes six fuel each turn, and provides enough power for six factories or mining stations.
+  </Description>
+
+  <Production>
+    <Built_Costs Num="24"/>
+    <Build_As String="BigBuilding"/>
+  </Production>
+
+  <Movement>
+    <Factor_Ground Num="1"/>
+  </Movement>
+
+  <Abilities>
+    <Size Num="6"/>
+    <Connects_To_Base YN="Yes"/>
+    <Armor Num="8"/>
+    <Hitpoints Num="56"/>
+    <Scan_Range Num="3"/>
+    <Can_Be_Disabled YN="Yes"/>
+    <Does_Self_Repair YN="Yes"/>
+
+    <Needs_Energy Num="-6"/>
+    <Needs_Oil Num="6"/>
+
+    <Is_Activatable YN="Yes"/>
+
+    <Can_Self_Destroy YN="Yes"/>
+  </Abilities>
+
+  <Graphic refsize="128;128">
+    <Has_Damage_Effect YN="Yes"/>
+    <Has_Beton_Underground YN="Yes"/>
+    <Has_Player_Color YN="Yes"/>
+    <Power_On YN="Yes"/>
+
+    <Sprite file="img.pcx" layer="image" colorkey="auto"/>
+    <Sprite file="shw.pcx" layer="shadow" colorkey="auto"/>
+    <Sprite file="effect.pcx" layer="effect" colorkey="auto"/>
+  </Graphic>
+</Building>

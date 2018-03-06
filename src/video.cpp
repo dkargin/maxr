@@ -104,6 +104,10 @@ void cVideo::init()
 	SDL_SetHint (SDL_HINT_RENDER_SCALE_QUALITY, "linear");
 
 	detectResolutions();
+
+	SDL_RendererInfo rinfo;
+	SDL_GetRendererInfo(sdlRenderer, &rinfo);
+	Log.write ("cVideo::init  => Created a renderer: " + std::string(rinfo.name), cLog::eLOG_TYPE_INFO);
 }
 
 void cVideo::showSplashScreen(AutoSurface splash)
@@ -137,8 +141,8 @@ void cVideo::initializeBuffer (int width, int height)
 	if (buffer) SDL_FreeSurface (buffer);
 	buffer = SDL_CreateRGBSurface (0, width, height, getColDepth(), 0, 0, 0, 0);
 
-    if (font != nullptr)
-        font->setTargetSurface (buffer);
+	if (font != nullptr)
+		font->setTargetSurface (buffer);
 
 	if (sdlTexture) SDL_DestroyTexture (sdlTexture);
 	sdlTexture = SDL_CreateTexture (sdlRenderer,

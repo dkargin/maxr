@@ -24,7 +24,7 @@
   </Movement>
 
   <Abilities>
-    <Size Num="6"/>
+    <Size Num="2"/>
     <Connects_To_Base YN="Yes"/>
     <Armor Num="8"/>
     <Hitpoints Num="56"/>

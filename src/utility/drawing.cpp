@@ -272,6 +272,18 @@ void drawCheckerPattern(SDL_Surface* surface, int cellSize, int colorA, int colo
 }
 
 //------------------------------------------------------------------------------
+cRenderContext::cRenderContext()
+{
+
+}
+
+//------------------------------------------------------------------------------
+cRenderContext::cRenderContext(SDL_Surface *surface, const SDL_Rect &rect)
+	:surface(surface), dstRect(rect)
+{
+}
+
+//------------------------------------------------------------------------------
 void cRenderable::setSize(const cVector2& newSize)
 {
 	this->size = newSize;
@@ -361,10 +373,24 @@ void cSprite::render(cRenderable::sContext& context) const
 		applyBlending(cache.get());
 	}
 
-	applyBlending(dst);
+	uint8_t oldAlpha = 255;
+	SDL_GetSurfaceAlphaMod(dst, &oldAlpha);
+
+	// TODO: A dirty hack to pass effect alpha channel right here
+	// Should wrap this stuff to a proper parameters
+	if(context.channels.count("alpha"))
+	{
+		int newAlpha = context.channels["alpha"];
+
+		if(alpha >= 0)
+			newAlpha = (alpha * newAlpha)/255;
+		SDL_SetSurfaceAlphaMod(cache.get(), newAlpha);
+	}
+
 	// Draw internal cache to the destination surface
 	SDL_Rect rc{0, 0, dst_rect.w, dst_rect.h};
 	SDL_BlitSurface(cache.get(), &rc, dst, &dst_rect);
+	SDL_SetSurfaceAlphaMod(dst, oldAlpha);
 }
 
 void cSprite::applyBlending(SDL_Surface* surface) const
@@ -372,6 +398,11 @@ void cSprite::applyBlending(SDL_Surface* surface) const
 	// Fix color settings
 	if(alpha >= 0)
 		SDL_SetSurfaceAlphaMod(surface, alpha);
+	else
+	{
+		// Disable alpha
+		SDL_SetSurfaceAlphaMod(surface, 255);
+	}
 
 	if(colorkey >= 0)
 		SDL_SetColorKey(surface, SDL_TRUE, colorkey);
@@ -509,7 +540,9 @@ SDL_Rect cSpriteList::getSrcRect(int frame) const
 cSpriteTool::cSpriteTool()
 {
 	cellSize = 64;
-	// TODO: Make a proper pixel format. Maybe by creatung a dummy surface
+	hasLayer = false;
+	// TODO: Make a proper pixel format.
+	// Maybe it could be done by creating a dummy surface
 }
 
 void cSpriteTool::setCellSize(int size)
@@ -540,10 +573,16 @@ void cSpriteTool::reset()
 }
 
 
-int cSpriteTool::mapRGB(int r, int g, int b)
+ColorRaw cSpriteTool::mapRGB(int r, int g, int b)
 {
 	return SDL_MapRGB(&format, r, g, b);
 }
+
+ColorRaw cSpriteTool::mapRGBA(int r, int g, int b, int a)
+{
+	return SDL_MapRGBA(&format, r, g, b, a);
+}
+
 // @path - path to an image
 // @size - size of the sprite in world coordinates
 cSpritePtr cSpriteTool::makeSprite(const std::string& path, const cVector2& size, FitMode mode)

@@ -24,6 +24,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 
 #include <SDL_mixer.h>
+#include <SDL_events.h>
 #include <iostream>
 #include <sstream>
 
@@ -37,7 +38,7 @@
 #include "loaddata.h"
 #include "maxrversion.h"
 
-#include "utility/autosurface.h"
+#include "utility/drawing.h"
 #include "utility/files.h"
 #include "utility/pcx.h"
 #include "utility/unifonts.h"
@@ -70,13 +71,17 @@ using namespace tinyxml2;
 
 tinyxml2::XMLDocument LanguageFile;
 
-/**
- * Writes a Logmessage on the SplashScreen
- * @param sTxt Text to write
- * @param ok 0 writes just text, 1 writes "OK" and else "ERROR"
- * @param pos Horizontal Positionindex on SplashScreen
- */
-static void MakeLog (const std::string& sTxt, int ok, int pos);
+cLoader::cLoader()
+	:LoaderNotification(SDL_RegisterEvents(1))
+
+{
+
+}
+
+cLoader::~cLoader()
+{
+	join();
+}
 
 /**
  * Loads the selected languagepack
@@ -105,14 +110,91 @@ int LoadEffects (const char* path);
  */
 static int LoadMusic (const char* path);
 
+
+void cLoader::join()
+{
+	if(load_thread)
+	{
+		SDL_WaitThread(load_thread, nullptr);
+		load_thread = nullptr;
+	}
+}
+
+int cLoader::getEventType() const
+{
+	return LoaderNotification;
+}
+
+int cLoader::threadFn(void * data)
+{
+	return static_cast<cLoader*>(data)->loadImpl();
+}
+
+cLoader::eLoadingState cLoader::load(const char * mod)
+{
+	pendingMods.clear();
+	if(mod)
+		pendingMods.push_back(mod);
+
+	assert(load_thread == nullptr);
+
+	load_thread = SDL_CreateThread (&cLoader::threadFn, "loadingData", this);
+
+	return LOAD_GOING;
+}
+
+void cLoader::notifyState(eLoadingState newState)
+{
+	// TODO: Mutex it
+	auto oldState = lastState;
+
+	lastState = newState;
+
+	assert(this->LoaderNotification != ((Uint32)-1));
+
+	SDL_Event event;
+	SDL_memset(&event, 0, sizeof(event)); /* or SDL_zero(event) */
+	event.type = LoaderNotification;
+	event.user.code = (int)newState;
+	event.user.data1 = reinterpret_cast<void*>(oldState);
+	event.user.data2 = 0;
+	SDL_PushEvent(&event);
+}
+
 // LoadData ///////////////////////////////////////////////////////////////////
 // Loads all relevant files and data:
-int LoadData (void* data)
+
+int cLoader::loadImpl()
 {
 	CR_ENABLE_CRASH_RPT_CURRENT_THREAD();
 
-	volatile int& loadingState = *static_cast<volatile int*> (data);
-	loadingState = LOAD_GOING;
+	// TODO: Mutex it
+	auto mods = this->pendingMods;
+
+	loadFolder("data");
+	for(auto mod: mods)
+	{
+		if(!mod.empty())
+			loadFolder(mod.c_str());
+	}
+
+	finalizeLoading();
+
+	if(useDelay)
+		SDL_Delay (1000);
+
+	notifyState(LOAD_FINISHED);
+}
+
+void cLoader::finalizeLoading()
+{
+	// Should do this afer all data is complete
+	UnitsDataGlobal.initializeClanUnitData(ClanDataGlobal);
+}
+
+int cLoader::loadFolder(const char* path)
+{
+	notifyState(LOAD_GOING);
 
 	if (!DEDICATED_SERVER)
 	{
@@ -123,7 +205,7 @@ int LoadData (void* data)
 			|| !FileExists ((fontPath + "latin_small.pcx").c_str()))
 		{
 			Log.write ("Missing a file needed for game. Check log and config! ", cLog::eLOG_TYPE_ERROR);
-			loadingState = LOAD_ERROR;
+			notifyState(LOAD_ERROR);
 			return 0;
 		}
 
@@ -137,10 +219,10 @@ int LoadData (void* data)
 	sVersion += MAX_BUILD_DATE; sVersion += " ";
 	sVersion += PACKAGE_REV;
 
-	MakeLog (sVersion, 0, 0);
+	writeConsole (sVersion, 0, 0);
 
 	// Load Languagepack
-	MakeLog ("Loading languagepack...", 0, 2);
+	writeConsole ("Loading languagepack...", 0, 2);
 
 	string sLang = cSettings::getInstance().getLanguage();
 	// FIXME: here is the assumption made
@@ -159,122 +241,122 @@ int LoadData (void* data)
 	Log.write ("Using langfile: " + sTmpString, cLog::eLOG_TYPE_DEBUG);
 	if (LoadLanguage() != 1 || !FileExists (sTmpString.c_str()))
 	{
-		MakeLog ("", -1, 2);
-		loadingState = LOAD_ERROR;
+		writeConsole ("", -1, SAME_LINE);
+		notifyState(LOAD_ERROR);
 		SDL_Delay (5000);
 		return -1;
 	}
 	else
 	{
 		LanguageFile.LoadFile (sTmpString.c_str());
-		MakeLog ("", 1, 2);
+		writeConsole ("", 1, SAME_LINE);
 	}
 	Log.mark();
 
 	// Load Keys
-	MakeLog (lngPack.i18n ("Text~Init~Keys"), 0, 3);
+	writeConsole (lngPack.i18n ("Text~Init~Keys"), 0, NEXT_LINE);
 
 	try
 	{
 		KeysList.loadFromFile();
-		MakeLog ("", 1, 3);
+		writeConsole ("", 1, SAME_LINE);
 	}
 	catch (std::runtime_error& e)
 	{
 		Log.write (e.what(), cLog::eLOG_TYPE_ERROR);
-		MakeLog ("", -1, 3);
+		writeConsole ("", -1, SAME_LINE);
 		SDL_Delay (5000);
-		loadingState = LOAD_ERROR;
+		notifyState(LOAD_ERROR);
 		return -1;
 	}
 	Log.mark();
 
 	// Load Fonts
-	MakeLog (lngPack.i18n ("Text~Init~Fonts"), 0, 4);
+	writeConsole (lngPack.i18n ("Text~Init~Fonts"), 0, NEXT_LINE);
 	// -- little bit crude but fonts are already loaded.
 	// what to do with this now? -- beko
 	// Really loaded with new cUnicodeFont
-	MakeLog ("", 1, 4);
+	writeConsole ("", 1, SAME_LINE);
 	Log.mark();
 
 	// Load Graphics
-	MakeLog (lngPack.i18n ("Text~Init~GFX"), 0, 5);
+	writeConsole (lngPack.i18n ("Text~Init~GFX"), 0, NEXT_LINE);
 
 	if (LoadGraphics (cSettings::getInstance().getGfxPath().c_str()) != 1)
 	{
-		MakeLog ("", -1, 5);
+		writeConsole ("", -1, SAME_LINE);
 		Log.write ("Error while loading graphics", cLog::eLOG_TYPE_ERROR);
 		SDL_Delay (5000);
-		loadingState = LOAD_ERROR;
+		notifyState(LOAD_ERROR);
 		return -1;
 	}
 	else
 	{
-		MakeLog ("", 1, 5);
+		writeConsole ("", 1, SAME_LINE);
 	}
 	Log.mark();
 
 	// Load Effects
-	MakeLog (lngPack.i18n ("Text~Init~Effects"), 0, 6);
+	writeConsole (lngPack.i18n ("Text~Init~Effects"), 0, NEXT_LINE);
 
 	if (LoadEffects (cSettings::getInstance().getFxPath().c_str()) != 1)
 	{
-		MakeLog ("", -1, 6);
+		writeConsole ("", -1, SAME_LINE);
 		SDL_Delay (5000);
-		loadingState = LOAD_ERROR;
+		notifyState(LOAD_ERROR);
 		return -1;
 	}
 	else
 	{
-		MakeLog ("", 1, 6);
+		writeConsole ("", 1, SAME_LINE);
 	}
 	Log.mark();
 
 	// Load Vehicles
-	MakeLog (lngPack.i18n ("Text~Init~Vehicles"), 0, 7);
+	writeConsole (lngPack.i18n ("Text~Init~Vehicles"), 0, NEXT_LINE);
 
 	ModData mod("core", &UnitsDataGlobal);
-	if (mod.LoadVehicles(cSettings::getInstance().getVehiclesPath().c_str()) != 1)
+	if (mod.loadVehicles(cSettings::getInstance().getVehiclesPath().c_str()) != 1)
 	{
-		MakeLog ("", -1, 7);
+		writeConsole ("", -1, SAME_LINE);
 		SDL_Delay (5000);
-		loadingState = LOAD_ERROR;
+		notifyState(LOAD_ERROR);
 		return -1;
 	}
 	else
 	{
-		MakeLog ("", 1, 7);
+		writeConsole ("", 1, SAME_LINE);
 	}
 	Log.mark();
 
 	// Load Buildings
-	MakeLog (lngPack.i18n ("Text~Init~Buildings"), 0, 8);
+	writeConsole (lngPack.i18n ("Text~Init~Buildings"), 0);
 
-	if (mod.LoadBuildings(cSettings::getInstance().getBuildingsPath().c_str()) != 1)
+	if (mod.loadBuildings(cSettings::getInstance().getBuildingsPath().c_str()) != 1)
 	{
-		MakeLog ("", -1, 8);
+		writeConsole ("", -1, SAME_LINE);
 		SDL_Delay (5000);
-		loadingState = LOAD_ERROR;
+		notifyState(LOAD_ERROR);
 		return -1;
 	}
 	else
 	{
-		MakeLog ("", 1, 8);
+		writeConsole ("", 1, SAME_LINE);
 	}
 	Log.mark();
 
-	MakeLog (lngPack.i18n ("Text~Init~Clans"), 0, 9);
+	writeConsole (lngPack.i18n ("Text~Init~Clans"), 0);
 
 	// Load Clan Settings
-	if (mod.LoadClans() != 1)
+	if (mod.loadClans() != 1)
 	{
 		SDL_Delay (5000);
-		loadingState = LOAD_ERROR;
+		notifyState(LOAD_ERROR);
 		return -1;
 	}
 	else
 	{
-		MakeLog ("", 1, 9);
+		writeConsole ("", 1, SAME_LINE);
 	}
 	Log.mark();
 
@@ -282,45 +364,50 @@ int LoadData (void* data)
 	if (!DEDICATED_SERVER)
 	{
 		// Load Music
-		MakeLog (lngPack.i18n ("Text~Init~Music"), 0, 10);
+		writeConsole (lngPack.i18n ("Text~Init~Music"), 0);
 
 		if (LoadMusic (cSettings::getInstance().getMusicPath().c_str()) != 1)
 		{
-			MakeLog ("", -1, 10);
+			writeConsole ("", -1, SAME_LINE);
 			SDL_Delay (5000);
-			loadingState = LOAD_ERROR;
+			notifyState(LOAD_ERROR);
 			return -1;
 		}
 		else
 		{
-			MakeLog ("", 1, 10);
+			writeConsole ("", 1, SAME_LINE);
 		}
 		Log.mark();
 
 		// Load Sounds
-		MakeLog (lngPack.i18n ("Text~Init~Sounds"), 0, 11);
+		writeConsole (lngPack.i18n ("Text~Init~Sounds"), 0, NEXT_LINE);
 		Log.write ("Loading Sounds", cLog::eLOG_TYPE_INFO);
 		SoundData.load (cSettings::getInstance().getSoundsPath().c_str());
-		MakeLog ("", 1, 11);
+		writeConsole ("", 1, SAME_LINE);
 		Log.mark();
 
 		// Load Voices
-		MakeLog (lngPack.i18n ("Text~Init~Voices"), 0, 12);
+		writeConsole (lngPack.i18n ("Text~Init~Voices"), 0, NEXT_LINE);
 		Log.write ("Loading Voices", cLog::eLOG_TYPE_INFO);
 		VoiceData.load (cSettings::getInstance().getVoicesPath().c_str());
-		MakeLog ("", 1, 12);
+		writeConsole ("", 1, SAME_LINE);
 		Log.mark();
 	}
 
-	SDL_Delay (1000);
-	loadingState = LOAD_FINISHED;
 	return 1;
 }
 
-// MakeLog ///////////////////////////////////////////////////////////////////
-// Writes a Logmessage on the SplashScreen:
-/* static */ void MakeLog (const string& sTxt, int ok, int pos)
+/**
+ * Writes a Logmessage on the SplashScreen
+ * @param sTxt Text to write
+ * @param ok 0 writes just text, 1 writes "OK" and else "ERROR"
+ * @param pos Horizontal Positionindex on SplashScreen
+ */
+void cLoader::writeConsole (const string& sTxt, int ok, int increment)
 {
+	int pos = this->logPosition;
+	logPosition += increment;
+
 	if (DEDICATED_SERVER)
 	{
 		cout << sTxt << endl;
@@ -737,8 +824,6 @@ int LoadGraphics (const char* path)
 	GraphicsData.gfx_band_small = CloneSDLSurface (*GraphicsData.gfx_band_small_org);
 	LoadGraphicToSurface (GraphicsData.gfx_band_big_org, path, "band_big.pcx");
 	GraphicsData.gfx_band_big = CloneSDLSurface (*GraphicsData.gfx_band_big_org);
-	LoadGraphicToSurface (GraphicsData.gfx_big_beton_org, path, "big_beton.pcx");
-	GraphicsData.gfx_big_beton = CloneSDLSurface (*GraphicsData.gfx_big_beton_org);
 	LoadGraphicToSurface (GraphicsData.gfx_storage, path, "storage.pcx");
 	LoadGraphicToSurface (GraphicsData.gfx_storage_ground, path, "storage_ground.pcx");
 	LoadGraphicToSurface (GraphicsData.gfx_dialog, path, "dialog.pcx");

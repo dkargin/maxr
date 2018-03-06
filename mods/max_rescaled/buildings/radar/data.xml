@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Building ID="1 26" name="radar">
+  <Header>
+    <Author name="Someone">
+      <Editor name="Someone" time="2007-09-30 13:05:00"/>
+    </Author>
+    <Game_Version text="0.2.5"/>
+  </Header>
+  <Description lang="ENG">
+    Radar\n\nStationary, long-range radar. Longer-range units like missile launchers and artillery cannot fire on what thay cannot see, so it's important to have a scanner or radar nearby.
+  </Description>
+
+  <Production>
+    <Built_Costs Num="18"/>
+    <Build_As String="SmallBuilding"/>
+  </Production>
+
+  <Movement>
+    <Factor_Ground Num="1"/>
+  </Movement>
+
+  <Abilities>
+    <Size Num="3"/>
+    <Connects_To_Base YN="Yes"/>
+    <Armor Num="8"/>
+    <Hitpoints Num="18"/>
+    <Scan_Range Num="18"/>
+    <Can_Be_Disabled YN="Yes"/>
+    <Can_Self_Destroy YN="Yes"/>
+  </Abilities>
+
+  <!-- Graphics block describes the sprites, used to draw a unit -->
+  <!-- field "refsize" specifies reference size of a unit in image' pixels -->
+  <Graphic refsize="64x64">
+    <!-- All the sprites from this block are added to 'image' layer -->
+    <!-- You can add sprites directly, and add parameter layer="image" -->
+    <SpriteSheet file="img.pcx" frames="25" channel="animation" layer="image" colorkey="auto"/>
+    <Sprite file="shw.pcx" layer="shadow" colorkey="auto"/>
+  </Graphic>
+
+  <Graphic>
+    <Has_Damage_Effect YN="Yes"/>
+    <Has_Beton_Underground YN="Yes"/>
+    <Has_Player_Color YN="Yes"/>
+    <Is_Animated YN="Yes"/>
+  </Graphic>
+</Building>
+
+

@@ -68,11 +68,25 @@ static int initSound();
 static void logMAXRVersion();
 static void showIntro();
 
+struct AtExit
+{
+	~AtExit()
+	{
+		//unload files here
+		cSoundDevice::getInstance().close();
+		SDLNet_Quit();
+		Video.clearMemory();
+		SDL_Quit();
+		Log.write ("EOF");;
+	}
+};
+
 int main (int argc, char* argv[])
 {
+	AtExit exitGuard;	// Will clean data global data in its destructor
+
 	if (!cSettings::getInstance().isInitialized())
 	{
-		Quit();
 		return -1;
 	}
 
@@ -90,26 +104,35 @@ int main (int argc, char* argv[])
 	if (!DEDICATED_SERVER)
 	{
 		Video.init();
-        Video.showSplashScreen(LoadPCX (SPLASH_BACKGROUND)); // show splashscreen
+		Video.showSplashScreen(LoadPCX (SPLASH_BACKGROUND)); // show splashscreen
 		initSound(); // now config is loaded and we can init sound and net
 	}
 	initNet();
 
-	// load files
-	volatile int loadingState = LOAD_GOING;
-	SDL_Thread* dataThread = SDL_CreateThread (LoadData, "loadingData", const_cast<int*> (&loadingState));
+	cLoader loader;
+
+	const char * mod = nullptr;
+
+	// Get custom SDL Event ID for data loader
+	const int LoaderNotification = loader.getEventType();
+
+	// Start loading process
+	cLoader::eLoadingState loadingState = loader.load(mod);
 
 	SDL_Event event;
-	while (loadingState != LOAD_FINISHED)
+	while (loadingState != cLoader::LOAD_FINISHED)
 	{
-		if (loadingState == LOAD_ERROR)
+		if (loadingState == cLoader::LOAD_ERROR || loadingState == cLoader::LOAD_IDLE)
 		{
 			Log.write ("Error while loading data!", cLog::eLOG_TYPE_ERROR);
-			SDL_WaitThread (dataThread, nullptr);
-			Quit();
+			return -1;
 		}
 		while (SDL_PollEvent (&event))
 		{
+			if (event.type == LoaderNotification)
+			{
+				loadingState = (cLoader::eLoadingState)event.user.code;
+			}
 			if (!DEDICATED_SERVER
 				&& event.type == SDL_WINDOWEVENT
 				&& event.window.event == SDL_WINDOWEVENT_EXPOSED)
@@ -138,7 +161,7 @@ int main (int argc, char* argv[])
 		}
 	}
 
-	SDL_WaitThread (dataThread, nullptr);
+	loader.join();
 
 	if (DEDICATED_SERVER)
 	{
@@ -149,7 +172,7 @@ int main (int argc, char* argv[])
 		Video.prepareGameScreen();
 		Video.clearBuffer();
 
-        cApplication application;
+		cApplication application;
 
 		cMouse mouse;
 		cKeyboard keyboard;
@@ -165,7 +188,6 @@ int main (int argc, char* argv[])
 		application.execute();
 	}
 
-	Quit();
 	return 0;
 }
 
@@ -310,23 +332,6 @@ bool is_main_thread()
 	return main_thread_id == SDL_ThreadID();
 }
 
-/**
- *Terminates app
- *@author beko
- */
-void Quit()
-{
-	//unload files here
-	cSoundDevice::getInstance().close();
-	SDLNet_Quit();
-	Video.clearMemory();
-	SDL_Quit();
-	Log.write ("EOF");
-
-    // TODO: exit(0) is EVIL!
-	exit (0);
-}
-
 string iToStr (int x)
 {
 	stringstream strStream;
@@ -428,7 +433,7 @@ void cFreezeModes::enable (eFreezeMode mode)
 		break;
 	case eFreezeMode::WAIT_FOR_CLIENT:
 		waitForClient = true;
-		break; 
+		break;
 	case eFreezeMode::WAIT_FOR_SERVER:
 		waitForServer = true;
 		break;

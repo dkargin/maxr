@@ -138,7 +138,7 @@ cGameGuiController::cGameGuiController (cApplication& application_, std::shared_
 //------------------------------------------------------------------------------
 cGameGuiController::~cGameGuiController()
 {
-	application.removeRunnable (*animationTimer);
+	application.removeRunnable (animationTimer);
 }
 
 //------------------------------------------------------------------------------

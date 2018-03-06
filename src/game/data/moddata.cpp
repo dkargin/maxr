@@ -51,6 +51,7 @@
 #include "sound.h"
 #include "video.h"	// do not want this as well
 #include "debug.h"
+#include "utility/drawing.h"
 
 tinyxml2::XMLElement* XmlGetFirstElement (tinyxml2::XMLDocument& xmlDoc, const char* first, ...);
 
@@ -542,8 +543,9 @@ void ModData::parseDataFile(const char* path, const char* directory)
 	}while((element = element->NextSiblingElement()) != nullptr);
 }
 
-int ModData::LoadVehicles(const char* vehicle_directory)
+int ModData::loadVehicles(const char* vehicle_directory)
 {
+	// TODO merge with loadBuildings. They are mostly the same
 	Log.write ("Loading Vehicles", cLog::eLOG_TYPE_INFO);
 
 	tinyxml2::XMLDocument VehiclesXml;
@@ -617,8 +619,9 @@ int ModData::LoadVehicles(const char* vehicle_directory)
 	return 1;
 }
 
-int ModData::LoadBuildings(const char* buldings_folder)
+int ModData::loadBuildings(const char* buldings_folder)
 {
+	// TODO merge with loadVehicles. They are mostly the same
 	Log.write ("Loading Buildings", cLog::eLOG_TYPE_INFO);
 
 	// read buildings.xml
@@ -684,8 +687,6 @@ int ModData::LoadBuildings(const char* buldings_folder)
 				UnitsDataGlobal.setSpecialIDLandMine(sID(1, IDList.back()));
 			else if (specialString == "seamine")
 				UnitsDataGlobal.setSpecialIDSeaMine(sID(1, IDList.back()));
-			else if (specialString == "smallBeton") // Especially this one
-				UnitsDataGlobal.setSpecialIDSmallBeton(sID(1, IDList.back()));
 			else
 				Log.write ("Unknown spacial in buildings.xml \"" + specialString + "\"", cLog::eLOG_TYPE_WARNING);
 		}
@@ -702,8 +703,6 @@ int ModData::LoadBuildings(const char* buldings_folder)
 		Log.write("special \"landmine\" missing in buildings.xml", cLog::eLOG_TYPE_WARNING);
 	if (UnitsDataGlobal.getSpecialIDSeaMine().secondPart    == 0)
 		Log.write("special \"seamine\" missing in buildings.xml", cLog::eLOG_TYPE_WARNING);
-	if (UnitsDataGlobal.getSpecialIDSmallBeton().secondPart == 0)
-		Log.write("special \"smallBeton\" missing in buildings.xml", cLog::eLOG_TYPE_WARNING);
 	*/
 
 	// Parse all folders that were declared in buildings.xml
@@ -721,7 +720,24 @@ int ModData::LoadBuildings(const char* buldings_folder)
 	// Dirtsurfaces
 	if (!DEDICATED_SERVER)
 	{
-#ifdef DISABLE_T
+		spriteTool->resetRefSize();
+
+		std::string dir = cSettings::getInstance().getBuildingsPath() + PATH_DELIMITER;
+
+		GraphicsData.big_rubble = spriteTool->makeSpriteSheet(dir + "dirt_big.pcx", 2, cVector2(128, 128));
+		if (auto sprite = spriteTool->makeSpriteSheet(dir + "dirt_big_shw.pcx", 2, cVector2(128, 128)))
+		{
+			sprite->setAlphaKey(50);
+			GraphicsData.big_rubble_shadow = sprite;
+		}
+
+		GraphicsData.small_rubble = spriteTool->makeSpriteSheet(dir + "dirt_small.pcx", 2, cVector2(64, 64));
+		if(auto sprite = spriteTool->makeSpriteSheet(dir + "dirt_small_shw.pcx", 2, cVector2(64, 64)))
+		{
+			sprite->setAlphaKey(50);
+			GraphicsData.small_rubble_shadow = sprite;
+		}
+/*
 		LoadGraphicToSurface (UnitsUiData.rubbleBig->img_org, cSettings::getInstance().getBuildingsPath().c_str(), "dirt_big.pcx");
 		UnitsUiData.rubbleBig->img = CloneSDLSurface (*UnitsUiData.rubbleBig->img_org);
 		LoadGraphicToSurface(UnitsUiData.rubbleBig->img_shadow_original, cSettings::getInstance().getBuildingsPath().c_str(), "dirt_big_shw.pcx");
@@ -734,8 +750,7 @@ int ModData::LoadBuildings(const char* buldings_folder)
 		LoadGraphicToSurface(UnitsUiData.rubbleSmall->img_shadow_original, cSettings::getInstance().getBuildingsPath().c_str(), "dirt_small_shw.pcx");
 		UnitsUiData.rubbleSmall->img_shadow = CloneSDLSurface(*UnitsUiData.rubbleSmall->img_shadow_original);
 		if (UnitsUiData.rubbleSmall->img_shadow != nullptr)
-			SDL_SetSurfaceAlphaMod(UnitsUiData.rubbleSmall->img_shadow.get(), 50);
-#endif
+			SDL_SetSurfaceAlphaMod(UnitsUiData.rubbleSmall->img_shadow.get(), 50);*/
 	}
 	return 1;
 }
@@ -1079,7 +1094,9 @@ bool ModData::parseSpriteAttributes(tinyxml2::XMLElement* gobj, cSprite& sprite)
 			else
 			{
 				assert(spriteTool);
-				auto clr = spriteTool->mapRGB(color.r, color.g, color.b);
+				auto clr = color.a >= 0 ?
+							spriteTool->mapRGB(color.r, color.g, color.b) :
+							spriteTool->mapRGBA(color.r, color.g, color.b, color.a);
 				sprite.setColorKey(clr);
 			}
 			return true;
@@ -1121,7 +1138,7 @@ bool ModData::parseGraphicObject(tinyxml2::XMLElement* xml, cStaticUnitData& sta
 }
 
 //------------------------------------------------------------------------------
-int ModData::LoadClans()
+int ModData::loadClans()
 {
 	tinyxml2::XMLDocument clansXml;
 
@@ -1134,27 +1151,35 @@ int ModData::LoadClans()
 		return 0;
 	}
 
-	tinyxml2::XMLElement* xmlElement = clansXml.FirstChildElement ("Clans");
-	if (xmlElement == 0)
+	tinyxml2::XMLElement* xmlStart = clansXml.FirstChildElement ("Clans");
+	if (xmlStart == 0)
 	{
 		Log.write ("Can't read \"Clans\" node!", cLog::eLOG_TYPE_ERROR);
 		return 0;
 	}
 
-	for (tinyxml2::XMLElement* clanElement = xmlElement->FirstChildElement ("Clan"); clanElement; clanElement = clanElement->NextSiblingElement ("Clan"))
+	for (tinyxml2::XMLElement* xml = xmlStart->FirstChildElement ("Clan"); xml; xml = xml->NextSiblingElement ("Clan"))
 	{
-		cClan* newClan = ClanDataGlobal.addClan();
-		string nameAttr = clanElement->Attribute ("Name");
-		newClan->setName (nameAttr);
+		string nameAttr = xml->Attribute ("Name");
 
-		const XMLElement* descriptionNode = clanElement->FirstChildElement ("Description");
+		cClan* newClan = ClanDataGlobal.makeClan(nameAttr.c_str());
+
+		if(const char * attr = xml->Attribute("mode"))
+		{
+			if(std::string(attr) != "append")
+			{
+				newClan->resetAll();
+			}
+		}
+
+		const XMLElement* descriptionNode = xml->FirstChildElement ("Description");
 		if (descriptionNode)
 		{
 			string descriptionString = descriptionNode->GetText();
 			newClan->setDescription (descriptionString);
 		}
 
-		for (XMLElement* statsElement = clanElement->FirstChildElement ("ChangedUnitStat"); statsElement; statsElement = statsElement->NextSiblingElement ("ChangedUnitStat"))
+		for (XMLElement* statsElement = xml->FirstChildElement ("ChangedUnitStat"); statsElement; statsElement = statsElement->NextSiblingElement ("ChangedUnitStat"))
 		{
 			const char* idAttr = statsElement->Attribute ("UnitID");
 			if (idAttr == 0)
@@ -1180,7 +1205,7 @@ int ModData::LoadClans()
 		}
 
 		// Find all embarcation blocks
-		for (tinyxml2::XMLElement* block = clanElement->FirstChildElement("Embark"); block; block = block->NextSiblingElement ("Embark"))
+		for (tinyxml2::XMLElement* block = xml->FirstChildElement("Embark"); block; block = block->NextSiblingElement ("Embark"))
 		{
 			// Iterate through all embark items
 			for(tinyxml2::XMLElement* item = block->FirstChildElement(); item; item = item->NextSiblingElement())
@@ -1221,8 +1246,6 @@ int ModData::LoadClans()
 			}
 		}
 	}
-
-	unitsData->initializeClanUnitData(ClanDataGlobal);
 
 	return 1;
 }
@@ -1272,6 +1295,13 @@ int ModData::LoadClans()
 		color.g = atoi(parts[1].c_str());
 		color.b = atoi(parts[2].c_str());
 		return true;
+	}
+	else if(parts.size() == 4)
+	{
+		color.r = atoi(parts[0].c_str());
+		color.g = atoi(parts[1].c_str());
+		color.b = atoi(parts[2].c_str());
+		color.a = atoi(parts[3].c_str());
 	}
 	return false;
 }

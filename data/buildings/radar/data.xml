@@ -20,7 +20,7 @@
   </Movement>
 
   <Abilities>
-    <Size Num="3"/>
+    <Size Num="1"/>
     <Connects_To_Base YN="Yes"/>
     <Armor Num="8"/>
     <Hitpoints Num="18"/>
@@ -36,11 +36,11 @@
     <!-- You can add sprites directly, and add parameter layer="image" -->
     <SpriteSheet file="img.pcx" frames="25" channel="animation" layer="image" colorkey="auto"/>
     <Sprite file="shw.pcx" layer="shadow" colorkey="auto"/>
+    <Sprite file="../small_beton.pcx" layer="underlay" colorkey="auto"/>
   </Graphic>
 
   <Graphic>
     <Has_Damage_Effect YN="Yes"/>
-    <Has_Beton_Underground YN="Yes"/>
     <Has_Player_Color YN="Yes"/>
     <Is_Animated YN="Yes"/>
   </Graphic>

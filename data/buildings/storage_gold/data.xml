@@ -35,10 +35,10 @@
   <Graphic refsize="64;64">
     <Has_Player_Color YN="Yes"/>
     <Has_Damage_Effect YN="Yes"/>
-    <Has_Beton_Underground YN="Yes"/>
 
     <Sprite file="img.pcx" layer="image" colorkey="auto"/>
     <Sprite file="shw.pcx" layer="shadow" colorkey="auto"/>
+    <Sprite file="../small_beton.pcx" layer="underlay" colorkey="auto"/>
   </Graphic>
 </Building>
 

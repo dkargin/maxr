@@ -23,7 +23,7 @@
   </Movement>
 
   <Abilities>
-    <Size Num="6"/>
+    <Size Num="2"/>
     <Connects_To_Base YN="Yes"/>
     <Armor Num="8"/>
     <Hitpoints Num="56"/>
@@ -40,13 +40,13 @@
   </Abilities>
   <Graphic refsize="128;128">
     <Has_Damage_Effect YN="Yes"/>
-    <Has_Beton_Underground YN="Yes"/>
     <Has_Player_Color YN="Yes"/>
     <Power_On YN="Yes"/>
 
     <Sprite file="img.pcx" layer="image" colorkey="auto"/>
     <Sprite file="shw.pcx" layer="shadow" colorkey="auto"/>
     <Sprite file="effect.pcx" layer="effect" colorkey="auto"/>
+    <Sprite file="../big_beton.pcx" layer="underlay" colorkey="auto"/>
   </Graphic>
 </Building>
 

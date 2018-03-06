@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Building ID="1 14" name="goldraffinery">
+  <Header>
+    <Author name="Someone">
+      <Editor name="Someone" time="2007-09-30 13:05:00"/>
+    </Author>
+    <Game_Version text="0.2.5"/>
+  </Header>
+  <Description lang="ENG">
+    Gold Refinery\n\nRefinery for converting gold into credits. Credits are required to purchase unit improvements. To run, a gold refinery needs a source of gold ore. A mining station can produce gold ore if one of its four spuares covers a spuare with undergound gold.
+  </Description>
+
+  <Production>
+    <Built_Costs Num="24"/>
+    <Build_As String="BigBuilding"/>
+  </Production>
+
+  <Movement>
+    <Factor_Ground Num="1"/>
+  </Movement>
+
+  <Abilities>
+    <Size Num="6"/>
+    <Connects_To_Base YN="Yes"/>
+    <Armor Num="8"/>
+    <Hitpoints Num="56"/>
+    <Scan_Range Num="3"/>
+    <Can_Be_Disabled YN="Yes"/>
+    <Does_Self_Repair YN="Yes"/>
+
+    <Converts_Gold Num="5"/>
+    <Needs_Energy Num="1"/>
+
+    <Is_Activatable YN="Yes"/>
+
+    <Can_Self_Destroy YN="Yes"/>
+  </Abilities>
+  
+  <Graphic refsize="128;128">
+    <Has_Damage_Effect YN="Yes"/>
+    <Has_Beton_Underground YN="Yes"/>
+    <Has_Player_Color YN="Yes"/>
+    <Power_On YN="Yes"/>
+    
+    <Sprite file="img.pcx" layer="image" colorkey="auto"/>
+    <Sprite file="shw.pcx" layer="shadow" colorkey="auto"/>
+    <Sprite file="effect.pcx" layer="effect" colorkey="auto"/>
+  </Graphic>
+</Building>
+
+

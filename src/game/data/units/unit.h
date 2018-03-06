@@ -21,10 +21,10 @@
 #define game_data_units_unitH
 
 #include <string>
+#include "utility/autosurface.h"
 #include "utility/signal/signal.h"
 #include "utility/position.h"
 #include "utility/box.h"
-#include "utility/drawing.h"
 #include "game/data/resourcetype.h"
 #include "sound.h"
 
@@ -36,6 +36,9 @@ class cPlayer;
 class cSoundManager;
 class cUnitsData;
 struct sTerrain;
+
+class cRenderable;
+class cRenderContext;
 
 //-----------------------------------------------------------------------------
 struct sID
@@ -129,7 +132,7 @@ public:
 	uint32_t getChecksum(uint32_t crc) const;
 
 	// Set graphics layer
-	virtual bool setGraphics(const std::string& layer, const cRenderablePtr& sprite);
+	virtual bool setGraphics(const std::string& layer, const std::shared_ptr<cRenderable>& sprite);
 
 	// Main
 	sID ID;
@@ -157,16 +160,16 @@ public:
 	// Unit info
 	AutoSurface info;
 	// Additional overlay, like radar dish
-	cRenderablePtr overlay;
+	std::shared_ptr<cRenderable> overlay;
 	// Main graphics
-	cRenderablePtr image;
+	std::shared_ptr<cRenderable> image;
 	// Shadow graphics
-	cRenderablePtr shadow;
+	std::shared_ptr<cRenderable> shadow;
 	// Image for 'dead' state
-	cRenderablePtr corpse;
+	std::shared_ptr<cRenderable> corpse;
 
 	// Sprite that will be rendered below the unit, on the ground
-	cRenderablePtr underlay;
+	std::shared_ptr<cRenderable> underlay;
 
 	// Some common flags
 	bool hasDamageEffect = false;
@@ -335,9 +338,18 @@ public:
 		bool shadow = false;
 		bool underlay = false;
 		bool overlay = true;
+
+		int alpha = 254;
+
+		// If we should fill in some background
+		bool hasBackground = false;
+		// Use player color as a background
+		const cPlayer* owner = nullptr;
+		// Use raw color as a background. Player texture is prefered
+		cRgbColor background;
 	};
 
-	virtual void render(cRenderable::sContext& context, const sRenderOps& ops) const;
+	virtual void render(cRenderContext& context, const sRenderOps& ops) const;
 private:
 	std::string description; //untranslated data from unit xml. Will be used, when translation for the unit is not available
 	std::string name;        //untranslated data from unit xml. Will be used, when translation for the unit is not available

@@ -33,6 +33,9 @@ class cRgbColor;
 class cPosition;
 template<typename> class cBox;
 
+// Raw ARGB color
+typedef int32_t ColorRaw;
+
 void drawPoint (SDL_Surface* surface, const cPosition& position, const cRgbColor& color);
 
 void drawLine (SDL_Surface* surface, const cPosition& start, const cPosition& end, const cRgbColor& color);
@@ -62,22 +65,34 @@ void replaceColor (SDL_Surface& surface, const cRgbColor& sourceColor, const cRg
 void blitClipped (SDL_Surface& source, const cBox<cPosition>& area, SDL_Surface& destination, const cBox<cPosition>& clipRect);
 
 /**
+ * A set of values, that necessary to pick proper graphics from all the objects
+ */
+class cRenderContext
+{
+public:
+	cRenderContext();
+	cRenderContext(SDL_Surface* surface, const SDL_Rect& rect);
+	SDL_Renderer* renderer = nullptr;
+	SDL_Surface* surface = nullptr;
+	SDL_Rect dstRect;
+	// Channel values. Here are clan variations or animated frames
+	std::map<std::string, int> channels;
+	// Selected layer
+	int layer;
+
+	// Should we use internal cache
+	bool cache = true;
+	int alpha = -1;
+
+	void setTarget(SDL_Surface* surface, const SDL_Rect& rect);
+};
+/**
  * Base class for renderable object
  */
 class cRenderable : public std::enable_shared_from_this<cRenderable>
 {
 public:
-	// A set of values, that necessary to pick proper graphics from all the objects
-	struct sContext
-	{
-		SDL_Surface* surface;
-		SDL_Rect dstRect;
-		// Channel values. Here are clan variations or animated frames
-		std::map<std::string, int> channels;
-		// Selected layer
-		int layer;
-		bool cache = true;
-	};
+	using sContext = cRenderContext;
 
 	virtual ~cRenderable() {}
 	virtual cBox<cVector2> getRect() const; 	// Get bounding rectangle
@@ -141,11 +156,10 @@ public:
 	void setColorKeyAuto();
 	// Set alpha blending value
 	void setAlphaKey(int alpha = -1);
+
 	// Blit this sprite to output surface
 	// Will do rescaling, if necessary
-	//void blit_and_cache(SDL_Surface* surface, SDL_Rect rect) override;
 	virtual void render(sContext& context) const override;
-
 	// Applies blending settings to specified surface
 	void applyBlending(SDL_Surface* surface) const;
 protected:
@@ -158,11 +172,11 @@ protected:
 	int alpha = -1;
 	// Shared pointer to SDL surface
 	SurfacePtr surface;
+	std::shared_ptr<SDL_Texture> texture;
 	// Area of source surface. We copy data from that area
 	SDL_Rect srcRect;
 	// Rendering mode. That's static data from XML
 	FitMode mode;
-
 	// Filename for source bitmap
 	std::string file;
 };
@@ -208,7 +222,8 @@ public:
 	void setLayer(int layer);
 
 	// Maps RGB to raw color, using default pixel format
-	int mapRGB(int r, int g, int b);
+	ColorRaw mapRGB(int r, int g, int b);
+	ColorRaw mapRGBA(int r, int g, int b, int a);
 	// @path - path to an image
 	// @size - size of the sprite in world coordinates
 	cSpritePtr makeSprite(const std::string& path, const cVector2& size = cVector2(1,1), FitMode mode = FitMode::Scale);

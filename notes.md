@@ -111,11 +111,46 @@ Render order:
 
 Animations are generated from snprintf(sztmp, sizeof (sztmp), "img%d_%.2d.pcx", dir, frame);
 
-Local plan
+Local plan:
 
-1. Fix unit/building lists. Move rendering function to cStaticUnitData		OK
-2. Implement a loader for sprite lists										OK
-3. Fix shadow scaling and rendering options 
-4. Complete the basic rendering (except faction colors)
+1. Exit points are so borken. Fixed a bit, but still broken
+2. Builder's graphics are broken. Need to restore it using new codebase.
+	- When iterating visible map for a units: should check builders, cause they can occupy much more space.
+	- Draw sprites where necessary
+3. Faction colors are broken
+4. Generator effects are broken
+5. Shadows are not so sharp. 											DONE
+6. Shadows are cropped. Every shadow image is larger than actual tile sizes
+7. Missing beton underlay for most of buildings. Fix XMLs for it 		DONE
+8. Shadows mess with ground layer
+9. Fix sprite loading for rubble/wrecs/...
 
-5. Exit points are so borken
+if (cellSize > 1)
+{
+	CHECK_SCALING (*UnitsUiData.rubbleBig->shw, *UnitsUiData.rubbleBig->shw_org, zoomFactor);
+	SDL_BlitSurface (UnitsUiData.rubbleBig->shw.get(), &src, surface, &tmp);
+}
+else
+{
+	CHECK_SCALING (*UnitsUiData.rubbleSmall->shw, *UnitsUiData.rubbleSmall->shw_org, zoomFactor);
+	SDL_BlitSurface (UnitsUiData.rubbleSmall->shw.get(), &src, surface, &tmp);
+}
+
+AutoSurface s (SDL_CreateRGBSurface (0, x, y, 32, 0, 0, 0, 0));
+
+For effects:
+
+SDL_SetSurfaceAlphaMod (ui.eff.get(), 10);
+
+For building images:
+			ui.img_org = LoadPCX (sTmpString);
+			ui.img = CloneSDLSurface (*ui.img_org);
+			SDL_SetColorKey (ui.img_org.get(), SDL_TRUE, 0xFFFFFF);
+			SDL_SetColorKey (ui.img.get(), SDL_TRUE, 0xFFFFFF);
+
+Restoring vanilla unit parameters
+
+Restored vanilla unit parameters.
+Moved overriden unit parameters to mods/max_rescaled folder.
+
+Added proper cmake config for SDL2_image library.

@@ -28,7 +28,6 @@
 
 #include "utility/signal/signal.h"
 #include "utility/serialization/serialization.h"
-#include "utility/drawing.h"
 #include "sound.h"
 
 #include "unit.h"

@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Building ID="1 13" name="smallfactory">
+  <Header>
+    <Author name="Someone">
+      <Editor name="Someone" time="2007-09-30 13:05:00"/>
+    </Author>
+    <Game_Version text="0.2.5"/>
+  </Header>
+  <Description lang="ENG">
+    Light Vehicle Plant\n\nBuilds light vehicles: pioneers, trucks, mobile repair units, scouts and mobile anti-aircraft units. A light vehicle plant requires three raw materials a turn to operate, and power from a power generator or power station.
+  </Description>
+
+  <Production>
+    <Built_Costs Num="20"/>
+    <Can_Build String="SmallGroundVehicle"/>
+    <Build_As String="BigBuilding"/>
+    <Max_Build_Factor Num="3"/>
+    <Can_Build_Repeat YN="Yes"/>
+  </Production>
+
+  <Movement>
+    <Factor_Ground Num="1"/>
+  </Movement>
+
+  <Abilities>
+    <Size Num="6"/>
+    <Connects_To_Base YN="Yes"/>
+    <Armor Num="8"/>
+    <Hitpoints Num="56"/>
+    <Scan_Range Num="3"/>
+    <Can_Be_Disabled YN="Yes"/>
+    <Does_Self_Repair YN="Yes"/>
+
+    <Needs_Energy Num="1"/>
+    <Needs_Metal Num="3"/>
+
+    <Is_Activatable YN="Yes"/>
+
+    <Can_Self_Destroy YN="Yes"/>
+  </Abilities>
+  <Graphic refsize="128;128">
+    <Has_Damage_Effect YN="Yes"/>
+    <Has_Beton_Underground YN="Yes"/>
+    <Has_Player_Color YN="Yes"/>
+    <Power_On YN="Yes"/>
+
+    <Sprite file="img.pcx" layer="image" colorkey="auto"/>
+    <Sprite file="shw.pcx" layer="shadow" colorkey="auto"/>
+    <Sprite file="effect.pcx" layer="effect" colorkey="auto"/>
+  </Graphic>
+</Building>
+
+

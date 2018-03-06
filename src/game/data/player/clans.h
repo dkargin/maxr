@@ -35,8 +35,8 @@ struct sLandingUnit;
 class cClanUnitStat
 {
 public:
-    cClanUnitStat (sID unitId_) : unitId (unitId_) {}
-    cClanUnitStat () {}
+	cClanUnitStat (sID unitId_) : unitId (unitId_) {}
+	cClanUnitStat () {}
 
 	void addModification (const std::string& area, int value);
 
@@ -63,9 +63,9 @@ private:
 class cClan
 {
 public:
-	cClan (int num) : num(num) {};
-	cClan () : num(-1) {};
-	
+	cClan (int num) : num(num) {}
+	cClan () : num(-1) {}
+
 	cClan (const cClan& other);
 
 	void setDescription (const std::string& newDescription);
@@ -83,11 +83,18 @@ public:
 	cClanUnitStat* addUnitStat (sID id);
 	int getNrUnitStats() const { return static_cast<int> (stats.size()); }
 
-    void addEmbarkUnit(const sLandingUnit& item);
-    void addEmbarkBuilding(const cBaseLayoutItem& item);
+	// Reset all clan data
+	void resetAll();
+	// Reset embarcation
+	void resetEmbark();
+	// Reset unit upgrades
+	void resetStats();
 
-    // Creates initial landing config
-    void createLanding(sLandingConfig& config, const cGameSettings& gameSettings, const cUnitsData& unitsData);
+	void addEmbarkUnit(const sLandingUnit& item);
+	void addEmbarkBuilding(const cBaseLayoutItem& item);
+
+	// Creates initial landing config
+	void createLanding(sLandingConfig& config, const cGameSettings& gameSettings, const cUnitsData& unitsData);
 
 	template <typename T>
 	void save(T& archive)
@@ -99,8 +106,8 @@ public:
 		for (const auto& stat : stats)
 			archive << *stat;
 
-        archive << landingUnits;
-        archive <<  baseLayout;
+		archive << landingUnits;
+		archive <<  baseLayout;
 	}
 
 	template <typename T>
@@ -120,8 +127,8 @@ public:
 			stats.push_back(std::make_unique<cClanUnitStat>(stat));
 		}
 
-        archive >> landingUnits;
-        archive >>  baseLayout;
+		archive >> landingUnits;
+		archive >>  baseLayout;
 	}
 	SERIALIZATION_SPLIT_MEMBER();
 
@@ -132,20 +139,23 @@ protected:
 	std::string name;
 	std::vector<std::unique_ptr<cClanUnitStat>> stats;
 
-    // Default units to be embarked
-    std::vector<sLandingUnit> landingUnits;
-    // Initial layout of the base.
-    std::vector<cBaseLayoutItem> baseLayout;
+	// Default units to be embarked
+	std::vector<sLandingUnit> landingUnits;
+	// Initial layout of the base.
+	std::vector<cBaseLayoutItem> baseLayout;
 };
 
 //-------------------------------------------------------------------------
 class cClanData
 {
 public:
-	cClanData() {};
+	cClanData() {}
 	cClanData(const cClanData& other);
 
-	cClan* addClan();
+	// Greates a new clan or obtains existing one
+	// @param name - unique clan name
+	cClan* makeClan(const char* name);
+
 	cClan* getClan (unsigned int num) const;
 	int getNrClans() const { return static_cast<int> (clans.size()); }
 

@@ -69,7 +69,7 @@
 
     <Embark>
       <Building ID="1 22" name="mine" pos="0;0"/>
-      <Building ID="1 8" name="generator" pos="0;-3"/>
+      <Building ID="1 8" name="generator" pos="-1;0"/>
       <Vehicle ID="0 19" name="konstrukt" metal="40"/>
       <Vehicle ID="0 24" name="pionier" metal="20"/>
       <Vehicle ID="0 31" name="surveyor" />
@@ -114,9 +114,9 @@
 
     <Embark>
       <Building ID="1 22" name="mine" pos="0;0"/>
-      <Building ID="1 8" name="generator" pos="0;-3"/>
-      <Building ID="1 8" name="generator" pos="3;-3"/>
-      <Building ID="1 26" name="radar_tower" pos="-3;0"/>
+      <Building ID="1 8" name="generator" pos="-1;0"/>
+      <Building ID="1 8" name="generator" pos="-1;1"/>
+      <Building ID="1 26" name="radar_tower" pos="-1;-1"/>
       <Vehicle ID="0 19" name="konstrukt" metal="40"/>
       <Vehicle ID="0 24" name="pionier" metal="20"/>
       <Vehicle ID="0 31" name="surveyor" />
@@ -150,7 +150,7 @@
 
     <Embark>
       <Building ID="1 22" name="mine" pos="0;0"/>
-      <Building ID="1 8" name="generator" pos="0;-3"/>
+      <Building ID="1 8" name="generator" pos="-1;0"/>
       <Vehicle ID="0 19" name="konstrukt" metal="40"/>
       <Vehicle ID="0 24" name="pionier" metal="20"/>
       <Vehicle ID="0 31" name="surveyor" />
@@ -186,7 +186,7 @@
 
     <Embark>
       <Building ID="1 22" name="mine" pos="0;0"/>
-      <Building ID="1 8" name="generator" pos="0;-3"/>
+      <Building ID="1 8" name="generator" pos="-1;0"/>
       <Vehicle ID="0 19" name="konstrukt" metal="40"/>
       <Vehicle ID="0 24" name="pionier" metal="20"/>
       <Vehicle ID="0 31" name="surveyor" />
@@ -226,7 +226,7 @@
 
     <Embark>
       <Building ID="1 22" name="mine" pos="0;0"/>
-      <Building ID="1 8" name="generator" pos="0;-3"/>
+      <Building ID="1 8" name="generator" pos="-1;0"/>
       <Vehicle ID="0 19" name="konstrukt" metal="40"/>
       <Vehicle ID="0 24" name="pionier" metal="20"/>
       <Vehicle ID="0 31" name="surveyor" />
@@ -267,7 +267,7 @@
 
     <Embark>
       <Building ID="1 22" name="mine" pos="0;0"/>
-      <Building ID="1 8" name="generator" pos="0;-3"/>
+      <Building ID="1 8" name="generator" pos="-1;0"/>
       <Vehicle ID="0 19" name="konstrukt" metal="40"/>
       <Vehicle ID="0 24" name="pionier" metal="20"/>
       <Vehicle ID="0 31" name="surveyor" />
@@ -287,8 +287,7 @@
 
     <Embark>
       <Building ID="1 22" name="mine" pos="0;0"/>
-      <!-- generator is 3x3 tiles, so we offset it to -3 -->
-      <Building ID="1 8" name="generator" pos="0;-3"/>
+      <Building ID="1 8" name="generator" pos="-1;0"/>
 
       <Vehicle ID="0 19" name="konstrukt" metal="40"/>
       <Vehicle ID="0 24" name="pionier" metal="20"/>

@@ -29,7 +29,7 @@
   </Movement>
 
   <Abilities>
-    <Size Num="3"/>
+    <Size Num="1"/>
     <Connects_To_Base YN="Yes"/>
     <Can_Be_Disabled YN="Yes"/>
     <Armor Num="8"/>
@@ -39,11 +39,11 @@
   </Abilities>
   <Graphic refsize="64;64">
     <Has_Damage_Effect YN="Yes"/>
-    <Has_Beton_Underground YN="Yes"/>
     <Has_Player_Color YN="Yes"/>
 
     <SpriteSheet file="img.pcx" frames="8" channel="direction" layer="image" colorkey="auto"/>
     <Sprite file="shw.pcx" layer="shadow" colorkey="auto"/>
+    <Sprite file="../small_beton.pcx" layer="underlay" colorkey="auto"/>
   </Graphic>
 </Building>
 

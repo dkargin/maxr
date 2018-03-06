@@ -28,29 +28,83 @@
 #include <string>
 #include <vector>
 
+struct SDL_Thread;
+struct SDL_Mutex;
 ///////////////////////////////////////////////////////////////////////////////
 // Defines
 // ------------------------
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-enum eLoadingState
+class cLoader
 {
-	LOAD_GOING = 0,
-	LOAD_ERROR = 1,
-	LOAD_FINISHED = 2
-};
-///////////////////////////////////////////////////////////////////////////////
-// Predeclerations
-// ------------------------
-//
-///////////////////////////////////////////////////////////////////////////////
 
-/**
-* Loads all relevant files and data
-* @return 1 on success
-*/
-int LoadData (void* loadingState);
+public:
+	enum eLoadingState
+	{
+		LOAD_IDLE = 0,
+		LOAD_GOING = 1,
+		LOAD_ERROR = 2,
+		LOAD_FINISHED = 3,
+	};
+
+public:
+	cLoader();
+	~cLoader();
+
+	/**
+	 * Loads all relevant files and data
+	 * This is asynchronous function
+	 * @param mod - name of the mod.
+	 * @return current loading state
+	 */
+	eLoadingState load(const char *mod = nullptr);
+
+	// Get current loading state
+	int getState() const;
+
+	// Get event type for polling SDL event queue
+	int getEventType() const;
+
+	// Wait until internal thread is complete
+	void join();
+protected:
+	static int threadFn(void * data);
+
+	int loadImpl();
+	// Called after all data is loaded
+	// Checks data integrity and creates cross-links.
+	void finalizeLoading();
+
+	// Loads all the data from specified folder
+	int loadFolder(const char * path);
+
+	void notifyState(eLoadingState newState);
+
+	enum ConsoleLine
+	{
+		SAME_LINE = 0,
+		NEXT_LINE = 1,
+	};
+
+	void writeConsole (const std::string& sTxt, int ok, int increment=1);
+private:
+	SDL_Thread* load_thread = nullptr;
+	SDL_Mutex* guard = nullptr;
+	volatile eLoadingState lastState = LOAD_IDLE;
+
+	const int LoaderNotification;
+
+	// Mods to be loaded
+	std::vector<std::string> pendingMods;
+
+	// Current log position in graphical console
+	int logPosition = 0;
+
+	// Should we use some delays to let user see messages
+	bool useDelay = false;
+};
+
 
 void createShadowGfx();
 

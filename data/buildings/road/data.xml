@@ -33,7 +33,8 @@
   </Abilities>
 
   <Graphic refsize="64;64">
-    <Sprite file="img.pcx" layer="image" colorkey="auto"/>
+    <!-- Using small_beton as main layer. Most of the buildings use it as underlay -->
+    <Sprite file="../small_beton.pcx" layer="image" colorkey="auto"/>
     <Sprite file="shw.pcx" layer="shadow" colorkey="auto"/>
   </Graphic>
 

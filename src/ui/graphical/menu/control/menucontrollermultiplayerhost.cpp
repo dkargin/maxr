@@ -129,7 +129,7 @@ void cMenuControllerMultiplayerHost::reset()
 	windowNetworkLobby = nullptr;
 	windowLandingPositionSelection = nullptr;
 	newGame = nullptr;
-	application.removeRunnable (*this);
+	application.removeRunnable (shared_from_this());
 }
 
 //------------------------------------------------------------------------------

@@ -22,6 +22,7 @@
 #include "ui/graphical/menu/widgets/label.h"
 #include "game/data/units/building.h"
 #include "game/data/units/vehicle.h"
+#include "utility/drawing.h"
 
 const int cReportDisadvantagesListViewItem::unitImageWidth = 32;
 const int cReportDisadvantagesListViewItem::unitImageHeight = 32;
@@ -40,7 +41,7 @@ cReportDisadvantagesListViewItem::cReportDisadvantagesListViewItem (const cStati
 	SDL_SetColorKey (unitSurface.get(), SDL_TRUE, 0x00FF00FF);
 	SDL_FillRect (unitSurface.get(), nullptr, 0x00FF00FF);
 
-	cRenderable::sContext context;
+	cRenderContext context;
 	context.surface = unitSurface.get();
 	context.dstRect = SDL_Rect{0, 0, unitImageWidth, unitImageHeight};
 	data.render(context, cStaticUnitData::sRenderOps{});

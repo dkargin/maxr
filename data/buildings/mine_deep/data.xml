@@ -153,11 +153,10 @@
   
   <Graphic>
     <Has_Overlay YN="No"/>
-    <Animations>
-      <Build_Up YN="No"/>
-      <Movement YN="No"/>
-      <Power_On YN="Yes"/>
-    </Animations>
+    <Build_Up YN="No"/>
+    <Movement YN="No"/>
+    <Power_On YN="Yes"/>
+    <Sprite file="../big_beton.pcx" layer="underlay" colorkey="auto"/>
   </Graphic>
 </Building>
 

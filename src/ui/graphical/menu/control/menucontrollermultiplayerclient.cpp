@@ -97,7 +97,7 @@ void cMenuControllerMultiplayerClient::reset()
 	windowLandingPositionSelection = nullptr;
 	playersLandingStatus.clear();
 	newGame = nullptr;
-	application.removeRunnable (*this);
+	application.removeRunnable (shared_from_this());
 }
 
 //------------------------------------------------------------------------------

@@ -18,7 +18,7 @@
  ***************************************************************************/
 #include <cmath>
 
-#include "game/data/units/building.h"
+#include "building.h"
 
 #include "game/logic/client.h"
 #include "game/logic/clientevents.h"
@@ -42,6 +42,7 @@
 #include "ui/sound/soundmanager.h"
 #include "ui/sound/effects/soundeffectvoice.h"
 #include "utility/crc.h"
+#include "utility/drawing.h"
 #include "game/data/map/mapview.h"
 #include "game/data/map/mapfieldview.h"
 
@@ -63,7 +64,9 @@ void cBuildingData::render(cRenderable::sContext& context, const sRenderOps& ops
 
 //--------------------------------------------------------------------------
 cBuildListItem::cBuildListItem()
-{}
+{
+	remainingMetal = 0;
+}
 
 //--------------------------------------------------------------------------
 cBuildListItem::cBuildListItem (sID type_, int remainingMetal_) :
@@ -369,8 +372,10 @@ void cBuilding::render_rubble (SDL_Surface* surface, const SDL_Rect& dest, float
 	assert (isRubble());
 
 	SDL_Rect src;
+
 #ifdef FUCK_THIS
-	if (isBig)
+	// There is no UnitsUiData, and no one right now has rubbleBig/Small
+	if (cellSize > 1)
 	{
 		if (!UnitsUiData.rubbleBig->img)
 			return;
@@ -392,7 +397,7 @@ void cBuilding::render_rubble (SDL_Surface* surface, const SDL_Rect& dest, float
 	if (drawShadow)
 	{
 #ifdef FUCK_THIS
-		if (isBig)
+		if (cellSize > 1)
 		{
 			CHECK_SCALING (*UnitsUiData.rubbleBig->shw, *UnitsUiData.rubbleBig->shw_org, zoomFactor);
 			SDL_BlitSurface (UnitsUiData.rubbleBig->shw.get(), &src, surface, &tmp);
@@ -435,24 +440,34 @@ void cBuilding::connectFirstBuildListItem()
 //------------------------------------------------------------------------------
 void cBuilding::render (unsigned long long animationTime, SDL_Surface* surface, const SDL_Rect& dest, const cStaticUnitData::sRenderOps& ops) const
 {
-	// Note: when changing something in this function,
-	// make sure to update the caching rules!
-
 	cRenderable::sContext context;
+	//context.surface = GraphicsData.gfx_tmp.get();
+	//context.dstRect = SDL_Rect{0, 0, dest.w, dest.h};
+
 	context.surface = surface;
 	context.dstRect = dest;
 	context.cache = true;
 	context.channels["clan"] = this->getOwner()->getClan()+1;
 	context.channels["animation"] = animationTime;
 
+	cStaticUnitData::sRenderOps modified_ops = ops;
+	if(uiData->hasPlayerColor)
+		modified_ops.owner = this->getOwner();
+
+	modified_ops.hasBackground = true;
+
+	// Set default color key for a background
+	modified_ops.background = cRgbColor(255, 0, 255, 255);
+
 	// check, if it is dirt:
-#ifdef FIX_RUBBLE
 	if (isRubble())
 	{
-		render_rubble (surface, dest, zoomFactor, drawShadow);
+		//render_rubble (surface, dest, zoomFactor, drawShadow);
 		return;
 	}
-#endif
+
+	//if(ops.underlay && uiData->underlay)
+	//	uiData->underlay->render(context);
 
 #ifdef FIX_CONNECTORS
 	// draw the connector slots:
@@ -462,10 +477,25 @@ void cBuilding::render (unsigned long long animationTime, SDL_Surface* surface, 
 		if (uiData->isConnectorGraphic) return;
 	}
 #endif
-	uiData->render(context, ops);
+
+	context.surface = GraphicsData.gfx_tmp.get();
+	context.dstRect = SDL_Rect{0, 0, dest.w, dest.h};
+
+	uiData->render(context, modified_ops);
 
 	if(isUnitWorking() && uiData->effect)
+	{
+		context.channels["alpha"] = effectAlpha;
 		uiData->effect->render(context);
+	}
+
+	// draw the building
+	int alpha = alphaEffectValue && cSettings::getInstance().isAlphaEffects() ? alphaEffectValue : 254;
+
+	SDL_SetSurfaceAlphaMod (GraphicsData.gfx_tmp.get(), alpha);
+	SDL_Rect tmp = dest;
+	SDL_SetColorKey(GraphicsData.gfx_tmp.get(), SDL_TRUE, 0xFF00FF);
+	SDL_BlitSurface (GraphicsData.gfx_tmp.get(), &context.dstRect, surface, &tmp);
 }
 
 //--------------------------------------------------------------------------

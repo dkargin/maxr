@@ -60,11 +60,11 @@ static string GetModificatorString (int original, int modified)
 //--------------------------------------------------
 string cClanUnitStat::getClanStatsDescription(const cUnitsData& originalData) const
 {
-    const cDynamicUnitData* data = &originalData.getDynamicData(unitId);
+	const cDynamicUnitData* data = &originalData.getDynamicData(unitId);
 
 	if (data == nullptr) return "Unknown";
 
-    string result = originalData.getUnit(unitId)->getName() + lngPack.i18n ("Text~Punctuation~Colon");
+	string result = originalData.getUnit(unitId)->getName() + lngPack.i18n ("Text~Punctuation~Colon");
 	const char* const commaSep = ", ";
 	const char* sep = "";
 
@@ -96,8 +96,8 @@ string cClanUnitStat::getClanStatsDescription(const cUnitsData& originalData) co
 	{
 		result += sep;
 		int nrTurns = getModificationValue ("Built_Costs");
-        if (!originalData.getUnit(data->getId())->hasFlag(UnitFlag::IsHuman))
-            nrTurns /= unitId.isAVehicle() == 0 ? 2 : 3;
+		if (!originalData.getUnit(data->getId())->hasFlag(UnitFlag::IsHuman))
+			nrTurns /= unitId.isAVehicle() == 0 ? 2 : 3;
 
 		result += iToStr (nrTurns) + " " + lngPack.i18n ("Text~Comp~Turns");
 	}
@@ -189,39 +189,59 @@ vector<string> cClan::getClanStatsDescription(const cUnitsData& originalData) co
 
 void cClan::addEmbarkUnit(const sLandingUnit& item)
 {
-    landingUnits.push_back(item);
+	landingUnits.push_back(item);
 }
 
 void cClan::addEmbarkBuilding(const cBaseLayoutItem& item)
 {
-    baseLayout.push_back(item);
+	baseLayout.push_back(item);
 }
 
 //------------------------------------------------------------------------------
 void cClan::createLanding(sLandingConfig& config, const cGameSettings& gameSettings, const cUnitsData& unitsData)
 {
-    if (gameSettings.getBridgeheadType() == eGameSettingsBridgeheadType::Mobile)
-        return;
+	if (gameSettings.getBridgeheadType() == eGameSettingsBridgeheadType::Mobile)
+		return;
 
-    if(config.state != 0)
-        return;
+	if(config.state != 0)
+		return;
 
-    //Add initial buildings
-    for(const auto& item: this->baseLayout)
-    {
-        config.baseLayout.push_back(item);
-    }
+	//Add initial buildings
+	for(const auto& item: this->baseLayout)
+	{
+		config.baseLayout.push_back(item);
+	}
 
-    // Add initial vehicles.
-    // This vehicles can depend in starting credits
-    const int startCredits = gameSettings.getStartCredits();
-    for(const auto& item: landingUnits)
-    {
-        if(startCredits >= item.minCredits)
-            config.landingUnits.push_back(item);
-    }
+	// Add initial vehicles.
+	// This vehicles can depend in starting credits
+	const int startCredits = gameSettings.getStartCredits();
+	for(const auto& item: landingUnits)
+	{
+		if(startCredits >= item.minCredits)
+			config.landingUnits.push_back(item);
+	}
 
-    config.state = 1;
+	config.state = 1;
+}
+
+// Reset all clan data
+void cClan::resetAll()
+{
+	resetEmbark();
+	resetStats();
+}
+
+// Reset embarcation
+void cClan::resetEmbark()
+{
+	landingUnits.clear();;
+	baseLayout.clear();
+}
+
+// Reset unit upgrades
+void cClan::resetStats()
+{
+	stats.clear();
 }
 
 
@@ -235,10 +255,22 @@ cClanData::cClanData(const cClanData& other)
 }
 
 //--------------------------------------------------
-cClan* cClanData::addClan()
+cClan* cClanData::makeClan(const char* name)
 {
-	clans.push_back (std::make_unique<cClan> ((int) clans.size()));
-	return clans.back().get();
+	assert(name && strlen(name) > 0);
+
+	// Trying to find existing clan
+	for (const auto& clan : clans)
+	{
+		if(clan->getName() == name)
+			return clan.get();
+	}
+
+	// No clan is found. Creating a new one
+	cClan* clan = new cClan((int) clans.size());
+	clan->setName(name);
+	clans.push_back(std::unique_ptr<cClan>(clan));
+	return clan;
 }
 
 //--------------------------------------------------

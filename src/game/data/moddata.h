@@ -5,7 +5,12 @@ class cUnitsData;
 class cStaticUnitData;
 class cVehicleData;
 class cBuildingData;
+class cSpriteTool;
 
+class cRenderable;
+class cSprite;
+class cSpriteList;
+class cSpriteTool;
 struct sID;
 
 namespace tinyxml2
@@ -22,14 +27,14 @@ public:
 	 * @param path Directory of the Buildings
 	 * @return 1 on success
 	 */
-	int LoadBuildings(const char* path);
+	int loadBuildings(const char* path);
 
 	/**
 	 * Loads all Vehicles
 	 * @param path Directory of the Vehicles
 	 * @return 1 on success
 	 */
-	int LoadVehicles(const char* path);
+	int loadVehicles(const char* path);
 
 	/**
 	 * @brief parseDataFile parses XML file and adds all the data from it to BD
@@ -55,7 +60,7 @@ public:
 	 * Loads the clan values and stores them in the cUnitData class
 	 * @return 1 on success
 	 */
-	int LoadClans();
+	int loadClans();
 protected:
 	/**
 	 * Loads the unitdata from the data.xml in the unitfolder

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Vehicle ID="0 10" name="bulldozer">
+  <Header>
+    <Author name="Someone">
+      <Editor name="Someone" time="2007-09-30 13:05:00"/>
+    </Author>
+    <Game_Version text="0.2.5"/>
+  </Header>
+  <Description lang="ENG">
+    Bulldozer\n\nVehicle for clearing rubble and demolishing buildings. Bulldozers can scavenge material from debris.
+  </Description>
+
+  <Production>
+    <Built_Costs Num="15"/>
+    <Build_As String="SmallGroundVehicle"/>
+  </Production>
+
+  <Movement>
+    <Movement_Sum Num="7"/>
+    <Factor_Ground Num="1"/>
+  </Movement>
+
+  <Abilities>
+    <Armor Num="4"/>
+    <Hitpoints Num="14"/>
+    <Scan_Range Num="3"/>
+    <Can_Be_Captured YN="Yes"/>
+    <Can_Be_Disabled YN="Yes"/>
+
+    <Can_Clear_Area YN="Yes"/>
+  </Abilities>
+
+  <Storage>
+    <Capacity_Resources Num="30"/>
+    <Capacity_Res_Type Const="Metal"/>
+    <Is_Storage_Type String="Ground"/>
+  </Storage>
+
+  <Graphic refsize="64;64">
+    <Has_Damage_Effect YN="Yes"/>
+    <Has_Player_Color YN="Yes"/>
+    <Makes_Tracks YN="Yes"/>
+
+    <SpriteList pattern="img%d.pcx" frames="8" channel="direction" layer="main" colorkey="auto"/>
+    <SpriteList pattern="shw%d.pcx" frames="8" channel="direction" layer="shadow" colorkey="auto"/>
+
+    <SpriteSheet file="clear_small.pcx" frames="4" channel="animation" layer="clear" colorkey="auto"/>
+    <Sprite file="clear_small_shw.pcx" layer="clear_shadow" colorkey="auto"/>
+  </Graphic>
+</Vehicle>

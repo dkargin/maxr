@@ -48,6 +48,7 @@ class cLanguage;
 struct cBuildingData;
 struct cVehicleData;
 class cClanData;
+class cSpriteList;
 
 ///////////////////////////////////////////////////////////////////////////////
 // Globals
@@ -113,8 +114,6 @@ public:
 	AutoSurface gfx_band_big;
 	AutoSurface gfx_band_small_org;
 	AutoSurface gfx_band_big_org;
-	AutoSurface gfx_big_beton_org;
-	AutoSurface gfx_big_beton;
 	AutoSurface gfx_Ctransf;
 	AutoSurface gfx_Cload;
 	AutoSurface gfx_Cactivate;
@@ -141,6 +140,11 @@ public:
 	AutoSurface gfx_menu_buttons;
 	AutoSurface gfx_player_ready;
 	AutoSurface gfx_hud_chatbox;
+
+	std::shared_ptr<cSpriteList> big_rubble;
+	std::shared_ptr<cSpriteList> big_rubble_shadow;
+	std::shared_ptr<cSpriteList> small_rubble;
+	std::shared_ptr<cSpriteList> small_rubble_shadow;
 
 	std::string DialogPath;
 	std::string Dialog2Path;
@@ -229,7 +233,7 @@ public:
 	bool waitForTurnEnd;    // server is processing the turn end
 	bool pause;             // pause, because... pause
 	bool waitForClient;      // waiting for response from client
-	
+
 	// This mode is triggered on client (and not synchronized with server or other clients):
 	bool waitForServer;     // waiting for response from server
 };
@@ -305,7 +309,5 @@ int Round (float num);
 
 std::string getHexValue(unsigned char byte);
 unsigned char getByteValue(const std::string& str, int index);
-
-void Quit();
 
 #endif

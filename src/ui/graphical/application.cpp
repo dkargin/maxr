@@ -72,7 +72,12 @@ cApplication::cApplication() :
 //------------------------------------------------------------------------------
 cApplication::~cApplication()
 {
-    font;
+	// Move it to temporary container.
+	// It allows to break all shared_ptr cross-references broken before
+	// cApplication is destroyed
+	{
+		auto runnables_tmp = std::move(runnables);
+	}
 }
 
 //------------------------------------------------------------------------------
@@ -81,9 +86,11 @@ void cApplication::execute()
 	cWindow* lastActiveWindow = nullptr;
 	bool lastClosed = false;
 
-	while (!modalWindows.empty())
+	cEventManager& eventManager = cEventManager::getInstance();
+
+	while (!modalWindows.empty() && !eventManager.shouldExit())
 	{
-		cEventManager::getInstance().run();
+		eventManager.run();
 
 		for (auto i = runnables.begin(); i != runnables.end(); /*erase in loop*/)
 		{
@@ -239,12 +246,12 @@ void cApplication::addRunnable (std::shared_ptr<cRunnable> runnable)
 }
 
 //------------------------------------------------------------------------------
-std::shared_ptr<cRunnable> cApplication::removeRunnable (const cRunnable& runnable)
+std::shared_ptr<cRunnable> cApplication::removeRunnable(std::shared_ptr<cRunnable> runnable)
 {
 	std::shared_ptr<cRunnable> result;
 	for (auto i = runnables.begin(); i != runnables.end();)
 	{
-		if (i->get() == &runnable)
+		if (*i == runnable)
 		{
 			result = std::move (*i);
 			i = runnables.erase (i);

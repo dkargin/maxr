@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Building ID="1 22" name="mine">
+  <Header>
+    <Author name="Someone">
+      <Editor name="Someone" time="2007-09-30 13:05:00"/>
+    </Author>
+    <Game_Version text="0.2.5"/>
+  </Header>
+  <Description lang="ENG">
+    Mining Station\n\nExtracts raw materials, fuel and gold from the ground everuy turn. Buildings must be connected to a mine to use the resources a mine produces. If there are no storage buildings, to store extra materials, it will be lost.
+  </Description>
+
+  <Production>
+    <Built_Costs Num="24"/>
+    <Build_As String="BigBuilding"/>
+  </Production>
+
+  <Movement>
+    <Factor_Ground Num="1"/>
+  </Movement>
+
+  <Abilities>
+    <Size Num="6"/>
+    <Connects_To_Base YN="Yes"/>
+    <Armor Num="8"/>
+    <Hitpoints Num="56"/>
+    <Scan_Range Num="3"/>
+    <Can_Be_Disabled YN="Yes"/>
+    <Does_Self_Repair YN="Yes"/>
+
+    <Can_Mine_Max_Resource Num="16"/>
+
+    <Needs_Energy Num="1"/>
+
+    <Is_Activatable YN="Yes"/>
+    <Can_Self_Destroy YN="Yes"/>
+  </Abilities>
+
+  <Storage>
+    <Capacity_Resources Num="25"/>
+    <Capacity_Res_Type Const="Metal"/>
+  </Storage>
+
+  <!-- refsize means that all sprites mentioned are designed for an object
+    of 128x128 pixels size-->
+  <Graphic refsize="128;128">
+    <!-- imp.pcx contains variants for every clan -->
+    <SpriteSheet file="img.pcx" frames="9" channel="clan" layer="image" colorkey="auto"/>
+    <!-- Loading shadow sprite from shw.pcx -->
+    <Sprite file="shw.pcx" layer="shadow" colorkey="auto"/>
+    <Sprite file="effect.pcx" layer="effect" colorkey="auto"/>
+    <Sprite file="../../gfx/big_beton.pcx" layer="underlay" colorkey="auto"/>
+  
+    <Has_Clan_Logos YN="Yes"/>
+    <Has_Damage_Effect YN="Yes"/>
+    <Has_Beton_Underground YN="Yes"/>
+    <Has_Player_Color YN="Yes"/>
+    <Power_On YN="Yes"/>
+  </Graphic>
+</Building>

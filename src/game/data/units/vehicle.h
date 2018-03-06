@@ -94,14 +94,14 @@ struct cVehicleData : public cStaticUnitData
 	bool animationMovement = false;
 	bool makeTracks = false;
 
-	cRenderablePtr build;
-	cRenderablePtr build_shadow;
-	cRenderablePtr clear;
-	cRenderablePtr clear_shadow;
+	std::shared_ptr<cRenderable> build;
+	std::shared_ptr<cRenderable> build_shadow;
+	std::shared_ptr<cRenderable> clear;
+	std::shared_ptr<cRenderable> clear_shadow;
 
-	bool setGraphics(const std::string& layer, const cRenderablePtr& sprite) override;
+	bool setGraphics(const std::string& layer, const std::shared_ptr<cRenderable>& sprite) override;
 
-	void render(cRenderable::sContext& context, const sRenderOps& ops) const;
+	void render(cRenderContext& context, const sRenderOps& ops) const;
 
 	virtual UnitType getType() const
 	{

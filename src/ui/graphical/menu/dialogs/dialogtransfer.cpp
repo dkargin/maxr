@@ -25,6 +25,7 @@
 #include "ui/graphical/menu/widgets/image.h"
 #include "ui/graphical/application.h"
 #include "utility/pcx.h"
+#include "utility/drawing.h"
 #include "main.h"
 #include "game/data/units/unit.h"
 #include "game/data/units/building.h"
@@ -133,10 +134,7 @@ void cNewDialogTransfer::initUnitImage (cImage& image, const cUnit& unit)
 	SDL_FillRect (unitImageSurface.get(), nullptr, 0xFF00FF);
 	SDL_SetColorKey (unitImageSurface.get(), SDL_TRUE, 0xFF00FF);
 
-	cRenderable::sContext context;
-	context.surface = unitImageSurface.get();
-	context.dstRect = SDL_Rect{0, 0, unitImageWidth, unitImageHeight};
-
+	cRenderContext context(unitImageSurface.get(), SDL_Rect{0, 0, unitImageWidth, unitImageHeight});
 	unit.getStaticUnitData().render(context, cStaticUnitData::sRenderOps{});
 
 	image.setImage (unitImageSurface.get());

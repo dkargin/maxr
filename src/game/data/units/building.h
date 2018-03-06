@@ -53,16 +53,16 @@ struct cBuildingData : public cStaticUnitData
 	AutoSurface video;  // video
 
 	// Surfaces of the effects
-	cRenderablePtr effect;
+	std::shared_ptr<cRenderable> effect;
 
-	bool setGraphics(const std::string& layer, const cRenderablePtr& sprite) override;
+	bool setGraphics(const std::string& layer, const std::shared_ptr<cRenderable>& sprite) override;
 
 	virtual UnitType getType() const
 	{
 		return UnitType::Building;
 	}
 
-	virtual void render(cRenderable::sContext& context, const sRenderOps& ops) const override;
+	virtual void render(cRenderContext& context, const sRenderOps& ops) const override;
 };
 
 typedef std::shared_ptr<cBuildingData> sBuildingDataPtr;

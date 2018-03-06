@@ -19,7 +19,7 @@
 
 #include <algorithm>
 
-#include "game/data/units/unit.h"
+#include "unit.h"
 
 #include "game/logic/attackjob.h"
 #include "game/logic/client.h"
@@ -31,7 +31,7 @@
 #include "game/data/units/building.h"
 #include "game/data/units/vehicle.h"
 
-#include "utility/position.h"
+#include "utility/drawing.h"
 #include "utility/box.h"
 #include "utility/crc.h"
 #include "utility/listhelpers.h"
@@ -41,9 +41,21 @@ using namespace std;
 bool cStaticUnitData::setGraphics(const std::string& layer, const cRenderablePtr& sprite)
 {
 	if(layer == "main" || layer == "image")
+	{
 		image = sprite;
+		// Dirty hack to make player color work properly
+		if(image && this->hasPlayerColor)
+			image->setColorKey(0xffffffff);
+	}
 	else if(layer == "shadow")
+	{
 		shadow = sprite;
+		if(shadow)
+		{
+			// Hardcoding it untill all units has a proper XML setting for it
+			shadow->setAlphaKey(50);
+		}
+	}
 	else if(layer == "underlay")
 		underlay = sprite;
 	else
@@ -53,8 +65,21 @@ bool cStaticUnitData::setGraphics(const std::string& layer, const cRenderablePtr
 
 void cStaticUnitData::render(cRenderable::sContext& context, const sRenderOps& ops) const
 {
-	if(ops.underlay && underlay)
-		underlay->render(context);
+	// blit the players color and building graphic
+	if (ops.hasBackground)
+	{
+		if (ops.owner)
+		{
+			SDL_Rect rc = context.dstRect;
+			SDL_BlitSurface(ops.owner->getColor().getTexture(), nullptr, context.surface, &rc);
+		}
+		else
+		{
+			SDL_Rect rc = context.dstRect;
+			ColorRaw color = SDL_MapRGBA(context.surface->format, ops.background.r, ops.background.g, ops.background.b, ops.background.a);
+			SDL_FillRect(context.surface, &rc, color);
+		}
+	}
 
 	if(ops.shadow && shadow)
 		shadow->render(context);
@@ -606,7 +631,7 @@ std::vector<cPosition> generateBorder(const cPosition& corner, int size)
 		size = 1;
 	std::vector<cPosition> result(size*4-4);
 	int dx = 1;
-	int dy = -1;
+	int dy = 1;
 	bool hor = true;
 	int x = corner.x();
 	int y = corner.y();
@@ -649,7 +674,7 @@ std::vector<cPosition> generateBorder(const cPosition& corner, int size)
 
 std::vector<cPosition> generateOuterBorder(const cPosition& corner, int size)
 {
-	return generateBorder(corner-1, size+1);
+	return generateBorder(corner-1, size+2);
 }
 
 
