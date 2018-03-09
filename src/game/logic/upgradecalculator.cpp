@@ -1295,12 +1295,13 @@ void cResearch::init()
 	int oldCurResearchPoints[kNrResearchAreas];
 	int oldNeededResearchPoints[kNrResearchAreas];
 
+	// For the sake of valgrind
+	memcpy(oldCurResearchLevel, curResearchLevel, sizeof(oldCurResearchLevel));
+	memcpy(oldCurResearchPoints, curResearchPoints, sizeof(oldCurResearchPoints));
+	memcpy(oldNeededResearchPoints, neededResearchPoints, sizeof(oldNeededResearchPoints));
+
 	for (int i = 0; i < kNrResearchAreas; i++)
 	{
-		oldCurResearchLevel[i] = curResearchLevel[i];
-		oldCurResearchPoints[i] = curResearchPoints[i];
-		oldNeededResearchPoints[i] = neededResearchPoints[i];
-
 		curResearchLevel[i] = 0;
 		curResearchPoints[i] = 0;
 		neededResearchPoints[i] = cUpgradeCalculator::instance().calcResearchTurns (0, getUpgradeCalculatorUpgradeType (i));
@@ -1308,9 +1309,12 @@ void cResearch::init()
 
 	for (int i = 0; i < kNrResearchAreas; i++)
 	{
-		if (oldCurResearchLevel[i] != curResearchLevel[i]) currentResearchLevelChanged ((ResearchArea)i);
-		if (oldCurResearchPoints[i] != curResearchPoints[i]) currentResearchPointsChanged ((ResearchArea)i);
-		if (oldNeededResearchPoints[i] != neededResearchPoints[i]) neededResearchPointsChanged ((ResearchArea)i);
+		if (oldCurResearchLevel[i] != curResearchLevel[i])
+			currentResearchLevelChanged ((ResearchArea)i);
+		if (oldCurResearchPoints[i] != curResearchPoints[i])
+			currentResearchPointsChanged ((ResearchArea)i);
+		if (oldNeededResearchPoints[i] != neededResearchPoints[i])
+			neededResearchPointsChanged ((ResearchArea)i);
 	}
 }
 

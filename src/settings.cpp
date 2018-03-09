@@ -228,7 +228,7 @@ void cSettings::setPaths()
 	if (FileExists ("/proc/self/exe"))
 	{
 		int iSize;
-		char cPathToExe[255];
+		char cPathToExe[255] = "";
 		iSize = readlink ("/proc/self/exe", cPathToExe, sizeof (cPathToExe));
 		if (iSize < 0)
 		{
