@@ -338,6 +338,7 @@ public:
 		bool shadow = false;
 		bool underlay = false;
 		bool overlay = true;
+		bool effect = false;
 
 		int alpha = 254;
 

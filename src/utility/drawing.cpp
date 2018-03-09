@@ -284,6 +284,12 @@ cRenderContext::cRenderContext(SDL_Surface *surface, const SDL_Rect &rect)
 }
 
 //------------------------------------------------------------------------------
+void cRenderContext::setTarget(SDL_Surface* surface, const SDL_Rect& rect)
+{
+	this->surface = surface;
+	this->dstRect = rect;
+}
+//------------------------------------------------------------------------------
 void cRenderable::setSize(const cVector2& newSize)
 {
 	this->size = newSize;
@@ -367,7 +373,8 @@ void cSprite::render(cRenderable::sContext& context) const
 	if(refresh)
 	{
 		SDL_Rect rc{0, 0, dst_rect.w, dst_rect.h};
-		SDL_FillRect(cache.get(), &rc, colorkey);
+		if(colorkey >= 0)
+			SDL_FillRect(cache.get(), &rc, colorkey);
 		SDL_BlitScaled(src, &srcRect, cache.get(), &rc);
 		lastSize = cPosition(dst_rect.w, dst_rect.h);
 		applyBlending(cache.get());
@@ -386,6 +393,12 @@ void cSprite::render(cRenderable::sContext& context) const
 			newAlpha = (alpha * newAlpha)/255;
 		SDL_SetSurfaceAlphaMod(cache.get(), newAlpha);
 	}
+
+	if(context.overrideColorkey)
+		SDL_SetColorKey(cache.get(), SDL_TRUE, context.colorkey);
+	else
+		SDL_SetColorKey(cache.get(), this->colorkey != -1 ? SDL_TRUE:SDL_FALSE, colorkey);
+	// Oops, we have updated our local state
 
 	// Draw internal cache to the destination surface
 	SDL_Rect rc{0, 0, dst_rect.w, dst_rect.h};
@@ -496,7 +509,8 @@ void cSpriteList::render(sContext& context) const
 	if(refresh)
 	{
 		SDL_Rect rc{0,0, cacheWidth, dst_rect.h};
-		SDL_FillRect(cache.get(), &rc, colorkey);
+		if(colorkey >= 0)
+			SDL_FillRect(cache.get(), &rc, colorkey);
 		SDL_BlitScaled(src, &srcRect, cache.get(), &rc);
 		// Should update last size
 		lastSize = cPosition(dst_rect.w, dst_rect.h);
@@ -509,6 +523,10 @@ void cSpriteList::render(sContext& context) const
 		}
 	}
 
+	if(context.overrideColorkey)
+		SDL_SetColorKey(cache.get(), SDL_TRUE, context.colorkey);
+	else
+		SDL_SetColorKey(cache.get(), this->colorkey != -1 ? SDL_TRUE:SDL_FALSE, colorkey);
 	// Fix color settings
 	int frame = 0;
 	if(context.channels.count(channel))
@@ -543,7 +561,33 @@ cSpriteTool::cSpriteTool()
 	hasLayer = false;
 	// TODO: Make a proper pixel format.
 	// Maybe it could be done by creating a dummy surface
+	cache = AutoSurface(SDL_CreateRGBSurface (0, 256, 256, 4, 0, 0, 0, 0));
 }
+
+AutoSurface cSpriteTool::cache;
+
+/*static*/ void cSpriteTool::saveImage(SDL_Surface* surf, const SDL_Rect* rect, const std::string& path)
+{
+	if(!surf)
+		return;
+
+	SDL_Rect rc = {0, 0, surf->w, surf->h};
+	if(rect != nullptr)
+		rc = *rect;
+
+	// Clipping the size
+	if(rc.x + rc.w >= surf->w)
+		rc.w = (surf->w - rc.x);
+	if(rc.y + rc.y >= surf->h)
+		rc.h = (surf->h - rc.y);
+	SDL_Surface* cache = SDL_CreateRGBSurface (0, rc.w, rc.h, 4, 0, 0, 0, 0);
+
+	SDL_FillRect(cache, nullptr, 0);
+	SDL_BlitSurface(surf, &rc, cache, nullptr);
+	IMG_SavePNG(cache, path.c_str());
+	SDL_FreeSurface (cache);
+}
+
 
 void cSpriteTool::setCellSize(int size)
 {
@@ -594,6 +638,8 @@ cSpritePtr cSpriteTool::makeSprite(const std::string& path, const cVector2& size
 	if(!surface)
 		return nullptr;
 
+	SDL_SetColorKey (surface.get(), SDL_FALSE, 0x0);
+
 	cVector2 adjustedSize = size;
 	// Adjusting reference size
 	if(hasRefSize)
@@ -623,6 +669,8 @@ cSpriteListPtr cSpriteTool::makeSpriteSheet(const std::string& path, int frames,
 	auto surface = LoadPCX(path);
 	if(!surface)
 		return nullptr;
+
+	SDL_SetColorKey (surface.get(), SDL_FALSE, 0x0);
 
 	if(frames < 1)
 		frames = 1;
@@ -670,11 +718,13 @@ cSpriteListPtr cSpriteTool::makeSpriteList(const std::list<std::string>& paths, 
 		int depth = src[0]->format->BitsPerPixel;
 		SDL_Rect rect = {0, 0, int(w * src.size()), h};
 		SDL_Surface* surface = SDL_CreateRGBSurface (0, rect.w, rect.h, depth, 0, 0, 0, 0);
+		SDL_SetColorKey(surface, SDL_FALSE, 0x0);
 
 		// Put frames to internal surface
 		for(int i = 0; i < src.size(); i++)
 		{
 			auto surf = src[i].get();
+			SDL_SetColorKey(surf, SDL_FALSE, 0x0);
 			SDL_Rect dst_rect = {i*w, 0, w, h};
 			SDL_Rect src_rect = {0, 0, surf->w, surf->h};
 			SDL_BlitSurface(surf, &src_rect, surface, &dst_rect);

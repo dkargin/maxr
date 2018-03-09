@@ -43,9 +43,11 @@ bool cStaticUnitData::setGraphics(const std::string& layer, const cRenderablePtr
 	if(layer == "main" || layer == "image")
 	{
 		image = sprite;
-		// Dirty hack to make player color work properly
-		if(image && this->hasPlayerColor)
-			image->setColorKey(0xffffffff);
+		// Dirty hack to override colorkey for unit
+		if(hasPlayerColor && sprite)
+		{
+			//image->setColorKey(0xffffff);
+		}
 	}
 	else if(layer == "shadow")
 	{
@@ -63,29 +65,49 @@ bool cStaticUnitData::setGraphics(const std::string& layer, const cRenderablePtr
 	return true;
 }
 
-void cStaticUnitData::render(cRenderable::sContext& context, const sRenderOps& ops) const
+void cStaticUnitData::render(cRenderContext& context, const sRenderOps& ops) const
 {
-	// blit the players color and building graphic
-	if (ops.hasBackground)
-	{
-		if (ops.owner)
-		{
-			SDL_Rect rc = context.dstRect;
-			SDL_BlitSurface(ops.owner->getColor().getTexture(), nullptr, context.surface, &rc);
-		}
-		else
-		{
-			SDL_Rect rc = context.dstRect;
-			ColorRaw color = SDL_MapRGBA(context.surface->format, ops.background.r, ops.background.g, ops.background.b, ops.background.a);
-			SDL_FillRect(context.surface, &rc, color);
-		}
-	}
+	sRenderOps local_ops = ops;
+
+	cRenderContext tmpContext = context;
+
+	SDL_Rect tmpRect = context.dstRect;
+	tmpRect.x = 0;
+	tmpRect.y = 0;
+	SDL_Surface* tmpSurface = GraphicsData.gfx_tmp.get();
+	tmpContext.setTarget(tmpSurface, tmpRect);
+
+	if(ops.underlay && underlay)
+		underlay->render(context);
 
 	if(ops.shadow && shadow)
 		shadow->render(context);
 
+	// blit the players color and building graphic
+	if (hasPlayerColor && ops.owner)
+	{
+		SDL_Rect rc = tmpRect;
+		SDL_BlitSurface(ops.owner->getColor().getTexture(), nullptr, tmpSurface, &rc);
+		tmpContext.overrideColorkey = true;
+		tmpContext.colorkey = 0xffffff;
+	}
+	else
+	{
+		SDL_Rect rc = tmpRect;
+		//ColorRaw color = SDL_MapRGB(tmpSurface->format, ops.background.r, ops.background.g, ops.background.b);
+		SDL_FillRect(tmpSurface, &rc, 0xff00ff);
+	}
+
 	if(image)
-		image->render(context);
+		image->render(tmpContext);
+
+	int alpha = ops.alpha;
+	SDL_SetSurfaceAlphaMod (tmpSurface, alpha);
+	SDL_Rect rc = context.dstRect;
+	SDL_SetColorKey(tmpSurface, SDL_TRUE, 0xFF00FF);
+	SDL_BlitSurface (tmpSurface, &tmpRect, context.surface, &rc);
+
+	//cSpriteTool::saveImage(tmpSurface, &tmpRect, name + ".cache.png");
 }
 
 //------------------------------------------------------------------------------

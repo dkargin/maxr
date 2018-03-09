@@ -78,10 +78,15 @@ public:
 	// Channel values. Here are clan variations or animated frames
 	std::map<std::string, int> channels;
 	// Selected layer
-	int layer;
+	int layer = -1;
 
 	// Should we use internal cache
 	bool cache = true;
+
+	// Option to override colorkey from the sprite
+	bool overrideColorkey = false;
+	ColorRaw colorkey = -1;
+
 	int alpha = -1;
 
 	void setTarget(SDL_Surface* surface, const SDL_Rect& rect);
@@ -238,6 +243,7 @@ public:
 	// @size - size of the sprite in world coordinates
 	cSpriteListPtr makeSpriteSheet(const std::string& path, int variants, const cVector2& size = cVector2(1,1), FitMode mode = FitMode::Scale);
 
+	static void saveImage(SDL_Surface* surf, const SDL_Rect* rect, const std::string& path);
 	// Reset current flags (except pixel format)
 	void reset();
 protected:
@@ -252,6 +258,8 @@ protected:
 
 	// Pixel format used for surfaces
 	SDL_PixelFormat format;
+
+	static AutoSurface cache;
 };
 
 // Renderable group

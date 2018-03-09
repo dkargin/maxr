@@ -57,7 +57,7 @@ bool cBuildingData::setGraphics(const std::string& layer, const cRenderablePtr& 
 	return true;
 }
 
-void cBuildingData::render(cRenderable::sContext& context, const sRenderOps& ops) const
+void cBuildingData::render(cRenderContext& context, const sRenderOps& ops) const
 {
 	cStaticUnitData::render(context, ops);
 }
@@ -441,24 +441,11 @@ void cBuilding::connectFirstBuildListItem()
 void cBuilding::render (unsigned long long animationTime, SDL_Surface* surface, const SDL_Rect& dest, const cStaticUnitData::sRenderOps& ops) const
 {
 	cRenderable::sContext context;
-	//context.surface = GraphicsData.gfx_tmp.get();
-	//context.dstRect = SDL_Rect{0, 0, dest.w, dest.h};
-
 	context.surface = surface;
 	context.dstRect = dest;
 	context.cache = true;
 	context.channels["clan"] = this->getOwner()->getClan()+1;
 	context.channels["animation"] = animationTime;
-
-	cStaticUnitData::sRenderOps modified_ops = ops;
-	if(uiData->hasPlayerColor)
-		modified_ops.owner = this->getOwner();
-
-	modified_ops.hasBackground = true;
-
-	// Set default color key for a background
-	modified_ops.background = cRgbColor(255, 0, 255, 255);
-
 	// check, if it is dirt:
 	if (isRubble())
 	{
@@ -466,8 +453,6 @@ void cBuilding::render (unsigned long long animationTime, SDL_Surface* surface, 
 		return;
 	}
 
-	//if(ops.underlay && uiData->underlay)
-	//	uiData->underlay->render(context);
 
 #ifdef FIX_CONNECTORS
 	// draw the connector slots:
@@ -478,24 +463,14 @@ void cBuilding::render (unsigned long long animationTime, SDL_Surface* surface, 
 	}
 #endif
 
-	context.surface = GraphicsData.gfx_tmp.get();
-	context.dstRect = SDL_Rect{0, 0, dest.w, dest.h};
-
-	uiData->render(context, modified_ops);
+	// draw the building
+	uiData->render(context, ops);
 
 	if(isUnitWorking() && uiData->effect)
 	{
 		context.channels["alpha"] = effectAlpha;
 		uiData->effect->render(context);
 	}
-
-	// draw the building
-	int alpha = alphaEffectValue && cSettings::getInstance().isAlphaEffects() ? alphaEffectValue : 254;
-
-	SDL_SetSurfaceAlphaMod (GraphicsData.gfx_tmp.get(), alpha);
-	SDL_Rect tmp = dest;
-	SDL_SetColorKey(GraphicsData.gfx_tmp.get(), SDL_TRUE, 0xFF00FF);
-	SDL_BlitSurface (GraphicsData.gfx_tmp.get(), &context.dstRect, surface, &tmp);
 }
 
 //--------------------------------------------------------------------------

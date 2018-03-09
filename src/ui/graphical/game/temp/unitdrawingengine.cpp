@@ -97,8 +97,10 @@ void cUnitDrawingEngine::drawBuilding(const cBuilding& building, SDL_Rect destin
 	if (bDraw)
 	{
 		cStaticUnitData::sRenderOps ops;
-		ops.shadow = true;//cSettings::getInstance().isShadows();
+		ops.shadow = cSettings::getInstance().isShadows();
 		ops.underlay = true;
+		ops.owner = building.getOwner();
+		ops.alpha = building.alphaEffectValue && cSettings::getInstance().isAlphaEffects() ? building.alphaEffectValue : 254;
 		building.render(animationTime, drawingSurface, dest, ops);
 	}
 
@@ -205,9 +207,10 @@ void cUnitDrawingEngine::drawVehicle(const cVehicle& vehicle, SDL_Rect destinati
 	if (bDraw)
 	{
 		cStaticUnitData::sRenderOps ops;
-		ops.shadow = true;//cSettings::getInstance().isShadows();
+		ops.shadow = cSettings::getInstance().isShadows();
 		ops.underlay = true;
-		//ops.shadow = cSettings::getInstance().isShadows();
+		ops.owner = vehicle.getOwner();
+		ops.alpha = vehicle.alphaEffectValue && cSettings::getInstance().isAlphaEffects() ? vehicle.alphaEffectValue : 254;
 		vehicle.render (&map, animationTime, player, drawingSurface, dest, ops);
 	}
 

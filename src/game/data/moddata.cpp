@@ -551,7 +551,7 @@ int ModData::loadVehicles(const char* vehicle_directory)
 	tinyxml2::XMLDocument VehiclesXml;
 
 	std::string sTmpString = vehicle_directory;
-	sTmpString += PATH_DELIMITER "vehicles.xml";
+	sTmpString += PATH_DELIMITER "data.xml";
 
 	if (!FileExists (sTmpString.c_str()))
 	{
@@ -626,7 +626,7 @@ int ModData::loadBuildings(const char* buldings_folder)
 
 	// read buildings.xml
 	std::string sTmpString = buldings_folder;
-	sTmpString += PATH_DELIMITER "buildings.xml";
+	sTmpString += PATH_DELIMITER "data.xml";
 	if (!FileExists (sTmpString.c_str()))
 	{
 		return 0;
@@ -1108,7 +1108,6 @@ bool ModData::parseSpriteAttributes(tinyxml2::XMLElement* gobj, cSprite& sprite)
 bool ModData::parseGraphicObject(tinyxml2::XMLElement* xml, cStaticUnitData& staticData, const char* directory)
 {
 	// TODO: This loader is still not complete. Complete version should support recursive graphic objects
-	//std::string dir = std::string(directory) + PATH_DELIMITER;
 	std::string type = xml->Name();
 	cRenderablePtr gobject;
 
