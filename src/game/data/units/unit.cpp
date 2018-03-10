@@ -65,6 +65,45 @@ bool cStaticUnitData::setGraphics(const std::string& layer, const cRenderablePtr
 	return true;
 }
 
+/*static*/ void cStaticUnitData::renderFactionShadowSprite(const cRenderablePtr& image, const cRenderablePtr& shadow, cRenderContext& context, const sRenderOps& ops)
+{
+	sRenderOps local_ops = ops;
+
+	cRenderContext tmpContext = context;
+
+	SDL_Rect tmpRect = context.dstRect;
+	tmpRect.x = 0;
+	tmpRect.y = 0;
+	SDL_Surface* tmpSurface = GraphicsData.gfx_tmp.get();
+	tmpContext.setTarget(tmpSurface, tmpRect);
+
+	if(ops.shadow && shadow)
+		shadow->render(context);
+
+	// blit the players color and building graphic
+	if (ops.owner)
+	{
+		SDL_Rect rc = tmpRect;
+		SDL_BlitSurface(ops.owner->getColor().getTexture(), nullptr, tmpSurface, &rc);
+		tmpContext.overrideColorkey = true;
+		tmpContext.colorkey = 0xffffff;
+	}
+	else
+	{
+		SDL_Rect rc = tmpRect;
+		SDL_FillRect(tmpSurface, &rc, 0xff00ff);
+	}
+
+	if(image)
+		image->render(tmpContext);
+
+	int alpha = ops.alpha;
+	SDL_SetSurfaceAlphaMod (tmpSurface, alpha);
+	SDL_Rect rc = context.dstRect;
+	SDL_SetColorKey(tmpSurface, SDL_TRUE, 0xFF00FF);
+	SDL_BlitSurface (tmpSurface, &tmpRect, context.surface, &rc);
+}
+
 void cStaticUnitData::render(cRenderContext& context, const sRenderOps& ops) const
 {
 	sRenderOps local_ops = ops;

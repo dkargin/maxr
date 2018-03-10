@@ -99,6 +99,12 @@ struct cVehicleData : public cStaticUnitData
 	std::shared_ptr<cRenderable> clear;
 	std::shared_ptr<cRenderable> clear_shadow;
 
+	AutoSurface storage;        // image of the vehicle in storage
+	std::string FLCFile;        // FLC-Video
+
+	// Object ID for sweep building. Could be used for mine layers
+	sID sweepBuildObject;
+
 	bool setGraphics(const std::string& layer, const std::shared_ptr<cRenderable>& sprite) override;
 
 	void render(cRenderContext& context, const sRenderOps& ops) const;
@@ -107,9 +113,6 @@ struct cVehicleData : public cStaticUnitData
 	{
 		return UnitType::Vehicle;
 	}
-
-	AutoSurface storage;        // image of the vehicle in storage
-	std::string FLCFile;        // FLC-Video
 
 	cVehicleData();
 };
@@ -226,8 +229,6 @@ public:
 	void clearDetectedInThisTurnPlayerList();
 	bool wasDetectedInThisTurnByPlayer (const cPlayer* player) const;
 
-	static void blitWithPreScale (SDL_Surface* org_src, SDL_Surface* src, SDL_Rect* srcrect, SDL_Surface* dest, SDL_Rect* destrect, float factor, int frames = 1);
-
 	void executeAutoMoveJobCommand (cClient& client);
 
 	/**
@@ -343,8 +344,8 @@ public:
 	}
 private:
 
-	void render_BuildingOrBigClearing (const cMapView& map, unsigned long long animationTime, SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, bool drawShadow) const;
-	void render_smallClearing (unsigned long long animationTime, SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, bool drawShadow) const;
+	void render_BuildingOrBigClearing (const cMapView& map, unsigned long long animationTime, cRenderContext& context, const cStaticUnitData::sRenderOps& ops) const;
+	void render_smallClearing (unsigned long long animationTime, cRenderContext& context, const cStaticUnitData::sRenderOps& ops) const;
 	//void render_shadow (const cMapView& map, SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor) const;
 
 	//---- sentry and reaction fire helpers ------------------------------------

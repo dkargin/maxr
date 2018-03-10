@@ -377,6 +377,7 @@ void cSprite::render(cRenderable::sContext& context) const
 			SDL_FillRect(cache.get(), &rc, colorkey);
 		SDL_BlitScaled(src, &srcRect, cache.get(), &rc);
 		lastSize = cPosition(dst_rect.w, dst_rect.h);
+
 		applyBlending(cache.get());
 	}
 
@@ -391,6 +392,8 @@ void cSprite::render(cRenderable::sContext& context) const
 
 		if(alpha >= 0)
 			newAlpha = (alpha * newAlpha)/255;
+
+		SDL_SetSurfaceBlendMode(cache.get(), SDL_BLENDMODE_BLEND);
 		SDL_SetSurfaceAlphaMod(cache.get(), newAlpha);
 	}
 
@@ -410,7 +413,10 @@ void cSprite::applyBlending(SDL_Surface* surface) const
 {
 	// Fix color settings
 	if(alpha >= 0)
+	{
+		SDL_SetSurfaceBlendMode(cache.get(), SDL_BLENDMODE_BLEND);
 		SDL_SetSurfaceAlphaMod(surface, alpha);
+	}
 	else
 	{
 		// Disable alpha

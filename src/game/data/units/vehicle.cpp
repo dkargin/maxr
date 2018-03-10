@@ -139,23 +139,28 @@ sVehicleDataPtr cVehicle::getVehicleData() const
 	return this->vehicleData;
 }
 
-void cVehicle::render_BuildingOrBigClearing (const cMapView& map, unsigned long long animationTime, SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, bool drawShadow) const
+void cVehicle::render_BuildingOrBigClearing (const cMapView& map, unsigned long long animationTime, cRenderContext& context, const cStaticUnitData::sRenderOps& ops) const
 {
 	int size = getCellSize();
+
 	assert ((isUnitBuildingABuilding() || (isUnitClearing() && size > 1)) && job == nullptr);
+
 	// draw beton if necessary
+#ifdef FIX_THIS
 	SDL_Rect tmp = dest;
-#ifdef FIX_BUILD_ANIMATION
 	if (isUnitBuildingABuilding() && size > 1 && (!map.isWaterOrCoast (getPosition()) || map.getField (getPosition()).getBaseBuilding()))
 	{
 		SDL_SetSurfaceAlphaMod (GraphicsData.gfx_big_beton.get(), bigBetonAlpha);
 		CHECK_SCALING (*GraphicsData.gfx_big_beton, *GraphicsData.gfx_big_beton_org, zoomFactor);
 		SDL_BlitSurface (GraphicsData.gfx_big_beton.get(), nullptr, surface, &tmp);
 	}
+#endif
 
+	vehicleData->renderFactionShadowSprite(vehicleData->build, vehicleData->build_shadow, context, ops);
+#ifdef FUCK_THIS
 	// draw shadow
 	tmp = dest;
-	if (drawShadow)
+	if (ops.shadow)
 		blitWithPreScale (vehicleData->build_shw_org.get(), vehicleData->build_shw.get(), nullptr, surface, &tmp, zoomFactor);
 
 	// draw player color
@@ -175,15 +180,19 @@ void cVehicle::render_BuildingOrBigClearing (const cMapView& map, unsigned long 
 #endif
 }
 
-void cVehicle::render_smallClearing (unsigned long long animationTime, SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, bool drawShadow) const
+void cVehicle::render_smallClearing(unsigned long long animationTime, cRenderContext& context, const cStaticUnitData::sRenderOps& ops) const
 {
 	int size = getCellSize();
 	assert (isUnitClearing() && size == 1 && job == nullptr);
-#ifdef FIX_BUILD_ANIMATION
+
+	vehicleData->renderFactionShadowSprite(vehicleData->build, vehicleData->build_shadow, context, ops);
+
+#ifdef FUCK_THIS
 	// draw shadow
-	SDL_Rect tmp = dest;
-	if (drawShadow)
-		blitWithPreScale (vehicleData->clear_small_shw_org.get(), vehicleData->clear_small_shw.get(), nullptr, surface, &tmp, zoomFactor);
+	//SDL_Rect tmp = dest;
+	if (ops.shadow)
+		vehicleData->clearing_shadow->render(context);
+		//blitWithPreScale (vehicleData->clear_small_shw_org.get(), vehicleData->clear_small_shw.get(), nullptr, surface, &tmp, zoomFactor);
 
 	// draw player color
 	SDL_Rect src;
@@ -204,7 +213,7 @@ void cVehicle::render_smallClearing (unsigned long long animationTime, SDL_Surfa
 
 void cVehicle::render (const cMapView* map, unsigned long long animationTime, const cPlayer* activePlayer, SDL_Surface* surface, const SDL_Rect& dest, const cStaticUnitData::sRenderOps& ops) const
 {
-	cRenderable::sContext context;
+	cRenderContext context;
 	context.surface = surface;
 	context.dstRect = dest;
 	context.cache = true;
@@ -212,20 +221,18 @@ void cVehicle::render (const cMapView* map, unsigned long long animationTime, co
 	context.channels["animation"] = animationTime;
 	context.channels["direction"] = dir;
 
-	float zoomFactor = 1.0;
-
 	// draw working engineers and bulldozers:
 	if (map && job == nullptr)
 	{
 		/// TODO: Make a proper rendering
 		if (isUnitBuildingABuilding() || (isUnitClearing() && cellSize > 1))
 		{
-			render_BuildingOrBigClearing (*map, animationTime, surface, dest, zoomFactor, ops.shadow);
+			render_BuildingOrBigClearing (*map, animationTime, context, ops);
 			return;
 		}
 		if (isUnitClearing() && !cellSize == 1)
 		{
-			render_smallClearing (animationTime, surface, dest, zoomFactor, ops.shadow);
+			render_smallClearing (animationTime, context, ops);
 			return;
 		}
 	}
@@ -1088,30 +1095,20 @@ bool cVehicle::canSupply (const cUnit* unit, int supplyType) const
 //-----------------------------------------------------------------------------
 void cVehicle::layMine (cModel& model)
 {
-	if (getStoredResources() <= 0) return;
+	if (getStoredResources() <= 0)
+		return;
 
 	const cMap& map = *model.getMap();
 
-#ifdef FIX_MINE_LAYER
-	if (staticData->factorSea > 0 && staticData->factorGround == 0)
-	{
-		const auto& staticMineData = model.getUnitsData()->getSeaMineData();
-		if (!map.possiblePlaceBuilding (staticMineData, getPosition(), nullptr, this))
-			return;
-		model.addBuilding(getPosition(), staticMineData.ID, getOwner(), false);
-	}
-	else
-	{
-		const auto& staticMineData = model.getUnitsData()->getLandMineData();
-		if (!map.possiblePlaceBuilding(staticMineData, getPosition(), nullptr, this))
-			return;
-		model.addBuilding(getPosition(), staticMineData.ID, getOwner(), false);
-	}
+	const auto& staticMineData = model.getUnitsData()->getBuilding(vehicleData->sweepBuildObject);
+	if (!map.possiblePlaceBuilding(*staticMineData, getPosition(), nullptr, this))
+		return;
+
+	model.addBuilding(getPosition(), staticMineData->ID, getOwner(), false);
 	setStoredResources (getStoredResources() - 1);
 
 	if (getStoredResources() <= 0)
 		setLayMines (false);
-#endif
 
 	return;
 }
@@ -1400,25 +1397,6 @@ void cVehicle::makeDetection (cServer& server)
 }
 
 //-----------------------------------------------------------------------------
-void cVehicle::blitWithPreScale (SDL_Surface* org_src, SDL_Surface* src, SDL_Rect* srcrect, SDL_Surface* dest, SDL_Rect* destrect, float factor, int frames)
-{
-	if (!cSettings::getInstance().shouldDoPrescale())
-	{
-		int width, height;
-		height = (int) (org_src->h * factor);
-		if (frames > 1)
-			width = height * frames;
-		else
-			width = (int) (org_src->w * factor);
-
-		//if (src->w != width || src->h != height)
-		{
-			scaleSurface (org_src, src, width, height);
-		}
-	}
-	blittAlphaSurface (src, srcrect, dest, destrect);
-}
-
 cBuilding* cVehicle::getContainerBuilding()
 {
 	if (!isUnitLoaded()) return nullptr;

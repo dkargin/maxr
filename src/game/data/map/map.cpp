@@ -1216,8 +1216,10 @@ bool cMap::possiblePlaceVehicle(const cStaticUnitData& vehicleData, const cPosit
 
 bool cMap::possiblePlaceBuilding (const cStaticUnitData& buildingData, const cPosition& position, const cPlayer* player, const cVehicle* vehicle) const
 {
-	if (!isValidPosition (position)) return false;
-	if (isBlocked (position)) return false;
+	if (!isValidPosition (position))
+		return false;
+	if (isBlocked (position))
+		return false;
 	const auto field = cMapFieldView(getField(position), staticMap->getTerrain(position), player);
 
 	// Check all buildings in this field for a building of the same type. This

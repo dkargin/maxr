@@ -463,6 +463,9 @@ void cBuilding::render (unsigned long long animationTime, SDL_Surface* surface, 
 	}
 #endif
 
+	//if(uiData->underlay && ops.underlay)
+	//	uiData->underlay->render(context);
+
 	// draw the building
 	uiData->render(context, ops);
 

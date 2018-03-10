@@ -350,7 +350,20 @@ public:
 		cRgbColor background;
 	};
 
+	// Does basic rendering for this unit data
+	// Renders sprite, shadow and faction color, if there is any in @ops parameter
+	// @param context - rendering context
+	// @param ops - game-specific rendering options
 	virtual void render(cRenderContext& context, const sRenderOps& ops) const;
+
+	// Renders a sprite with its shadow and faction color
+	// There are some cases, where we have a separate set of sprites,
+	// and we should render it using the same pipeline as unit's graphics.
+	// @param image - basic sprite
+	// @param shadow - shadow sprite
+	// @param context - rendering context
+	// @param ops - game-specific rendering options
+	static void renderFactionShadowSprite(const std::shared_ptr<cRenderable>& image, const std::shared_ptr<cRenderable>& shadow, cRenderContext& context, const sRenderOps& ops);
 private:
 	std::string description; //untranslated data from unit xml. Will be used, when translation for the unit is not available
 	std::string name;        //untranslated data from unit xml. Will be used, when translation for the unit is not available
