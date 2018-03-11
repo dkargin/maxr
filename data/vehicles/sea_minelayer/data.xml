@@ -29,6 +29,7 @@
     <Can_Detect_Mines YN="Yes"/>
     <Can_Place_Mines YN="Yes"/>
     <Can_Detect_Stealth_On Num="32"/>
+    <SweepBuildObject sID="1 29"/>
   </Abilities>
 
   <Storage>

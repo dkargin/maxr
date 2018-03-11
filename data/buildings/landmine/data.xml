@@ -7,7 +7,7 @@
     <Game_Version text="0.2.5"/>
   </Header>
   <Description lang="ENG">
-    Land Mine\n\nSmall, hard to detect explosive device. Only surveyors, minelayers, and infiltratoers can spot mines. Once spotted, almost any damage will destroy it.
+    Land Mine\n\nSmall, hard to detect explosive device. Only surveyors, minelayers, and infiltrators can spot mines. Once spotted, almost any damage will destroy it.
   </Description>
 
   <Weapon>
@@ -30,7 +30,7 @@
     <Explodes_On_Contact YN="Yes"/>
   </Abilities>
   <Graphic refsize="64;64">
-    <Has_Player_Color YN="Yes"/>
+    <!--<Has_Player_Color YN="Yes"/> -->
 
     <Sprite file="img.pcx" layer="image" colorkey="auto"/>
     <Sprite file="shw.pcx" layer="shadow" colorkey="auto"/>

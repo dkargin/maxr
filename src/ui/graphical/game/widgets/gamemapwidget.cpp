@@ -650,12 +650,10 @@ void cGameMapWidget::draw (SDL_Surface& destination, const cBox<cPosition>& clip
 
 				auto surfacePos = building->getStaticUnitData().surfacePosition;
 
-				if (!building->isRubble() && (
-					surfacePos != cStaticUnitData::SURFACE_POS_BENEATH_SEA &&
-					surfacePos != cStaticUnitData::SURFACE_POS_BASE))
-					break;
-
-				rq.enqueue(RenderQueue::LayerBaseUnits, building);
+				if (building->isRubble() ||
+						(surfacePos == cStaticUnitData::SURFACE_POS_BENEATH_SEA ||
+						surfacePos == cStaticUnitData::SURFACE_POS_BASE))
+					rq.enqueue(RenderQueue::LayerBaseUnits, building);
 
 				if (surfacePos == cStaticUnitData::SURFACE_POS_ABOVE_SEA ||
 					surfacePos == cStaticUnitData::SURFACE_POS_ABOVE_BASE)
@@ -2132,7 +2130,7 @@ void cGameMapWidget::addAnimationsForUnit (const cUnit& unit)
 		if (building.isRubble())
 			return;
 
-		if (building.uiData->powerOnGraphic || unit.getStaticUnitData().hasFlag(UnitFlag::CanWork))
+		if (building.buildingData->powerOnGraphic || unit.getStaticUnitData().hasFlag(UnitFlag::CanWork))
 		{
 			assert(unit.isABuilding());
 			auto& building = static_cast<const cBuilding&> (unit);
@@ -2417,7 +2415,7 @@ void cGameMapWidget::renewDamageEffect (const cBuilding& building)
 {
 	if (building.isRubble()) return;
 
-	if (building.uiData->hasDamageEffect &&
+	if (building.buildingData->hasDamageEffect &&
 		building.data.getHitpoints() < building.data.getHitpointsMax() &&
 		(building.getOwner() == player.get() || (!player || mapView->canSeeUnit (building))))
 	{

@@ -101,7 +101,7 @@ void cUnitVideoWidget::setUnit (const cUnit* unit)
 			const auto& building = *static_cast<const cBuilding*> (unit);
 
 			fliAnimation = nullptr;
-			currentFrameImage->setImage (building.uiData->video.get());
+			currentFrameImage->setImage (building.buildingData->video.get());
 		}
 	}
 }

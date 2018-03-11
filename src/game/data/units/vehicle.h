@@ -115,6 +115,13 @@ struct cVehicleData : public cStaticUnitData
 	}
 
 	cVehicleData();
+
+	template<typename T>
+	void serialize(T& archive)
+	{
+		cStaticUnitData::serialize(archive);
+		archive & NVP(sweepBuildObject);
+	}
 };
 
 typedef std::shared_ptr<cVehicleData> sVehicleDataPtr;

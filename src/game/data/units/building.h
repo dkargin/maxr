@@ -133,7 +133,7 @@ public:
 	virtual bool isABuilding() const { return true; }
 	bool isRubble() const { return rubbleValue > 0; }
 
-	sBuildingDataPtr uiData;
+	sBuildingDataPtr buildingData;
 	mutable int effectAlpha; // alpha value for the effect
 
 	cSubBase* subBase;     // the subbase to which this building belongs
@@ -288,7 +288,7 @@ public:
 			{
 			}*/
 
-			uiData = std::dynamic_pointer_cast<cBuildingData>(staticData);
+			buildingData = std::dynamic_pointer_cast<cBuildingData>(staticData);
 			registerOwnerEvents();
 			connectFirstBuildListItem();
 		}
@@ -301,9 +301,9 @@ private:
 	/**
 	* draws the connectors onto the given surface
 	*/
-	void drawConnectors (SDL_Surface* surface, SDL_Rect dest, float zoomFactor, bool drawShadow) const;
+	void drawConnectors(cRenderContext& context, const cStaticUnitData::sRenderOps& ops) const;
 
-	void render_rubble (SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, bool drawShadow) const;
+	void render_rubble(cRenderContext& context, const cStaticUnitData::sRenderOps& ops) const;
 	void connectFirstBuildListItem();
 
 	bool isWorking;  // is the building currently working?

@@ -1101,10 +1101,15 @@ void cVehicle::layMine (cModel& model)
 	const cMap& map = *model.getMap();
 
 	const auto& staticMineData = model.getUnitsData()->getBuilding(vehicleData->sweepBuildObject);
-	if (!map.possiblePlaceBuilding(*staticMineData, getPosition(), nullptr, this))
+	if(!staticMineData)
 		return;
 
-	model.addBuilding(getPosition(), staticMineData->ID, getOwner(), false);
+	cPosition pos = getPosition();
+
+	if (!map.possiblePlaceBuilding(*staticMineData, pos, nullptr, this))
+		return;
+
+	model.addBuilding(pos, staticMineData->ID, getOwner(), false);
 	setStoredResources (getStoredResources() - 1);
 
 	if (getStoredResources() <= 0)

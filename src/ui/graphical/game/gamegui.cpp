@@ -505,8 +505,8 @@ void cGameGui::connectSelectedUnit()
 		stopSelectedUnitSound();
 		if (selectedUnit->data.getId().isABuilding())
 		{
-			if (selectedUnit->isUnitWorking()) soundManager->playSound (std::make_shared<cSoundEffectUnit> (eSoundEffectType::EffectStartWork, static_cast<const cBuilding&> (*selectedUnit).uiData->Start, *selectedUnit));
-			else soundManager->playSound (std::make_shared<cSoundEffectUnit> (eSoundEffectType::EffectStopWork, static_cast<const cBuilding&> (*selectedUnit).uiData->Stop, *selectedUnit));
+			if (selectedUnit->isUnitWorking()) soundManager->playSound (std::make_shared<cSoundEffectUnit> (eSoundEffectType::EffectStartWork, static_cast<const cBuilding&> (*selectedUnit).buildingData->Start, *selectedUnit));
+			else soundManager->playSound (std::make_shared<cSoundEffectUnit> (eSoundEffectType::EffectStopWork, static_cast<const cBuilding&> (*selectedUnit).buildingData->Stop, *selectedUnit));
 		}
 		updateSelectedUnitIdleSound();
 	});
@@ -740,11 +740,11 @@ void cGameGui::updateSelectedUnitIdleSound()
 		const auto& building = static_cast<const cBuilding&> (*selectedUnit);
 		if (building.isUnitWorking())
 		{
-			startSelectedUnitSound (building, building.uiData->Running);
+			startSelectedUnitSound (building, building.buildingData->Running);
 		}
 		else
 		{
-			startSelectedUnitSound (building, building.uiData->Wait);
+			startSelectedUnitSound (building, building.buildingData->Wait);
 		}
 	}
 	else

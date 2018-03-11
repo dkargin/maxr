@@ -145,7 +145,7 @@ uint32_t cBuildListItem::getChecksum(uint32_t crc) const
 //--------------------------------------------------------------------------
 cBuilding::cBuilding (sBuildingDataPtr data, const cDynamicUnitData* ddata, cPlayer* owner, unsigned int ID) :
 	cUnit(ddata, data, owner, ID),
-	uiData(data),
+	buildingData(data),
 	isWorking (false),
 	wasWorking(false),
 	metalPerRound(0),
@@ -367,7 +367,7 @@ bool cBuilding::refreshData()
 	return false;
 }
 
-void cBuilding::render_rubble (SDL_Surface* surface, const SDL_Rect& dest, float zoomFactor, bool drawShadow) const
+void cBuilding::render_rubble (cRenderContext& context, const cStaticUnitData::sRenderOps& ops) const
 {
 	assert (isRubble());
 
@@ -390,11 +390,11 @@ void cBuilding::render_rubble (SDL_Surface* surface, const SDL_Rect& dest, float
 #endif
 
 	src.x = src.w * rubbleTyp;
-	SDL_Rect tmp = dest;
+	SDL_Rect tmp = context.dstRect;
 	src.y = 0;
 
 	// draw the shadows
-	if (drawShadow)
+	if (ops.shadow)
 	{
 #ifdef FUCK_THIS
 		if (cellSize > 1)
@@ -411,7 +411,7 @@ void cBuilding::render_rubble (SDL_Surface* surface, const SDL_Rect& dest, float
 	}
 
 	// draw the building
-	tmp = dest;
+	tmp = context.dstRect;
 #ifdef FUCK_THIS
 	if (isBig)
 	{
@@ -446,33 +446,29 @@ void cBuilding::render (unsigned long long animationTime, SDL_Surface* surface, 
 	context.cache = true;
 	context.channels["clan"] = this->getOwner()->getClan()+1;
 	context.channels["animation"] = animationTime;
+
 	// check, if it is dirt:
 	if (isRubble())
 	{
-		//render_rubble (surface, dest, zoomFactor, drawShadow);
+		// Rubble graphics can use direction to pick a proper rubble sprite variant
+		context.channels["direction"] = dir;
+		render_rubble (context, ops);
 		return;
 	}
 
-
-#ifdef FIX_CONNECTORS
 	// draw the connector slots:
-	if ((this->subBase && !alphaEffectValue) || uiData->isConnectorGraphic)
+	if ((subBase && !alphaEffectValue) || buildingData->isConnectorGraphic)
 	{
-		drawConnectors (surface, dest, zoomFactor, drawShadow);
-		if (uiData->isConnectorGraphic) return;
+		drawConnectors (context, ops);
 	}
-#endif
-
-	//if(uiData->underlay && ops.underlay)
-	//	uiData->underlay->render(context);
 
 	// draw the building
-	uiData->render(context, ops);
+	buildingData->render(context, ops);
 
-	if(isUnitWorking() && uiData->effect)
+	if(isUnitWorking() && buildingData->effect)
 	{
 		context.channels["alpha"] = effectAlpha;
-		uiData->effect->render(context);
+		buildingData->effect->render(context);
 	}
 }
 
@@ -554,10 +550,10 @@ void cBuilding::CheckNeighbours (const cMap& map)
 //--------------------------------------------------------------------------
 /** Draws the connectors at the building: */
 //--------------------------------------------------------------------------
-void cBuilding::drawConnectors (SDL_Surface* surface, SDL_Rect dest, float zoomFactor, bool drawShadow) const
+void cBuilding::drawConnectors (cRenderContext& context, const cStaticUnitData::sRenderOps& ops) const
 {
 	SDL_Rect src, temp;
-#ifdef FUCK_THIS
+#ifdef FIX_CONNECTORS
 	CHECK_SCALING(*UnitsUiData.ptr_connector, *UnitsUiData.ptr_connector_org, zoomFactor);
 	CHECK_SCALING(*UnitsUiData.ptr_connector_shw, *UnitsUiData.ptr_connector_shw_org, zoomFactor);
 
@@ -590,7 +586,7 @@ void cBuilding::drawConnectors (SDL_Surface* surface, SDL_Rect dest, float zoomF
 		else if (!BaseN && !BaseE && !BaseS && !BaseW) src.x =  0;
 		src.x *= src.h;
 
-		if (src.x != 0 || uiData->isConnectorGraphic)
+		if (src.x != 0 || buildingData->isConnectorGraphic)
 		{
 			// blit shadow
 			temp = dest;

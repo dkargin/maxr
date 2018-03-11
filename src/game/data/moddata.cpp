@@ -287,10 +287,29 @@ void ModData::parseVehicle(tinyxml2::XMLElement* source, sID id, const std::stri
 	object->setName(name);
 	parseUnitData (source, *object, directory);
 
-	for(tinyxml2::XMLElement* graphic = source->FirstChildElement("Graphic"); graphic; graphic = graphic->NextSiblingElement("Graphic"))
+	for(tinyxml2::XMLElement* block = source->FirstChildElement("Graphic"); block; block = block->NextSiblingElement("Graphic"))
 	{
-		object->animationMovement = getValueBool(graphic, "Movement");
-		object->makeTracks = getValueBool(graphic, "Makes_Tracks");
+		object->animationMovement = getValueBool(block, "Movement");
+		object->makeTracks = getValueBool(block, "Makes_Tracks");
+	}
+
+	for(tinyxml2::XMLElement* block = source->FirstChildElement("Abilities"); block; block = block->NextSiblingElement("Abilities"))
+	{
+		if(tinyxml2::XMLElement* xml = block->FirstChildElement("SweepBuildObject"))
+		{
+			sID id;
+			if (const char* rawval = xml->Attribute("sID"))
+			{
+				if(parseSID(rawval, id))
+				{
+					object->sweepBuildObject = id;
+				}
+			}
+			else
+			{
+				// Gather a proper error
+			}
+		}
 	}
 
 	std::string sTmpString = directory;
@@ -582,10 +601,6 @@ int ModData::loadBuildings(const char* buldings_folder)
 			// C++ should not keep so specific data. Really.
 			if (specialString == "connector")
 				UnitsDataGlobal.setSpecialIDConnector(sID(1, IDList.back()));
-			else if (specialString == "landmine")
-				UnitsDataGlobal.setSpecialIDLandMine(sID(1, IDList.back()));
-			else if (specialString == "seamine")
-				UnitsDataGlobal.setSpecialIDSeaMine(sID(1, IDList.back()));
 			else
 				Log.write ("Unknown spacial in buildings.xml \"" + specialString + "\"", cLog::eLOG_TYPE_WARNING);
 		}
@@ -598,10 +613,6 @@ int ModData::loadBuildings(const char* buldings_folder)
 	// Will be deleted when explosive stuff moves completely to XML fields
 	if (UnitsDataGlobal.getSpecialIDConnector().secondPart  == 0)
 		Log.write("special \"connector\" missing in buildings.xml", cLog::eLOG_TYPE_WARNING);
-	if (UnitsDataGlobal.getSpecialIDLandMine().secondPart   == 0)
-		Log.write("special \"landmine\" missing in buildings.xml", cLog::eLOG_TYPE_WARNING);
-	if (UnitsDataGlobal.getSpecialIDSeaMine().secondPart    == 0)
-		Log.write("special \"seamine\" missing in buildings.xml", cLog::eLOG_TYPE_WARNING);
 	*/
 
 	// Parse all folders that were declared in buildings.xml

@@ -139,7 +139,7 @@ void sDrawingCacheEntry::init (const cVehicle& vehicle, const cMapView& map, con
 	if (vehicle.getFlightHeight() > 0)
 	{
 		#ifdef FIX_THIS
-		int shwOff = ((int) (Round (vehicle.uiData->img_org[vehicle.dir]->w * zoom) * (vehicle.getFlightHeight() / 64.0f)));
+		int shwOff = ((int) (Round (vehicle.buildingData->img_org[vehicle.dir]->w * zoom) * (vehicle.getFlightHeight() / 64.0f)));
 		height += shwOff;
 		width  += shwOff;
 		#endif
@@ -239,7 +239,7 @@ SDL_Surface* cDrawingCache::getCachedImage (const cBuilding& building, double zo
 			}
 #endif
 		}
-		if (building.uiData->hasFrames)
+		if (building.buildingData->hasFrames)
 		{
 			if (entry.dir != building.dir)
 				continue;
@@ -251,7 +251,7 @@ SDL_Surface* cDrawingCache::getCachedImage (const cBuilding& building, double zo
 		if (building.getOwner()->getClan() != entry.clan)
 			continue;
 
-		if(building.uiData->customGraphics)
+		if(building.buildingData->customGraphics)
 			continue;
 
 		//cache hit!

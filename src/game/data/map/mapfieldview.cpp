@@ -79,8 +79,9 @@ cBuilding* cMapFieldView::getTopBuilding() const
 	{
 		if (!player || player->canSeeUnit(*building, mapField, terrain))
 		{
-			if ((building->getStaticUnitData().surfacePosition == cStaticUnitData::SURFACE_POS_GROUND ||
-				 building->getStaticUnitData().surfacePosition == cStaticUnitData::SURFACE_POS_ABOVE) &&
+			auto pos = building->getStaticUnitData().surfacePosition;
+			if ((pos == cStaticUnitData::SURFACE_POS_GROUND ||
+				pos == cStaticUnitData::SURFACE_POS_ABOVE) &&
 				!building->isRubble())
 			{
 				return building;
