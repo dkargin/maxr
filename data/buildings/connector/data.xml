@@ -39,6 +39,7 @@
     <Build_Up YN="No"/>
     <Movement YN="No"/>
     <Power_On YN="No"/>
+    <IsConnector YN="Yes"/>
   </Graphic>
 </Building>
 

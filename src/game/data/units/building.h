@@ -48,7 +48,6 @@ class cCrossPlattformRandom;
 struct cBuildingData : public cStaticUnitData
 {
 	bool hasBetonUnderground;
-	bool isConnectorGraphic;
 
 	AutoSurface video;  // video
 
@@ -316,6 +315,9 @@ private:
 
 	int rubbleTyp;     // type of the rubble graphic (when unit is rubble)
 	int rubbleValue;   // number of resources in the rubble field
+
+	// Picked connector sprite indexes for the building
+	std::vector<std::pair<cPosition, int>> connectorTiles;
 
 	cResearch::ResearchArea researchArea; ///< if the building can research, this is the area the building last researched or is researching
 

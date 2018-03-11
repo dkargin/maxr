@@ -345,6 +345,7 @@ void ModData::parseBuilding(tinyxml2::XMLElement* source, sID id, const std::str
 	for(tinyxml2::XMLElement* graphic = source->FirstChildElement("Graphic"); graphic; graphic = graphic->NextSiblingElement("Graphic"))
 	{
 		object->hasBetonUnderground = getValueBool(graphic, "Has_Beton_Underground");
+		object->setFlag(UnitFlag::IsConnector, getValueBool(graphic, "IsConnector"));
 	}
 
 	LoadLegacyUnitGraphics(directory, *spriteTool, *object);
@@ -356,6 +357,7 @@ void ModData::parseBuilding(tinyxml2::XMLElement* source, sID id, const std::str
 		object->video = LoadPCX (sTmpString);
 
 #ifdef VERY_BROKEN
+
 	// I will send connectors to a separate special layer
 	// Get Ptr if necessary:
 	if (staticData.ID == UnitsDataGlobal.getSpecialIDConnector())
@@ -647,7 +649,17 @@ int ModData::loadBuildings(const char* buldings_folder)
 			sprite->setAlphaKey(50);
 			GraphicsData.small_rubble_shadow = sprite;
 		}
+
+		// TODO: move it to generic tile rules
+		if(auto sprite = spriteTool->makeSpriteSheet(dir + "connector/img.pcx", 16, cVector2(64, 64)))
+		{
+			sprite->setChannel("connector");
+			sprite->setColorKeyAuto();
+			GraphicsData.connector = sprite;
+		}
+
 /*
+		// Keep it until rubble stuff is completely implemented and tested
 		LoadGraphicToSurface (UnitsUiData.rubbleBig->img_org, cSettings::getInstance().getBuildingsPath().c_str(), "dirt_big.pcx");
 		UnitsUiData.rubbleBig->img = CloneSDLSurface (*UnitsUiData.rubbleBig->img_org);
 		LoadGraphicToSurface(UnitsUiData.rubbleBig->img_shadow_original, cSettings::getInstance().getBuildingsPath().c_str(), "dirt_big_shw.pcx");

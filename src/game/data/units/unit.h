@@ -108,6 +108,7 @@ enum class UnitFlag : int
 	ExplodesOnContact,
 	IsHuman,
 	HasAnimationMovement,		//< Legacy from old resource system
+	IsConnector,						//< Should be removed when generic tiling rules are implemented
 	UnitFlagMax,
 };
 

@@ -67,7 +67,7 @@ private:
 		}
 	}
 	cPosition org;
-	int buildingSize;
+	int buildingSize = 1;
 };
 
 #endif

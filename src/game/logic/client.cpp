@@ -310,7 +310,8 @@ void cClient::HandleNetMessage_GAME_EV_SPECIFIC_UNIT_DATA (cNetMessage& message)
 	cVehicle* Vehicle = getVehicleFromID (message.popInt16());
 	if (!Vehicle) return;
 	Vehicle->dir = message.popInt16();
-	Vehicle->setBuildingType (message.popID());
+	sID buildingID = message.popID();
+	Vehicle->setBuildingType(buildingID);
 	Vehicle->BuildPath = message.popBool();
 	Vehicle->bandPosition = message.popPosition();
 }

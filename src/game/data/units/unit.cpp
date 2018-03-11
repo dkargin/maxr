@@ -116,9 +116,6 @@ void cStaticUnitData::render(cRenderContext& context, const sRenderOps& ops) con
 	SDL_Surface* tmpSurface = GraphicsData.gfx_tmp.get();
 	tmpContext.setTarget(tmpSurface, tmpRect);
 
-	if(ops.underlay && underlay)
-		underlay->render(context);
-
 	if(ops.shadow && shadow)
 		shadow->render(context);
 

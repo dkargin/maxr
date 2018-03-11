@@ -40,28 +40,11 @@ Now mostly all the units are multi-tile ones. So we need to rework a lot of inte
 Building process should not need the unit to move to the center of building area. Unit could do its building stuff standing near construction site. It will simplify a lot of things for everyone
 
 
-<TileGen name="connectors" file="connectors.pcx" size="64x64">
-	<!--Central connector not connected anywhere-->
-	<Rule pos="0x0">
-		000
-		010
-		000
-	</Rule>
-	<!--Use this tile if there is a connection from the upper side-->
-	<Rule pos="1x0">
-		010
-		010
-		000
-	</Rule>
-</TileGen>
-
+Notable defines to be fixed:
 
 ```
 #ifdef FIX_THIS
-#ifdef OVERLAYS_TO_BE_FIXED
-#ifdef FIX_BUILD_ANIMATION
-#ifdef FIX_MINE_LAYER
-#ifdef FIX_BUILDING_UNDERLAY
+#ifdef FUCK_THIS
 ```
 
 Graphic layers:
@@ -76,32 +59,21 @@ Channels:
  - direction 	- where unit is facing
  - clan			- selected clan
 
-Render order:
-1. Player color to the cache
-2. Object's sprite. Set colormask = rgb{255,255,255}, dest=cache
-3. Draw object to main surface. Dest = screen, colorkey = rgb{255,0,255}
 
-Connector
-
- 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10| 11| 12| 13| 14| 15|
-   | | |   |   |   | | |   | | | | |   |   | | | | | | |   | | |
- o | o | o-| o |-o | o |-o-|-o | o-| o-|-o |-o |-o-| o-|-o-|-o-|
-   |   |   | | |   | | |   |   |   | | | | | | |   | | | | | | |
 Local plan:
 
-1. Exit points are so borken. Fixed a bit, but still broken
-1. Builder's graphics are broken. Need to restore it using new codebase.
-	- When iterating visible map for a units: should check builders, cause they can occupy much more space.
-	- Draw sprites where necessary
-	- Fix sprite position and scaling
-1. Fix sprite loading for rubble/wrecs/...
 
 The problems stopping from pull request:
 
-1. Reimplement rubble graphics
 1. Restore build/clear graphics to original look
-	- Fix wrong scaling
-1. Reimplement connector graphics
+	- Fix wrong scaling and sprite placement for large buildings
+	buildSize = building->getCellSize();
+1. Reimplement rubble graphics
+	- Rubble is not created
+	- Load rubble graphics to a common location
+	- Draw proper rubble
+	- Test it a bit
 1. Reimplement walking animation, using sprite groups
+	- implement cRenderableGroup class. We need a container for different sprites
 	- need iterative XML parser as well
-1. 
+1. Air transport can not load units

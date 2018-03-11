@@ -127,6 +127,8 @@ void cDestroyJob::deleteUnit(cModel& model)
 	cMap& map = *model.getMap();
 	cMapField& field = map.getField(position);
 
+	int cellSize = unit->getCellSize();
+
 	//delete planes immediately
 	if (unit->isAVehicle())
 	{
@@ -142,22 +144,21 @@ void cDestroyJob::deleteUnit(cModel& model)
 	//check, if there is a big unit on the field
 	bool bigUnit = false;
 	auto topBuilding = field.getTopBuilding();
-	if ((topBuilding && topBuilding->getCellSize() > 1) || unit->getCellSize() > 1)
+	if ((topBuilding && topBuilding->getCellSize() > 1) || cellSize > 1)
 		bigUnit = true;
-
 
 	//delete unit
 	int rubbleValue = 0;
-    if (!unit->getStaticUnitData().hasFlag(UnitFlag::IsHuman))
+	if(!unit->getStaticUnitData().hasFlag(UnitFlag::IsHuman))
 	{
 		rubbleValue += unit->data.getBuildCost();
 		// stored material is always added completely to the rubble
 		if (unit->getStaticUnitData().storeResType == eResourceType::Metal)
 			rubbleValue += unit->getStoredResources() * 2;
 	}
+
 	model.deleteUnit(unit);
 
-	int cellSize = unit->getCellSize();
 	bool removeBuildings = false;
 	if (removeBuildings)
 	{
@@ -170,9 +171,6 @@ void cDestroyJob::deleteUnit(cModel& model)
 				rubbleValue += deleteAllBuildingsOnField(field, !isVehicle, model);
 			}
 		}
-		//rubbleValue += deleteAllBuildingsOnField(map.getField(position + cPosition(1, 0)), !isVehicle, model);
-		//rubbleValue += deleteAllBuildingsOnField(map.getField(position + cPosition(0, 1)), !isVehicle, model);
-		//rubbleValue += deleteAllBuildingsOnField(map.getField(position + cPosition(1, 1)), !isVehicle, model);
 	}
 
 	//add rubble

@@ -345,8 +345,8 @@ public:
 	std::shared_ptr<cStaticMap> staticMap;
 private:
 	/**
-	* the information about the fields
-	*/
+	 * the information about the fields
+	 */
 	cMapField* fields;
 	cArrayCrc<sResources> Resources; // field with the ressource data
 };

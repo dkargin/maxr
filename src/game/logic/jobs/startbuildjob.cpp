@@ -50,14 +50,19 @@ void cStartBuildJob::run (cModel& model)
 		int deltaX = (vehicle->getPosition().x() < org.x() ? -1 : 1) * MOVE_SPEED;
 		int deltaY = (vehicle->getPosition().y() < org.y() ? -1 : 1) * MOVE_SPEED;
 		int dir = 0;
-		if (deltaX > 0 && deltaY > 0) dir = 3;
-		if (deltaX > 0 && deltaY < 0) dir = 1;
-		if (deltaX < 0 && deltaY > 0) dir = 5;
-		if (deltaX < 0 && deltaY < 0) dir = 7;
+		if (deltaX > 0 && deltaY > 0)
+			dir = 3;
+		if (deltaX > 0 && deltaY < 0)
+			dir = 1;
+		if (deltaX < 0 && deltaY > 0)
+			dir = 5;
+		if (deltaX < 0 && deltaY < 0)
+			dir = 7;
 
 		if (vehicle->getMovementOffset().x() == 32)
 		{
-			if (model.getGameTime() % 10 != 0) return;
+			if (model.getGameTime() % 10 != 0)
+				return;
 			vehicle->rotateTo (0);
 			if (vehicle->dir == 0)
 			{
@@ -79,13 +84,15 @@ void cStartBuildJob::run (cModel& model)
 		}
 		else
 		{
-			if (model.getGameTime() % 10 != 0) return;
+			if (model.getGameTime() % 10 != 0)
+				return;
 			vehicle->rotateTo (dir);
 		}
 	}
 	else
 	{
-		if (model.getGameTime() % 10 != 0) return;
+		if (model.getGameTime() % 10 != 0)
+			return;
 		vehicle->rotateTo (0);
 		if (vehicle->dir == 0)
 		{

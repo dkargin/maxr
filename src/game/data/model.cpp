@@ -394,34 +394,34 @@ void cModel::addRubble(const cPosition& position, int value, int size)
 	{
 		if (big)
 		{
-			addRubble(position + cPosition(1, 0), value / 4, false);
-			addRubble(position + cPosition(0, 1), value / 4, false);
-			addRubble(position + cPosition(1, 1), value / 4, false);
+			addRubble(position + cPosition(1, 0), value / 4, 1);
+			addRubble(position + cPosition(0, 1), value / 4, 1);
+			addRubble(position + cPosition(1, 1), value / 4, 1);
 		}
 		return;
 	}
 
 	if (big && map->isWaterOrCoast(position + cPosition(1, 0)))
 	{
-		addRubble(position, value / 4, false);
-		addRubble(position + cPosition(0, 1), value / 4, false);
-		addRubble(position + cPosition(1, 1), value / 4, false);
+		addRubble(position, value / 4, 1);
+		addRubble(position + cPosition(0, 1), value / 4, 1);
+		addRubble(position + cPosition(1, 1), value / 4, 1);
 		return;
 	}
 
 	if (big && map->isWaterOrCoast(position + cPosition(0, 1)))
 	{
-		addRubble(position, value / 4, false);
-		addRubble(position + cPosition(1, 0), value / 4, false);
-		addRubble(position + cPosition(1, 1), value / 4, false);
+		addRubble(position, value / 4, 1);
+		addRubble(position + cPosition(1, 0), value / 4, 1);
+		addRubble(position + cPosition(1, 1), value / 4, 1);
 		return;
 	}
 
 	if (big && map->isWaterOrCoast(position + cPosition(1, 1)))
 	{
-		addRubble(position, value / 4, false);
-		addRubble(position + cPosition(1, 0), value / 4, false);
-		addRubble(position + cPosition(0, 1), value / 4, false);
+		addRubble(position, value / 4, 1);
+		addRubble(position + cPosition(1, 0), value / 4, 1);
+		addRubble(position + cPosition(0, 1), value / 4, 1);
 		return;
 	}
 

@@ -123,7 +123,9 @@ void cActionStartBuild::execute(cModel& model) const
 		vehicle->getOwner()->buildErrorBuildPositionBlocked();
 		return;
 	}
+
 	vehicle->buildBigSavedPosition = vehicle->getPosition();
+	vehicle->setBuildSize(data.cellSize);
 
 	// set vehicle to build position
 	map.moveVehicle(*vehicle, buildPosition);

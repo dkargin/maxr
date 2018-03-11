@@ -144,7 +144,6 @@ std::pair<cPosition, cPosition> cGameMapWidget::computeTileDrawingRange() const
 
 	return std::make_pair (startTile, endTile);
 }
-
  */
 
 //------------------------------------------------------------------------------
@@ -895,12 +894,6 @@ cBox<cPosition> cGameMapWidget::getDisplayedMapArea() const
 	auto tileDrawingRange = computeTileDrawingRange();
 
 	return cBox<cPosition> (tileDrawingRange.first, tileDrawingRange.second - 1);
-	/*
-	auto minf = tileDrawingRange.getMinCorner();
-	auto maxf = tileDrawingRange.getMinCorner();
-	cPosition min(floor(minf.x()), floor(minf.y()));
-	cPosition max(ceil(maxf.x()), ceil(maxf.y()));
-	return cBox<cPosition> (min, max);*/
 }
 
 //------------------------------------------------------------------------------
@@ -1331,7 +1324,8 @@ void cGameMapWidget::drawEffects (bool bottom)
 //------------------------------------------------------------------------------
 bool cGameMapWidget::shouldDrawUnit (const cUnit& unit, const cPosition& visitingPosition, const std::pair<cPosition, cPosition>& tileDrawingRange)
 {
-	assert (unit.isAbove (visitingPosition));
+	// Why should we assert crash here?
+	//assert (unit.isAbove (visitingPosition));
 
 	if (!(unit.getCellSize() > 1))
 	{

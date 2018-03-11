@@ -94,10 +94,17 @@ struct cVehicleData : public cStaticUnitData
 	bool animationMovement = false;
 	bool makeTracks = false;
 
+	// This sprites are used for both building and cleaning
+	// Constructor has only 'large' sprites for 2x2 buildings,
+	// while an engineer has only small sprites for 1x1 case
 	std::shared_ptr<cRenderable> build;
 	std::shared_ptr<cRenderable> build_shadow;
-	std::shared_ptr<cRenderable> clear;
-	std::shared_ptr<cRenderable> clear_shadow;
+
+	// TODO: Should separate sprites for the vehicle and build site
+	// Then we could render working animation for the vehicle and leave
+	// the rendering of build/clean site to dummy building
+	std::shared_ptr<cRenderable> clear_small;
+	std::shared_ptr<cRenderable> clear_small_shadow;
 
 	AutoSurface storage;        // image of the vehicle in storage
 	std::string FLCFile;        // FLC-Video
@@ -275,7 +282,10 @@ public:
 	void setCommandoRank (float value);
 
 	const sID& getBuildingType() const;
-	void setBuildingType (const sID& id);
+	void setBuildingType(const sID& id);
+
+	int getBuildSize() const;
+	void setBuildSize(int size);
 	int getBuildCosts() const;
 	void setBuildCosts (int value);
 	int getBuildTurns() const;
@@ -334,6 +344,7 @@ public:
 		archive & NVP(isBuilding);
 		archive & NVP(buildingTyp);
 		archive & NVP(buildCosts);
+		archive & NVP(buildSize);
 		archive & NVP(buildTurns);
 		archive & NVP(buildTurnsStart);
 		archive & NVP(buildCostsStart);
@@ -387,10 +398,12 @@ private:
 	std::shared_ptr<cAutoMJob> autoMoveJob; //the auto move AI of the vehicle
 
 	bool loaded;
-
 	bool isBuilding;
 	sID buildingTyp;
 	int buildCosts;
+
+	// Size of the building being built. This is cached value
+	int buildSize;
 	int buildTurns;
 	int buildTurnsStart;
 	int buildCostsStart;

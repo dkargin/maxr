@@ -68,9 +68,9 @@ bool cVehicleData::setGraphics(const std::string& layer, const cRenderablePtr& s
 	else if(layer == "build_shadow")
 		build_shadow = sprite;
 	else if(layer == "clear")
-		clear = sprite;
+		clear_small = sprite;
 	else if(layer == "clear_shadow")
-		clear_shadow = sprite;
+		clear_small_shadow = sprite;
 	else
 		return cStaticUnitData::setGraphics(layer, sprite);
 	return true;
@@ -141,11 +141,14 @@ sVehicleDataPtr cVehicle::getVehicleData() const
 
 void cVehicle::render_BuildingOrBigClearing (const cMapView& map, unsigned long long animationTime, cRenderContext& context, const cStaticUnitData::sRenderOps& ops) const
 {
-	int size = getCellSize();
+	// We do not inherit the size of the building we build/clean. It was lame
+	int size = this->buildSize;
 
 	assert ((isUnitBuildingABuilding() || (isUnitClearing() && size > 1)) && job == nullptr);
 
 	// draw beton if necessary
+	// TODO: do not like to fix it here. It is better to make a separate building like 'build site'
+	// and replace it by the real building when building process is finished
 #ifdef FIX_THIS
 	SDL_Rect tmp = dest;
 	if (isUnitBuildingABuilding() && size > 1 && (!map.isWaterOrCoast (getPosition()) || map.getField (getPosition()).getBaseBuilding()))
@@ -156,28 +159,16 @@ void cVehicle::render_BuildingOrBigClearing (const cMapView& map, unsigned long 
 	}
 #endif
 
-	vehicleData->renderFactionShadowSprite(vehicleData->build, vehicleData->build_shadow, context, ops);
-#ifdef FUCK_THIS
-	// draw shadow
-	tmp = dest;
-	if (ops.shadow)
-		blitWithPreScale (vehicleData->build_shw_org.get(), vehicleData->build_shw.get(), nullptr, surface, &tmp, zoomFactor);
+	// We create new context to override dstRect to match build area
+	cRenderContext newContext = context;
+	if(size > 1)
+	{
+		newContext.dstRect.w += 64*(size-1);
+		newContext.dstRect.h += 64*(size-1);
+	}
 
-	// draw player color
-	SDL_Rect src;
-	src.y = 0;
-	src.h = src.w = (int) (vehicleData->build_org->h * zoomFactor);
-	src.x = (animationTime % 4) * src.w;
-	SDL_BlitSurface (getOwner()->getColor().getTexture(), nullptr, GraphicsData.gfx_tmp.get(), nullptr);
-	blitWithPreScale (vehicleData->build_org.get(), vehicleData->build.get(), &src, GraphicsData.gfx_tmp.get(), nullptr, zoomFactor, 4);
+	vehicleData->renderFactionShadowSprite(vehicleData->build, vehicleData->build_shadow, newContext, ops);
 
-	// draw vehicle
-	src.x = 0;
-	src.y = 0;
-	tmp = dest;
-	SDL_SetSurfaceAlphaMod (GraphicsData.gfx_tmp.get(), 254);
-	SDL_BlitSurface (GraphicsData.gfx_tmp.get(), &src, surface, &tmp);
-#endif
 }
 
 void cVehicle::render_smallClearing(unsigned long long animationTime, cRenderContext& context, const cStaticUnitData::sRenderOps& ops) const
@@ -185,30 +176,8 @@ void cVehicle::render_smallClearing(unsigned long long animationTime, cRenderCon
 	int size = getCellSize();
 	assert (isUnitClearing() && size == 1 && job == nullptr);
 
-	vehicleData->renderFactionShadowSprite(vehicleData->build, vehicleData->build_shadow, context, ops);
-
-#ifdef FUCK_THIS
-	// draw shadow
-	//SDL_Rect tmp = dest;
-	if (ops.shadow)
-		vehicleData->clearing_shadow->render(context);
-		//blitWithPreScale (vehicleData->clear_small_shw_org.get(), vehicleData->clear_small_shw.get(), nullptr, surface, &tmp, zoomFactor);
-
-	// draw player color
-	SDL_Rect src;
-	src.y = 0;
-	src.h = src.w = (int) (vehicleData->clear_small_org->h * zoomFactor);
-	src.x = (animationTime % 4) * src.w;
-	SDL_BlitSurface (getOwner()->getColor().getTexture(), nullptr, GraphicsData.gfx_tmp.get(), nullptr);
-	blitWithPreScale (vehicleData->clear_small_org.get(), vehicleData->clear_small.get(), &src, GraphicsData.gfx_tmp.get(), nullptr, zoomFactor, 4);
-
-	// draw vehicle
-	src.x = 0;
-	src.y = 0;
-	tmp = dest;
-	SDL_SetSurfaceAlphaMod (GraphicsData.gfx_tmp.get(), 254);
-	SDL_BlitSurface (GraphicsData.gfx_tmp.get(), &src, surface, &tmp);
-#endif
+	const cVehicleData* vdata = vehicleData.get();
+	vehicleData->renderFactionShadowSprite(vdata->clear_small, vdata->clear_small_shadow, context, ops);
 }
 
 void cVehicle::render (const cMapView* map, unsigned long long animationTime, const cPlayer* activePlayer, SDL_Surface* surface, const SDL_Rect& dest, const cStaticUnitData::sRenderOps& ops) const
@@ -1560,7 +1529,8 @@ void cVehicle::setClearing (bool value)
 void cVehicle::setBuildingABuilding (bool value)
 {
 	std::swap (isBuilding, value);
-	if (value != isBuilding) buildingChanged();
+	if (value != isBuilding)
+		buildingChanged();
 }
 
 //-----------------------------------------------------------------------------
@@ -1614,9 +1584,19 @@ void cVehicle::setBuildingType (const sID& id)
 {
 	auto oldId = id;
 	buildingTyp = id;
-	if (buildingTyp != oldId) buildingTypeChanged();
+	if (buildingTyp != oldId)
+		buildingTypeChanged();
 }
 
+int cVehicle::getBuildSize() const
+{
+	return buildSize;
+}
+
+void cVehicle::setBuildSize(int size)
+{
+	buildSize = size;
+}
 //-----------------------------------------------------------------------------
 int cVehicle::getBuildCosts() const
 {

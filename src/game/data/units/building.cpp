@@ -371,59 +371,22 @@ void cBuilding::render_rubble (cRenderContext& context, const cStaticUnitData::s
 {
 	assert (isRubble());
 
-	SDL_Rect src;
-
-#ifdef FUCK_THIS
-	// There is no UnitsUiData, and no one right now has rubbleBig/Small
 	if (cellSize > 1)
 	{
-		if (!UnitsUiData.rubbleBig->img)
-			return;
-		src.w = src.h = (int) (UnitsUiData.rubbleBig->img_org->h * zoomFactor);
+		if(ops.shadow && GraphicsData.big_rubble_shadow)
+			GraphicsData.big_rubble_shadow->render(context);
+
+		if(GraphicsData.big_rubble)
+			GraphicsData.big_rubble->render(context);
 	}
 	else
 	{
-		if (!UnitsUiData.rubbleSmall->img)
-			return;
-		src.w = src.h = (int) (UnitsUiData.rubbleSmall->img_org->h * zoomFactor);
-	}
-#endif
+		if(ops.shadow && GraphicsData.small_rubble_shadow)
+			GraphicsData.small_rubble_shadow->render(context);
 
-	src.x = src.w * rubbleTyp;
-	SDL_Rect tmp = context.dstRect;
-	src.y = 0;
-
-	// draw the shadows
-	if (ops.shadow)
-	{
-#ifdef FUCK_THIS
-		if (cellSize > 1)
-		{
-			CHECK_SCALING (*UnitsUiData.rubbleBig->shw, *UnitsUiData.rubbleBig->shw_org, zoomFactor);
-			SDL_BlitSurface (UnitsUiData.rubbleBig->shw.get(), &src, surface, &tmp);
-		}
-		else
-		{
-			CHECK_SCALING (*UnitsUiData.rubbleSmall->shw, *UnitsUiData.rubbleSmall->shw_org, zoomFactor);
-			SDL_BlitSurface (UnitsUiData.rubbleSmall->shw.get(), &src, surface, &tmp);
-		}
-#endif
+		if(GraphicsData.small_rubble)
+			GraphicsData.small_rubble->render(context);
 	}
-
-	// draw the building
-	tmp = context.dstRect;
-#ifdef FUCK_THIS
-	if (isBig)
-	{
-		CHECK_SCALING (*UnitsUiData.rubbleBig->img, *UnitsUiData.rubbleBig->img_org, zoomFactor);
-		SDL_BlitSurface (UnitsUiData.rubbleBig->img.get(), &src, surface, &tmp);
-	}
-	else
-	{
-		CHECK_SCALING (*UnitsUiData.rubbleSmall->img, *UnitsUiData.rubbleSmall->img_org, zoomFactor);
-		SDL_BlitSurface (UnitsUiData.rubbleSmall->img.get(), &src, surface, &tmp);
-	}
-#endif
 }
 
 //------------------------------------------------------------------------------
@@ -456,8 +419,11 @@ void cBuilding::render (unsigned long long animationTime, SDL_Surface* surface, 
 		return;
 	}
 
+	if(ops.underlay && buildingData->underlay)
+		buildingData->underlay->render(context);
+
 	// draw the connector slots:
-	if ((subBase && !alphaEffectValue) || buildingData->isConnectorGraphic)
+	if ((subBase && !alphaEffectValue) || hasStaticFlag(UnitFlag::ConnectsToBase))
 	{
 		drawConnectors (context, ops);
 	}
@@ -494,57 +460,110 @@ void cBuilding::updateNeighbours (const cMap& map)
 //--------------------------------------------------------------------------
 void cBuilding::CheckNeighbours (const cMap& map)
 {
-	/*
-#define CHECK_NEIGHBOUR(x, y, m) \
-	if (map.isValidPosition (cPosition(x, y))) \
-	{ \
-		const cBuilding* b = map.getField(cPosition(x, y)).getTopBuilding(); \
-		if (b && b->getOwner() == getOwner() && b->staticData->connectsToBase) \
-		{m = true;}else{m = false;} \
-	}*/
+	int size = this->cellSize;
+	// Size of processed tile template
+	int templateSize = size+2;
+	std::vector<int> tiles(templateSize*templateSize, 0);
 
-	auto adjacent = generateAdjacentBorder(this->getPosition(), this->getCellSize());
-	// find all neighbouring subbases
-	for(const cAdjPosition& adjPos : adjacent)
+	cPosition adjCorner = getPosition()-cPosition(1,1);
+	auto outer = generateOuterBorder(getPosition(), size);
+	auto inner = generateBorder(getPosition(), size);
+
+	auto index = [templateSize, adjCorner](const cPosition& pos)
 	{
-		const cPosition& pos = adjPos.first;
-		int side = adjPos.second;
-		if (map.isValidPosition (pos))
+		cPosition delta = pos - adjCorner;
+		return delta.x() + delta.y()*templateSize;
+	};
+
+	for(const cPosition& pos: outer)
+	{
+		// We are expecting connector to be at the top of the building
+		const cBuilding* b = map.getField(pos).getTopBuilding();
+		bool val = b && b->getOwner() == getOwner() &&
+				(b->hasStaticFlag(UnitFlag::ConnectsToBase) || b->hasStaticFlag(UnitFlag::IsConnector));
+
+		if(val)
 		{
-			const cBuilding* b = map.getField(pos).getTopBuilding();
-			bool val = b && b->getOwner() == getOwner() && b->hasStaticFlag(UnitFlag::ConnectsToBase);
-			// TODO: Connectors can deal with virtual ports themselves
-			switch(side)
-			{
-			case AdjLeft:
-			case AdjTop:
-			case AdjRight:
-			case AdjBottom:
-				break;
-			}
+			tiles[index(pos)] = 1;
 		}
 	}
 
-#ifdef FUCK_THIS
-	if (!isBig)
+	int connectMode = 0;
+	if(hasStaticFlag(UnitFlag::IsConnector))
+		connectMode = 1;
+	else if(hasStaticFlag(UnitFlag::ConnectsToBase))
+		connectMode = 2;
+
+	for(const cPosition& pos: inner)
 	{
-		CHECK_NEIGHBOUR (getPosition().x()    , getPosition().y() - 1, BaseN)
-		CHECK_NEIGHBOUR (getPosition().x() + 1, getPosition().y()    , BaseE)
-		CHECK_NEIGHBOUR (getPosition().x()    , getPosition().y() + 1, BaseS)
-		CHECK_NEIGHBOUR (getPosition().x() - 1, getPosition().y()    , BaseW)
+		if(!map.isValidPosition(pos))
+			continue;
+		tiles[index(pos)] = connectMode;
 	}
-	else
+
+	connectorTiles.clear();
+
+	for(const cPosition& pos: inner)
 	{
-		CHECK_NEIGHBOUR (getPosition().x()    , getPosition().y() - 1, BaseN)
-		CHECK_NEIGHBOUR (getPosition().x() + 1, getPosition().y() - 1, BaseBN)
-		CHECK_NEIGHBOUR (getPosition().x() + 2, getPosition().y()    , BaseE)
-		CHECK_NEIGHBOUR (getPosition().x() + 2, getPosition().y() + 1, BaseBE)
-		CHECK_NEIGHBOUR (getPosition().x()    , getPosition().y() + 2, BaseS)
-		CHECK_NEIGHBOUR (getPosition().x() + 1, getPosition().y() + 2, BaseBS)
-		CHECK_NEIGHBOUR (getPosition().x() - 1, getPosition().y()    , BaseW)
-		CHECK_NEIGHBOUR (getPosition().x() - 1, getPosition().y() + 1, BaseBW)
+		if(!map.isValidPosition(pos))
+			continue;
+
+		int pick = -1;
+
+		bool left = tiles[index(pos.relative(-1, 0))] == 1;
+		bool right = tiles[index(pos.relative(1, 0))] == 1;
+		bool up = tiles[index(pos.relative(0, -1))] == 1;
+		bool down = tiles[index(pos.relative(0, 1))] == 1;
+		int center = tiles[index(pos)];
+		//| 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10| 11| 12| 13| 14| 15|
+		//|   | | |   |   |   | | |   | | | | |   |   | | | | | | |   | | |
+		//| o | o | o-| o |-o | o |-o-|-o | o-| o-|-o |-o |-o-| o-|-o-|-o-|
+		//|   |   |   | | |   | | |   |   |   | | | | | | |   | | | | | | |
+		// TODO: Hide this rules into XML generic tile description
+		// Concrete walls, roads and platforms can be implemented using tiling rules in the future
+		if(center > 0)
+		{
+			if(left && right && up && down)
+				pick = 15;
+			else if(left && right && down)
+				pick = 14;
+			else if(up && right && down)
+				pick = 13;
+			else if(up && left && right)
+				pick = 12;
+			else if(up && down && left)
+				pick = 11;
+			else if(left && down)
+				pick = 10;
+			else if(right && down)
+				pick = 9;
+			else if(up && right)
+				pick = 8;
+			else if(up && left)
+				pick = 7;
+			else if(left && right)
+				pick = 6;
+			else if(up && down)
+				pick = 5;
+			else if(left)
+				pick = 4;
+			else if(down)
+				pick = 3;
+			else if(right)
+				pick = 2;
+			else if(up)
+				pick = 1;
+			else if(center == 1)
+				pick = 0;
+			else
+				pick = -1;
+		}
+
+		if(pick >= 0)
+		{
+			connectorTiles.push_back(std::make_pair(pos-getPosition(), pick));
+		}
 	}
-#endif
 }
 
 //--------------------------------------------------------------------------
@@ -552,123 +571,27 @@ void cBuilding::CheckNeighbours (const cMap& map)
 //--------------------------------------------------------------------------
 void cBuilding::drawConnectors (cRenderContext& context, const cStaticUnitData::sRenderOps& ops) const
 {
-	SDL_Rect src, temp;
-#ifdef FIX_CONNECTORS
-	CHECK_SCALING(*UnitsUiData.ptr_connector, *UnitsUiData.ptr_connector_org, zoomFactor);
-	CHECK_SCALING(*UnitsUiData.ptr_connector_shw, *UnitsUiData.ptr_connector_shw_org, zoomFactor);
+	cRenderContext tmpContext = context;
 
-	if (alphaEffectValue)
-		SDL_SetSurfaceAlphaMod(UnitsUiData.ptr_connector, alphaEffectValue);
-	else
-		SDL_SetSurfaceAlphaMod(UnitsUiData.ptr_connector, 254);
+	int tileSize = context.dstRect.w / this->cellSize;
 
-	src.y = 0;
-	src.x = 0;
-	src.h = src.w = UnitsUiData.ptr_connector->h;
-
-	if (!isBig)
+	for(auto tile: this->connectorTiles)
 	{
-		if (BaseN &&  BaseE &&  BaseS &&  BaseW) src.x = 15;
-		else if (BaseN &&  BaseE &&  BaseS && !BaseW) src.x = 13;
-		else if (BaseN &&  BaseE && !BaseS &&  BaseW) src.x = 12;
-		else if (BaseN &&  BaseE && !BaseS && !BaseW) src.x =  8;
-		else if (BaseN && !BaseE &&  BaseS &&  BaseW) src.x = 11;
-		else if (BaseN && !BaseE &&  BaseS && !BaseW) src.x =  5;
-		else if (BaseN && !BaseE && !BaseS &&  BaseW) src.x =  7;
-		else if (BaseN && !BaseE && !BaseS && !BaseW) src.x =  1;
-		else if (!BaseN &&  BaseE &&  BaseS &&  BaseW) src.x = 14;
-		else if (!BaseN &&  BaseE &&  BaseS && !BaseW) src.x =  9;
-		else if (!BaseN &&  BaseE && !BaseS &&  BaseW) src.x =  6;
-		else if (!BaseN &&  BaseE && !BaseS && !BaseW) src.x =  2;
-		else if (!BaseN && !BaseE &&  BaseS &&  BaseW) src.x = 10;
-		else if (!BaseN && !BaseE &&  BaseS && !BaseW) src.x =  3;
-		else if (!BaseN && !BaseE && !BaseS &&  BaseW) src.x =  4;
-		else if (!BaseN && !BaseE && !BaseS && !BaseW) src.x =  0;
-		src.x *= src.h;
+		tmpContext.dstRect = context.dstRect;
+		tmpContext.dstRect.w = tileSize;
+		tmpContext.dstRect.h = tileSize;
+		cPosition pos = tile.first;
+		if(tile.second < 0)
+			continue;
+		tmpContext.channels["connector"] = tile.second;
+		tmpContext.dstRect.x += tileSize*pos.x();
+		tmpContext.dstRect.y += tileSize*pos.y();
 
-		if (src.x != 0 || buildingData->isConnectorGraphic)
-		{
-			// blit shadow
-			temp = dest;
-			if (drawShadow) blittAlphaSurface (UnitsUiData.ptr_connector_shw, &src, surface, &temp);
-			// blit the image
-			temp = dest;
-			SDL_BlitSurface (UnitsUiData.ptr_connector, &src, surface, &temp);
-		}
+		if(ops.shadow && GraphicsData.connector_shadow)
+			GraphicsData.connector_shadow->render(tmpContext);
+		if(GraphicsData.connector)
+			GraphicsData.connector->render(tmpContext);
 	}
-	else
-	{
-		// make connector stubs of big buildings.
-		// upper left field
-		src.x = 0;
-		if (BaseN &&  BaseW) src.x = 7;
-		else if (BaseN && !BaseW) src.x = 1;
-		else if (!BaseN &&  BaseW) src.x = 4;
-		src.x *= src.h;
-
-		if (src.x != 0)
-		{
-			temp = dest;
-			if (drawShadow) blittAlphaSurface (UnitsUiData.ptr_connector_shw, &src, surface, &temp);
-			temp = dest;
-			SDL_BlitSurface (UnitsUiData.ptr_connector, &src, surface, &temp);
-		}
-
-		// upper right field
-		src.x = 0;
-		dest.x += Round (64.0f * zoomFactor);
-		if (BaseBN &&  BaseE) src.x = 8;
-		else if (BaseBN && !BaseE) src.x = 1;
-		else if (!BaseBN &&  BaseE) src.x = 2;
-		src.x *= src.h;
-
-		if (src.x != 0)
-		{
-			temp = dest;
-			if (drawShadow) blittAlphaSurface (UnitsUiData.ptr_connector_shw, &src, surface, &temp);
-			temp = dest;
-			SDL_BlitSurface (UnitsUiData.ptr_connector, &src, surface, &temp);
-		}
-
-		// lower right field
-		src.x = 0;
-		dest.y += Round (64.0f * zoomFactor);
-		if (BaseBE && BaseBS)
-			src.x = 9;
-		else if (BaseBE && !BaseBS)
-			src.x = 2;
-		else if (!BaseBE && BaseBS)
-			src.x = 3;
-		src.x *= src.h;
-
-		if (src.x != 0)
-		{
-			temp = dest;
-			if (drawShadow) blittAlphaSurface (UnitsUiData.ptr_connector_shw, &src, surface, &temp);
-			temp = dest;
-			SDL_BlitSurface (UnitsUiData.ptr_connector, &src, surface, &temp);
-		}
-
-		// lower left field
-		src.x = 0;
-		dest.x -= Round (64.0f * zoomFactor);
-		if (BaseS && BaseBW)
-			src.x = 10;
-		else if (BaseS && !BaseBW)
-			src.x = 3;
-		else if (!BaseS && BaseBW)
-			src.x = 4;
-		src.x *= src.h;
-
-		if (src.x != 0)
-		{
-			temp = dest;
-			if (drawShadow) blittAlphaSurface (UnitsUiData.ptr_connector_shw, &src, surface, &temp);
-			temp = dest;
-			SDL_BlitSurface (UnitsUiData.ptr_connector, &src, surface, &temp);
-		}
-	}
-#endif
 }
 
 //--------------------------------------------------------------------------
@@ -1319,21 +1242,8 @@ cResearch::ResearchArea cBuilding::getResearchArea() const
 void cBuilding::setRubbleValue(int value, cCrossPlattformRandom& randomGenerator)
 {
 	rubbleValue = value;
-
-	/*
-	// TODO: Rubble mechanic is quite flawed
-	// It is better to reimplement it in scripts
-	if (isBig)
-	{
-		rubbleTyp = randomGenerator.get(2);
-		uiData = UnitsUiData.rubbleBig;
-	}
-	else
-	{
-		rubbleTyp = randomGenerator.get(5);
-		uiData = UnitsUiData.rubbleSmall;
-	}
-	*/
+	// 2 types for large, and 5 types for small rubble.
+	rubbleTyp = randomGenerator.get(10);
 }
 
 //------------------------------------------------------------------------------

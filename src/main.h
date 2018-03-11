@@ -146,6 +146,9 @@ public:
 	std::shared_ptr<cSpriteList> small_rubble;
 	std::shared_ptr<cSpriteList> small_rubble_shadow;
 
+	std::shared_ptr<cSpriteList> connector;
+	std::shared_ptr<cSpriteList> connector_shadow;
+
 	std::string DialogPath;
 	std::string Dialog2Path;
 	std::string Dialog3Path;
