@@ -77,7 +77,23 @@ protected:
 	 * @param directory - current working directory
 	 * @return if graphic object was properly generated
 	 */
-	bool parseGraphicObject(tinyxml2::XMLElement* gobj, cStaticUnitData& staticData, const char* dir);
+
+	// Wraps parsing result for a graphic object
+	struct GraphicObj
+	{
+		// Parsed object
+		std::shared_ptr<cRenderable> obj;
+		// Layer for this object
+		std::string layer;
+		// Index of this object
+		int index = -1;
+
+		operator bool() const { return obj != nullptr; }
+	};
+
+	// Parses graphic object from XML and returns result wrapper
+	// This function can parse recursive objects, like several cRenderableGroup
+	GraphicObj parseGraphicObject(tinyxml2::XMLElement* gobj, const char* dir);
 
 	// Factory method to create a sprite object from XML data
 	std::shared_ptr<cSprite> makeSprite(tinyxml2::XMLElement* gobj, const char* directory);
@@ -85,6 +101,8 @@ protected:
 	std::shared_ptr<cSpriteList> makeSpriteList(tinyxml2::XMLElement* gobj, const char* directory);
 	// Factory method to create a sprite sheet object from XML data
 	std::shared_ptr<cSpriteList> makeSpriteSheet(tinyxml2::XMLElement* gobj, const char* directory);
+	// Factory method to create a group of renderable objects from XML data
+	std::shared_ptr<cRenderableGroup> makeSpriteGroup(tinyxml2::XMLElement* gobj, const char* directory);
 
 	// Parses common graphic attributes
 	bool parseSpriteAttributes(tinyxml2::XMLElement* gobj, cSprite& sprite);

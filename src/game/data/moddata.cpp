@@ -38,7 +38,6 @@
 #include "utility/autosurface.h"
 #include "utility/files.h"
 #include "utility/pcx.h"
-//#include "utility/unifonts.h"
 #include "utility/log.h"
 
 #include "game/data/units/building.h"
@@ -98,177 +97,6 @@ static void LoadUnitSoundfile (cSoundChunk& dest, const char* directory, const c
 	SDL_RWclose (file);
 
 	dest.load (filepath);
-}
-
-// Loads unit data from the path
-void LoadLegacyUnitGraphics(std::string srcPath,
-				  cSpriteTool& tool,
-				  cStaticUnitData& data)
-{
-	Log.write (" - loading legacy GFX for " + data.getName() + " from " + srcPath, cLog::eLOG_TYPE_INFO);
-	std::string sTmpString;
-
-	int size = data.cellSize;
-	cVector2 unitSize(size, size);
-
-	// load infoimage
-	sTmpString = srcPath + PATH_DELIMITER + "info.pcx";
-
-	if (FileExists (sTmpString))
-	{
-		Log.write (" - loading portrait" + sTmpString, cLog::eLOG_TYPE_DEBUG);
-		data.info = LoadPCX (sTmpString);
-	}
-	else
-	{
-		Log.write ("Missing portrait for " + data.getName() + " file " + sTmpString + " does not extis", cLog::eLOG_TYPE_ERROR);
-	}
-
-	// Load an old 'static' data
-	// New graphics is described inside XMLs
-	if(!data.customGraphics)
-	{
-		// load img
-		sTmpString = srcPath + PATH_DELIMITER + "img.pcx";
-
-		if(FileExists(sTmpString))
-		{
-			auto sprite = tool.makeSprite(sTmpString, unitSize);
-			if(sprite)
-			{
-				sprite->setColorKeyAuto();
-				data.image = sprite;
-			}
-			else
-			{
-				Log.write (" - can not load file " + sTmpString, cLog::eLOG_TYPE_ERROR);
-			}
-		}
-		// load shadow
-		sTmpString = srcPath + PATH_DELIMITER + "shw.pcx";
-		if(FileExists(sTmpString))
-		{
-			auto sprite = tool.makeSprite(sTmpString, unitSize);
-			if(sprite)
-			{
-				sprite->setColorKeyAuto();
-				data.shadow = sprite;
-			}
-		}
-		// load overlay graphics, if necessary
-		sTmpString = srcPath + PATH_DELIMITER + "overlay.pcx";
-		if(FileExists(sTmpString))
-			data.overlay = tool.makeSprite(sTmpString, unitSize);
-		// load infantery graphics
-		if (data.hasFlag(UnitFlag::HasAnimationMovement))
-		{
-	#ifdef FIX_ANIMATIONS_LATER
-			// TODO: Animations should be merged inside new cRenderable system
-			SDL_Rect rcDest;
-			for (int dir = 0; dir < 8; dir++)
-			{
-				//ui.directed_image[dir] = spriteTool.makeSprite();
-				ui.img[dir] = AutoSurface (SDL_CreateRGBSurface (0, 64 * 13, 64, Video.getColDepth(), 0, 0, 0, 0));
-				SDL_SetColorKey (ui.img[dir].get(), SDL_TRUE, 0x00FFFFFF);
-				SDL_FillRect (ui.img[dir].get(), nullptr, 0x00FF00FF);
-
-				for (int frame = 0; frame < 13; frame++)
-				{
-					sTmpString = sVehiclePath;
-					char sztmp[16];
-					TIXML_SNPRINTF (sztmp, sizeof (sztmp), "img%d_%.2d.pcx", dir, frame);
-					sTmpString += sztmp;
-
-					if (FileExists (sTmpString.c_str()))
-					{
-						AutoSurface sfTempSurface (LoadPCX (sTmpString));
-						if (!sfTempSurface)
-						{
-							Log.write (SDL_GetError(), cLog::eLOG_TYPE_WARNING);
-						}
-						else
-						{
-							rcDest.x = 64 * frame + 32 - sfTempSurface->w / 2;
-							rcDest.y = 32 - sfTempSurface->h / 2;
-							SDL_BlitSurface (sfTempSurface.get(), nullptr, ui.img[dir].get(), &rcDest);
-						}
-					}
-				}
-				ui.img_org[dir] = AutoSurface (SDL_CreateRGBSurface (0, 64 * 13, 64, Video.getColDepth(), 0, 0, 0, 0));
-				SDL_SetColorKey (ui.img[dir].get(), SDL_TRUE, 0x00FFFFFF);
-				SDL_FillRect (ui.img_org[dir].get(), nullptr, 0x00FFFFFF);
-				SDL_BlitSurface (ui.img[dir].get(), nullptr, ui.img_org[dir].get(), nullptr);
-
-				int size = staticData.cellSize;
-				ui.img[dir] = AutoSurface (SDL_CreateRGBSurface (0, size*64 * 13, size*64, Video.getColDepth(), 0, 0, 0, 0));
-
-				ui.shw[dir] = AutoSurface (SDL_CreateRGBSurface (0, 64 * 13, 64, Video.getColDepth(), 0, 0, 0, 0));
-				SDL_SetColorKey (ui.shw[dir].get(), SDL_TRUE, 0x00FF00FF);
-				SDL_FillRect (ui.shw[dir].get(), nullptr, 0x00FF00FF);
-				ui.shw_org[dir] = AutoSurface (SDL_CreateRGBSurface (0, 64 * 13, 64, Video.getColDepth(), 0, 0, 0, 0));
-				SDL_SetColorKey (ui.shw_org[dir].get(), SDL_TRUE, 0x00FF00FF);
-				SDL_FillRect (ui.shw_org[dir].get(), nullptr, 0x00FF00FF);
-
-				rcDest.x = 3;
-				rcDest.y = 3;
-				SDL_BlitSurface (ui.img_org[dir].get(), nullptr, ui.shw_org[dir].get(), &rcDest);
-				SDL_LockSurface (ui.shw_org[dir].get());
-				Uint32* ptr = static_cast<Uint32*> (ui.shw_org[dir]->pixels);
-				for (int j = 0; j < 64 * 13 * 64; j++)
-				{
-					if (*ptr != 0x00FF00FF)
-						*ptr = 0;
-					ptr++;
-				}
-				SDL_UnlockSurface (ui.shw_org[dir].get());
-				SDL_BlitSurface (ui.shw_org[dir].get(), nullptr, ui.shw[dir].get(), nullptr);
-				SDL_SetSurfaceAlphaMod (ui.shw_org[dir].get(), 50);
-				SDL_SetSurfaceAlphaMod (ui.shw[dir].get(), 50);
-			}
-	#endif
-		}
-		// load other vehicle graphics
-		else
-		{
-#ifdef FUCK_THIS
-			// TODO: Directions should be merged inside new cRenderable system
-			for (int n = 0; n < 8; n++)
-			{
-				// load image
-				char sztmp[16];
-				TIXML_SNPRINTF (sztmp, sizeof (sztmp), "img%d.pcx", n);
-				sTmpString = srcPath + PATH_DELIMITER + sztmp;
-
-				if(FileExists(sTmpString))
-				{
-					//SDL_SetColorKey (ui.img[n].get(), SDL_TRUE, 0xFFFFFF);
-					data.directed_image[n] = tool.makeSprite(sTmpString.c_str(), unitSize);
-					if(data.directed_image[n])
-					{
-						data.directed_image[n]->setColorKey(0xFFFFFF);
-					}
-					else
-					{
-						// TODO: Set default image
-						Log.write ("Missing GFX - your MAXR install seems to be incomplete!", cLog::eLOG_TYPE_ERROR);
-					}
-				}
-
-				// load shadow
-				TIXML_SNPRINTF (sztmp, sizeof (sztmp), "shw%d.pcx", n);
-				sTmpString = srcPath + PATH_DELIMITER + sztmp;
-				if(FileExists(sTmpString))
-				{
-					data.directed_shadow[n] = tool.makeSprite(sTmpString, unitSize);
-					if (data.directed_shadow[n])
-					{
-						data.directed_shadow[n]->setAlphaKey(50);
-					}
-				}
-			}
-#endif
-		}
-	}
 }
 
 ModData::ModData(const char * _path, cUnitsData* _unitsData)
@@ -332,8 +160,6 @@ void ModData::parseVehicle(tinyxml2::XMLElement* source, sID id, const std::stri
 	{
 		Log.write ("Missing GFX - your MAXR install seems to be incomplete!", cLog::eLOG_TYPE_ERROR);
 	}
-
-	LoadLegacyUnitGraphics(directory, *spriteTool, *object);
 }
 
 void ModData::parseBuilding(tinyxml2::XMLElement* source, sID id, const std::string& name, const char* directory)
@@ -348,43 +174,11 @@ void ModData::parseBuilding(tinyxml2::XMLElement* source, sID id, const std::str
 		object->setFlag(UnitFlag::IsConnector, getValueBool(graphic, "IsConnector"));
 	}
 
-	LoadLegacyUnitGraphics(directory, *spriteTool, *object);
-
 	// load video
 	std::string sTmpString = directory;
 	sTmpString += PATH_DELIMITER"video.pcx";
 	if (FileExists (sTmpString))
 		object->video = LoadPCX (sTmpString);
-
-#ifdef VERY_BROKEN
-
-	// I will send connectors to a separate special layer
-	// Get Ptr if necessary:
-	if (staticData.ID == UnitsDataGlobal.getSpecialIDConnector())
-	{
-		ui.isConnectorGraphic = true;
-		UnitsUiData.ptr_connector = ui.img.get();
-		UnitsUiData.ptr_connector_org = ui.img_org.get();
-		SDL_SetColorKey (UnitsUiData.ptr_connector, SDL_TRUE, 0xFF00FF);
-		UnitsUiData.ptr_connector_shw = ui.img_shadow.get();
-		UnitsUiData.ptr_connector_shw_org = ui.img_shadow_original.get();
-		SDL_SetColorKey(UnitsUiData.ptr_connector_shw, SDL_TRUE, 0xFF00FF);
-	}
-	else if (staticData.ID == UnitsDataGlobal.getSpecialIDSmallBeton())
-	{
-		UnitsUiData.ptr_small_beton = ui.img.get();
-		UnitsUiData.ptr_small_beton_org = ui.img_org.get();
-		SDL_SetColorKey(UnitsUiData.ptr_small_beton, SDL_TRUE, 0xFF00FF);
-	}
-
-
-	// Check if there is more than one frame
-	// use 129 here because some images from the res_installer are one pixel to large
-	if (ui.img_org->w > 129 && !ui.isConnectorGraphic && !ui.hasClanLogos)
-		ui.hasFrames = ui.img_org->w / ui.img_org->h;
-	else
-		ui.hasFrames = 0;
-#endif
 }
 
 void ModData::parseDataFile(const char* path, const char* directory)
@@ -493,7 +287,6 @@ int ModData::loadVehicles(const char* vehicle_directory)
 
 	// read vehicles.xml
 	std::vector<std::string> directories;
-	std::vector<int> IDList;
 
 	xmlElement = xmlElement->FirstChildElement();
 
@@ -508,14 +301,6 @@ int ModData::loadVehicles(const char* vehicle_directory)
 		else
 		{
 			string msg = string ("Can't read directory-attribute from \"") + xmlElement->Value() + "\" - node";
-			Log.write (msg, cLog::eLOG_TYPE_WARNING);
-		}
-
-		if (xmlElement->Attribute ("num"))
-			IDList.push_back (xmlElement->IntAttribute ("num"));
-		else
-		{
-			string msg = string ("Can't read num-attribute from \"") + xmlElement->Value() + "\" - node";
 			Log.write (msg, cLog::eLOG_TYPE_WARNING);
 		}
 
@@ -564,8 +349,8 @@ int ModData::loadBuildings(const char* buldings_folder)
 		Log.write ("Can't read \"BuildingData->Building\" node!", cLog::eLOG_TYPE_ERROR);
 		return 0;
 	}
+
 	std::vector<std::string> directories;
-	std::vector<int> IDList;
 
 	xmlElement = xmlElement->FirstChildElement();
 	if (xmlElement == nullptr)
@@ -585,37 +370,8 @@ int ModData::loadBuildings(const char* buldings_folder)
 			Log.write (msg, cLog::eLOG_TYPE_WARNING);
 		}
 
-		if (xmlElement->Attribute ("num"))
-			IDList.push_back (xmlElement->IntAttribute ("num"));
-		else
-		{
-			std::string msg = string ("Can't read num-attribute from \"") + xmlElement->Value() + "\" - node";
-			Log.write (msg, cLog::eLOG_TYPE_WARNING);
-		}
-
-		#ifdef VERY_BROKEN
-		// Will be deleted when explosive stuff moves completely to XML fields
-		const char* spezial = xmlElement->Attribute ("special");
-		if (spezial != nullptr)
-		{
-			std::string specialString = spezial;
-			// TODO: Get rid of this shit. Leave all data references to XML or scripts
-			// C++ should not keep so specific data. Really.
-			if (specialString == "connector")
-				UnitsDataGlobal.setSpecialIDConnector(sID(1, IDList.back()));
-			else
-				Log.write ("Unknown spacial in buildings.xml \"" + specialString + "\"", cLog::eLOG_TYPE_WARNING);
-		}
-		#endif
-
 		xmlElement = xmlElement->NextSiblingElement();
 	}
-
-	/*
-	// Will be deleted when explosive stuff moves completely to XML fields
-	if (UnitsDataGlobal.getSpecialIDConnector().secondPart  == 0)
-		Log.write("special \"connector\" missing in buildings.xml", cLog::eLOG_TYPE_WARNING);
-	*/
 
 	// Parse all folders that were declared in buildings.xml
 	for (const auto& dirname: directories)
@@ -895,9 +651,26 @@ void ModData::parseUnitData (tinyxml2::XMLElement* unitDataXml, cStaticUnitData&
 		/// Iterate through custom graphic elements
 		for(XMLElement* gobj = graphic->FirstChildElement(); gobj; gobj = gobj->NextSiblingElement())
 		{
-			if(parseGraphicObject(gobj, staticData, (std::string(directory)+PATH_DELIMITER).c_str()))
+			auto result = parseGraphicObject(gobj, (std::string(directory)+PATH_DELIMITER).c_str());
+			if(result)
+			{
 				foundCustomGraphics = true;
+				staticData.setGraphics(result.layer, result.obj);
+			}
 		}
+	}
+
+	// load infoimage
+	std::string sTmpString = std::string(directory) + PATH_DELIMITER + "info.pcx";
+
+	if (FileExists (sTmpString))
+	{
+		Log.write (" - loading portrait" + sTmpString, cLog::eLOG_TYPE_DEBUG);
+		staticData.info = LoadPCX (sTmpString);
+	}
+	else
+	{
+		Log.write (" - missing portrait for " + staticData.getName() + " file " + sTmpString + " does not extis", cLog::eLOG_TYPE_ERROR);
 	}
 
 	if(foundCustomGraphics)
@@ -1000,6 +773,33 @@ std::shared_ptr<cSpriteList> ModData::makeSpriteSheet(tinyxml2::XMLElement* xml,
 	return gobject;
 }
 
+std::shared_ptr<cRenderableGroup> ModData::makeSpriteGroup(XMLElement *gobj, const char *directory)
+{
+	/* Example structure:
+	<SpriteGroup channel="direction" layer="main">
+	  <SpriteList pattern="img0_%d.pcx" layer="0" frames="13" channel="animation" colorkey="auto"/>
+	</Group>
+	*/
+
+	cRenderableGroupPtr gobject(new cRenderableGroup());
+
+	if(const char* attr = gobj->Attribute("channel"))
+		gobject->setChannel(attr);
+
+	int index = 0;
+	for(XMLElement* xml = gobj->FirstChildElement(); xml; xml = xml->NextSiblingElement())
+	{
+		auto result = this->parseGraphicObject(xml, directory);
+		if(result)
+		{
+			gobject->setChild(result.index < 0 ? index : result.index, result.obj);
+		}
+		index++;
+	}
+
+	return gobject;
+}
+
 // Parses common graphic attributes
 bool ModData::parseSpriteAttributes(tinyxml2::XMLElement* gobj, cSprite& sprite)
 {
@@ -1027,9 +827,8 @@ bool ModData::parseSpriteAttributes(tinyxml2::XMLElement* gobj, cSprite& sprite)
 	return false;
 }
 
-bool ModData::parseGraphicObject(tinyxml2::XMLElement* xml, cStaticUnitData& staticData, const char* directory)
+ModData::GraphicObj ModData::parseGraphicObject(tinyxml2::XMLElement* xml, const char* directory)
 {
-	// TODO: This loader is still not complete. Complete version should support recursive graphic objects
 	std::string type = xml->Name();
 	cRenderablePtr gobject;
 
@@ -1045,17 +844,24 @@ bool ModData::parseGraphicObject(tinyxml2::XMLElement* xml, cStaticUnitData& sta
 	{
 		gobject = this->makeSpriteList(xml, directory);
 	}
+	else if(type == "SpriteGroup")
+	{
+		gobject = this->makeSpriteGroup(xml, directory);
+	}
 
 	// Add graphic object to the unit
+	GraphicObj result;
 	if(gobject)
 	{
-		std::string layer;
+		result.obj = gobject;
 		if(const char* attr = xml->Attribute("layer"))
-			layer = attr;
-		staticData.setGraphics(layer, gobject);
-		return true;
+			result.layer = attr;
+
+		if(const char* attr = xml->Attribute("index"))
+			result.index = xml->IntAttribute("index");
 	}
-	return false;
+
+	return result;
 }
 
 //------------------------------------------------------------------------------

@@ -48,5 +48,15 @@
     <Has_Corpse YN="Yes"/>
     <Has_Player_Color YN="Yes"/>
     <Movement YN="Yes"/>
+    <SpriteGroup channel="direction" layer="main">
+      <SpriteList pattern="img0_%02d.pcx" layer="0" frames="13" channel="animation" colorkey="auto"/>
+      <SpriteList pattern="img1_%02d.pcx" layer="1" frames="13" channel="animation" colorkey="auto"/>
+      <SpriteList pattern="img2_%02d.pcx" layer="2" frames="13" channel="animation" colorkey="auto"/>
+      <SpriteList pattern="img3_%02d.pcx" layer="3" frames="13" channel="animation" colorkey="auto"/>
+      <SpriteList pattern="img4_%02d.pcx" layer="4" frames="13" channel="animation" colorkey="auto"/>
+      <SpriteList pattern="img5_%02d.pcx" layer="5" frames="13" channel="animation" colorkey="auto"/>
+      <SpriteList pattern="img6_%02d.pcx" layer="6" frames="13" channel="animation" colorkey="auto"/>
+      <SpriteList pattern="img7_%02d.pcx" layer="7" frames="13" channel="animation" colorkey="auto"/>
+    </SpriteGroup>
   </Graphic>
 </Vehicle>

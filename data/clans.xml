@@ -230,6 +230,8 @@
       <Vehicle ID="0 19" name="konstrukt" metal="40"/>
       <Vehicle ID="0 24" name="pionier" metal="20"/>
       <Vehicle ID="0 31" name="surveyor" />
+      <Vehicle ID="0 18" name="infantery" />
+      <Vehicle ID="0 13" name="commando" />
     </Embark>
   </Clan>
 

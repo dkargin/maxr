@@ -561,6 +561,62 @@ SDL_Rect cSpriteList::getSrcRect(int frame) const
 }
 
 //------------------------------------------------------------------------------
+cRenderableGroup::cRenderableGroup()
+{
+
+}
+
+void cRenderableGroup::setChild(int index, const cRenderablePtr &ptr)
+{
+	if(index < 0)
+		return;
+
+	if(index >= group.size())
+	{
+		group.resize(index+1);
+	}
+
+	group[index] = ptr;
+}
+
+void cRenderableGroup::render(sContext& context) const
+{
+	auto it = context.channels.find(channel);
+
+	int index = -1;
+	if(it != context.channels.end())
+	{
+		index = it->second;
+	}
+
+	if(index >= 0 && index < group.size())
+	{
+		if(auto obj = group[index])
+		{
+			obj->render(context);
+		}
+	}
+}
+
+void cRenderableGroup::setColorKey(int key)
+{
+	for(auto ptr: group)
+	{
+		if(ptr)
+			ptr->setColorKey(key);
+	}
+}
+
+void cRenderableGroup::setAlphaKey(int alpha)
+{
+	for(auto ptr: group)
+	{
+		if(ptr)
+			ptr->setAlphaKey(alpha);
+	}
+}
+
+//------------------------------------------------------------------------------
 cSpriteTool::cSpriteTool()
 {
 	cellSize = 64;

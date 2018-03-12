@@ -132,10 +132,12 @@ protected:
 class cSprite;
 class cSpriteList;
 class cSpriteTool;
+class cRenderableGroup;
 
 typedef std::shared_ptr<cRenderable> cRenderablePtr;
 typedef std::shared_ptr<cSprite> cSpritePtr;
 typedef std::shared_ptr<cSpriteList> cSpriteListPtr;
+typedef std::shared_ptr<cRenderableGroup> cRenderableGroupPtr;
 
 enum class FitMode
 {
@@ -206,6 +208,22 @@ protected:
 	int frames;
 };
 
+// Renderable group
+class cRenderableGroup : public cRenderable
+{
+public:
+	cRenderableGroup();
+
+	void setColorKey(int key) override;
+	void setAlphaKey(int alpha = -1) override;
+
+	virtual void render(sContext& context) const override;
+	void setChild(int index, const cRenderablePtr& ptr);
+
+protected:
+	std::vector<cRenderablePtr> group;
+};
+
 // A factory for renderable objects
 class cSpriteTool
 {
@@ -260,14 +278,6 @@ protected:
 	SDL_PixelFormat format;
 
 	static AutoSurface cache;
-};
-
-// Renderable group
-class cRenderableGroup
-{
-public:
-
-	std::list<cRenderablePtr> children;
 };
 
 #endif // utility_drawingH
