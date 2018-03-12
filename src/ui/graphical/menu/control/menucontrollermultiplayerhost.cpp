@@ -34,6 +34,7 @@
 #include "ui/graphical/menu/dialogs/dialogyesno.h"
 #include "game/startup/network/host/networkhostgamenew.h"
 #include "game/startup/network/host/networkhostgamesaved.h"
+#include "maxrversion.h"
 #include "main.h"
 #include "game/data/map/map.h"
 #include "game/data/player/player.h"
