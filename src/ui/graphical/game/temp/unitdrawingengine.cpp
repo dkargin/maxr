@@ -177,8 +177,13 @@ void cUnitDrawingEngine::drawVehicle(const cVehicle& vehicle, SDL_Rect destinati
 	int ox = (int) (vehicle.getMovementOffset().x() * zoomFactor);
 	int oy = (int) (vehicle.getMovementOffset().y() * zoomFactor);
 
-	destination.x += ox;
-	destination.y += oy;
+	// Apply movement offset only if unit is not building.
+	// Or it will cause site border to be offsetted as well
+	if (!vehicle.isUnitBuildingABuilding() && !vehicle.isUnitClearing())
+	{
+		destination.x += ox;
+		destination.y += oy;
+	}
 
 	if (vehicle.getFlightHeight() > 0)
 	{
@@ -188,14 +193,17 @@ void cUnitDrawingEngine::drawVehicle(const cVehicle& vehicle, SDL_Rect destinati
 
 	SDL_Rect dest = {0,0, destination.w, destination.h};
 
-	bool bDraw = false;
+	bool bDraw = true;
+	SDL_Surface* drawingSurface = nullptr;
+
+	/*
 	SDL_Surface* drawingSurface = drawingCache.getCachedImage (vehicle, zoomFactor, map, animationTime);
 	if (drawingSurface == nullptr)
 	{
 		// no cached image found. building needs to be redrawn.
 		bDraw = true;
 		drawingSurface = drawingCache.createNewEntry (vehicle, zoomFactor, map, animationTime);
-	}
+	}*/
 
 	if (drawingSurface == nullptr)
 	{
@@ -229,11 +237,11 @@ void cUnitDrawingEngine::drawVehicle(const cVehicle& vehicle, SDL_Rect destinati
 	}
 
 	// remove movement offset for working units
-	if (vehicle.isUnitBuildingABuilding() || vehicle.isUnitClearing())
-	{
-		destination.x -= ox;
-		destination.y -= oy;
-	}
+	//if (vehicle.isUnitBuildingABuilding() || vehicle.isUnitClearing())
+	//{
+	//	destination.x -= ox;
+	//	destination.y -= oy;
+	//}
 
 	// draw indication, when building is complete
 	if (vehicle.isUnitBuildingABuilding() && vehicle.getBuildTurns() == 0 && vehicle.getOwner() == player && !vehicle.BuildPath)
@@ -268,10 +276,13 @@ void cUnitDrawingEngine::drawVehicle(const cVehicle& vehicle, SDL_Rect destinati
 	if (unitSelection && unitSelection->getSelectedUnitsCount() > 1 && unitSelection->isSelected (vehicle))
 	{
 		const cRgbColor groupSelectionColor = cRgbColor::yellow();
+		int size = vehicle.getCellSize();
+		if (vehicle.isUnitBuildingABuilding() || vehicle.isUnitClearing())
+			size = vehicle.getBuildSize();
 		cPosition minCorner(destination.x + 2, destination.y + 2);
 		cPosition maxCorner(
-				destination.x + 2 + (destination.w - 3),
-				destination.y + 2 + (destination.h - 3));
+				destination.x + 2 + (size*destination.w - 3),
+				destination.y + 2 + (size*destination.h - 3));
 		const cBox<cPosition> d (minCorner, maxCorner);
 
 		drawRectangle (*cVideo::buffer, d, groupSelectionColor, 1);

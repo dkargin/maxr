@@ -163,8 +163,9 @@ void cVehicle::render_BuildingOrBigClearing (const cMapView& map, unsigned long 
 	cRenderContext newContext = context;
 	if(size > 1)
 	{
-		newContext.dstRect.w += 64*(size-1);
-		newContext.dstRect.h += 64*(size-1);
+		int cell = newContext.dstRect.w / cellSize;
+		newContext.dstRect.w += cell*(size-1);
+		newContext.dstRect.h += cell*(size-1);
 	}
 
 	vehicleData->renderFactionShadowSprite(vehicleData->build, vehicleData->build_shadow, newContext, ops);

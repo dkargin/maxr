@@ -2,8 +2,6 @@
 
 ## Notable problems I've created ##
 
- - Rendering connector's attachments to the buildings is broken now. I've cut this part of code from the buildings. Connectors themselves should deal with it, not the buildings
- - Rendering pipeline hopes that size of unit's graphics is consistent with actual unit's size. In fact - it is not consistent, and should not.
  - Finish building job is broken:
  	- Markers are drawn in wrong places.
  	- Exit build area is broken
@@ -12,21 +10,15 @@
  - All exit points are broken
  - All range calculations are broken
  - UI interaction for move orders should be updated for multitile units.
- - Shadows are cropped. Should provide a larger area to render shadows
- - Render order for shadows is broken. All shadows should be rendered at once
-
+ 
 Broken functions. Should be fixed:
 
- - `void cVehicle::render_smallClearing` - 
- - `void cVehicle::render_BuildingOrBigClearing` - building process is so tricky ...
  - `void cBuilding::render_rubble` - I've just disabled all rubble-related stuff
  - `void cActionInitNewGame::execute(cModel& model) const` - disabled check for credits. Players 
  can overspend
  - ActionFinishBuild - exit points are wrong
  - void cGameMapWidget::drawExitPoints() is not consistent with actual exit points. Rendering code should be coupled with actual logic code
- - Unit selection is broken. 
- std::pair<bool, cPosition> cMouseModeSelectBuildPosition::findNextBuildPosition seems like broken
-
+ std::pair<bool, cPosition> cMouseModeSelectBuildPosition::findNextBuildPosition seems like broken for a very large buildings. 1x1 and 2x2 buildings are ok
 
 ## Stuff that I do not like ##
 
@@ -59,15 +51,11 @@ Channels:
  - direction 	- where unit is facing
  - clan			- selected clan
 
-
 Local plan:
-
 
 The problems stopping from pull request:
 
-1. Restore build/clear graphics to original look
-	- Fix wrong scaling and sprite placement for large buildings
-	buildSize = building->getCellSize();
+1. Sometimes build graphics are glitchy
 1. Reimplement rubble graphics
 	- Rubble is not created
 	- Load rubble graphics to a common location
@@ -77,3 +65,5 @@ The problems stopping from pull request:
 	- implement cRenderableGroup class. We need a container for different sprites
 	- need iterative XML parser as well
 1. Air transport can not load units
+1. Restore cache for vehicle sprites. Hell knows when I reimplement rendering with opengl
+1. Actual connector building does not pick proper graphics
