@@ -38,6 +38,7 @@
 #include "game/data/player/playerbasicdata.h"
 #include "utility/serialization/serialization.h"
 #include "utility/arraycrc.h"
+#include "game/data/rangemap.h"
 
 class cHud;
 class cMapField;
@@ -80,7 +81,7 @@ public:
 
 	bool isHuman() const { return true; } // only human players are implemented yet.
 	const cPlayerColor& getColor() const { return splayer.getColor(); }
-	void setColor (cPlayerColor color) { return splayer.setColor (std::move (color)); }
+	void setColor (cPlayerColor color) { splayer.setColor (std::move (color)); }
 
 	int getId() const { return splayer.getNr(); }
 
@@ -96,9 +97,20 @@ public:
 
 	void initMaps (cMap& map);
 	const cPosition& getMapSize() const;
-	void doScan();
-	void revealMap();
-	void revealPosition (const cPosition& position);
+
+	/** 
+	* Update the scan and detection maps of the player. These maps control,
+	* where a player can see other units.
+	*/
+	void addToScan(const cUnit& unit);
+
+	// This function is weird
+	void updateScan(const cUnit& unit, const cPosition& newPosition, int newSize = 1);
+	void updateScan(const cUnit& unit, int newScanRange);
+	void removeFromScan(const cUnit& unit);
+
+	const cRangeMap& getScanMap() const;
+
 	void revealResource();
 	unsigned int getOffset (const cPosition& pos) const { return pos.x() + pos.y() * mapSize.x(); }
 	/**
@@ -154,19 +166,18 @@ public:
 	bool getIsRemovedFromGame() const;
 	void setIsRemovedFromGame (bool value);
 
-	void exploreResource (const cPosition& pos) { ResourceMap.set(getOffset (pos), 1); }
-	bool hasResourceExplored (const cPosition& pos) const { return ResourceMap[getOffset (pos)] != 0; }
-	bool hasSentriesAir (const cPosition& pos) const { return SentriesMapAir[getOffset (pos)] != 0; }
-	bool hasSentriesGround (const cPosition& pos) const { return SentriesMapGround[getOffset (pos)] != 0; }
-	bool hasLandDetection (const cPosition& pos) const { return DetectLandMap[getOffset (pos)] != 0; }
-	bool hasMineDetection (const cPosition& pos) const { return DetectMinesMap[getOffset (pos)] != 0; }
-	bool hasSeaDetection (const cPosition& pos) const { return DetectSeaMap[getOffset (pos)] != 0; }
+	void exploreResource (const cPosition& pos) { resourceMap.set(getOffset (pos), 1); }
+	bool hasResourceExplored (const cPosition& pos) const { return resourceMap[getOffset (pos)] != 0; }
+	bool hasSentriesAir (const cPosition& pos) const { return sentriesMapAir.get(pos); }
+	bool hasSentriesGround (const cPosition& pos) const { return sentriesMapGround.get(pos); }
+	bool hasLandDetection (const cPosition& pos) const { return detectLandMap.get(pos); }
+	bool hasMineDetection (const cPosition& pos) const { return detectMinesMap.get(pos); }
+	bool hasSeaDetection (const cPosition& pos) const { return detectSeaMap.get(pos); }
 
 	void doResearch(const cUnitsData& unitsData);  // proceed with the research at turn end
 	void accumulateScore (cServer& server); // at turn end
 
-	void refreshSentryAir();
-	void refreshSentryGround();
+	void refreshSentryMaps();
 
 	bool mayHaveOffensiveUnit() const;
 
@@ -208,7 +219,8 @@ public:
 	mutable cSignal<void ()> buildErrorBuildPositionBlocked;
 	mutable cSignal<void ()> buildErrorInsufficientMaterial;
 	mutable cSignal<void (const cUnit& unit)> buildPathInterrupted;
-	mutable cSignal<void ()> scanAreaChanged;
+	mutable cSignal<void (const cUnit& unit)> detectedStealthUnit;
+	mutable cSignal<void (const cUnit& unit)> stealthUnitDissappeared;
 
 	template <typename T>
 	void save(T& archive)
@@ -255,7 +267,7 @@ public:
 			archive & NVP(vehicleID);
 			cDynamicUnitData dummy2;
 			std::shared_ptr<cVehicleData> dummy1(new cVehicleData());
-			auto vehicle = std::make_shared<cVehicle>(dummy1, dummy2, this, vehicleID);
+			auto vehicle = std::make_shared<cVehicle>(dummy1, &dummy2, this, vehicleID);
 			archive & serialization::makeNvp("vehicle", *vehicle);
 			vehicles.insert(std::move(vehicle));
 		}
@@ -288,13 +300,13 @@ public:
 		archive & NVP(researchState);
 
 		hasFinishedTurnChanged(); //FIXME: deserialization does not trigger signals on changed data members. But this signal is needed for the gui after loading a save game...
-		doScan();
-		refreshSentryAir();
-		refreshSentryGround();
+		refreshScanMaps();
+		refreshSentryMaps();
 		refreshResearchCentersWorkingOnArea();
 		countEcoSpheres();
 	}
 	SERIALIZATION_SPLIT_MEMBER();
+
 private:
 	/**
 	* draws a circle on the map for the fog
@@ -317,14 +329,21 @@ private:
 	void drawSpecialCircle (const cUnit& unit, int iRadius, cArrayCrc<uint8_t>& map, const cPosition& mapsize);
 	//void drawSpecialCircleBig (const cPosition& position, int iRadius, cArrayCrc<uint8_t>& map, const cPosition& mapsize);
 
-	std::string resourceMapToString() const;
-	void setResourceMapFromString(const std::string& str);
-private:
-	cPlayerBasicData splayer;
 public:
 	cUnitsData::DynamicUnitDataStorage dynamicUnitsData; // Current version of vehicles.
 	cBase base;               // the base (groups of connected buildings) of the player
+	PointsHistory pointsHistory; // history of player's total score (from eco-spheres) for graph
+	bool isDefeated;        // true if the player has been defeated
+	int numEcos;            // number of ecospheres. call countEcoSpheres to update.
+
 private:
+	std::string resourceMapToString() const;
+	void setResourceMapFromString(const std::string& str);
+
+	void refreshScanMaps();
+
+	cPlayerBasicData splayer;
+
 	cFlatSet<std::shared_ptr<cVehicle>, sUnitLess<cVehicle>> vehicles;
 	cFlatSet<std::shared_ptr<cBuilding>, sUnitLess<cBuilding>> buildings;
 
@@ -332,20 +351,15 @@ private:
 	cPosition mapSize; // Width and Height of the map.
 
 	// using a special array with cached checksum. This speeds up the calculation of the model checksum.
-	cArrayCrc<uint8_t> ScanMap;            // seen Map tiles.
-	cArrayCrc<uint8_t> ResourceMap;        // Map with explored resources.
-	cArrayCrc<uint8_t> SentriesMapAir;     /**< the covered air area */
-	cArrayCrc<uint8_t> SentriesMapGround;  /**< the covered ground area */
-	cArrayCrc<uint8_t> DetectLandMap;      // Map mit den Gebieten, die an Land gesehen werden kˆnnen.
-	cArrayCrc<uint8_t> DetectSeaMap;       // Map mit den Gebieten, die im Wasser gesehen werden kˆnnen.
-	cArrayCrc<uint8_t> DetectMinesMap;     /** the area where the player can detect mines */
-public:
-	PointsHistory pointsHistory; // history of player's total score (from eco-spheres) for graph
-	bool isDefeated;        // true if the player has been defeated
-	int numEcos;            // number of ecospheres. call countEcoSpheres to update.
-private:
-	int clan;
+	cArrayCrc<uint8_t> resourceMap;        /** Map with explored resources. */
+	cRangeMap sentriesMapAir;     /** the covered air area */
+	cRangeMap sentriesMapGround;  /** the covered ground area */
+	cRangeMap scanMap;            /** seen Map tiles. */
+	cRangeMap detectLandMap;      /** the area where the player can detect land stealth units */
+	cRangeMap detectSeaMap;       /** the area where the player can detect sea stealth units */
+	cRangeMap detectMinesMap;     /** the area where the player can detect mines */
 
+	int clan;
 	int credits;
 
 	std::vector<sTurnstartReport> currentTurnUnitReports; //TODO: remove. Shouldn't be part of the game model

@@ -67,8 +67,8 @@ void cActionStop::execute(cModel& model) const
 			/// Positioning unit at the center of the building
 			if (vehicle->getCellSize() > 1)
 			{
+				vehicle->getOwner()->updateScan(*vehicle, vehicle->buildBigSavedPosition);
 				model.getMap()->moveVehicle(*vehicle, vehicle->buildBigSavedPosition);
-				vehicle->getOwner()->doScan();
 			}
 		}
 	}

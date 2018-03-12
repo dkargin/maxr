@@ -33,6 +33,8 @@
 cDialogColorPicker::cDialogColorPicker (const cRgbColor& color, eWindowBackgrounds backgroundType) :
 	cWindow (LoadPCX (GFXOD_DIALOG2), backgroundType)
 {
+	auto* font = cUnicodeFont::font.get();
+
 	colorPicker = addChild (std::make_unique<cRgbColorPicker> (cBox<cPosition> (getPosition() + cPosition (35, 35), getPosition() + cPosition (35 + 160, 35 + 135)), color));
 
 	selectedColorImage = addChild (std::make_unique<cImage> (getPosition() + cPosition (210, 35)));

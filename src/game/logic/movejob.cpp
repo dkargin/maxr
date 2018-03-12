@@ -240,15 +240,17 @@ void cMoveJob::startMove(cModel& model)
 	savedSpeed = 0;
 	vehicle->DecSpeed(nextCosts);
 
+	vehicle->tryResetOfDetectionStateBeforeMove(map, model.getPlayerList());
+	
+	if(cPlayer* owner = vehicle->getOwner())
+		owner->updateScan(*vehicle, path.front(), vehicle->getCellSize());
 	map.moveVehicle(*vehicle, path.front());
+	
 	path.pop_front();
+	
 	vehicle->setMovementOffset(cPosition(0, 0));
 	changeVehicleOffset(-64);
 	Log.write(" cMoveJob: Vehicle (ID: " + iToStr (vehicle->getId()) + ") moved to (" + iToStr(vehicle->getPosition().x()) + ", " + iToStr(vehicle->getPosition().y()) + ") @" + iToStr(model.getGameTime()), cLog::eLOG_TYPE_NET_DEBUG);
-
-	vehicle->getOwner()->doScan();
-
-	//TODO: handle detection of this unit
 }
 
 //------------------------------------------------------------------------------
@@ -270,18 +272,19 @@ bool cMoveJob::handleCollision(cModel &model)
 	{
 		return true;
 	}
-
-	//TODO: model.sideStepStealthUnit();
-	if (map.possiblePlace(*vehicle, path.front(), false))
-	{
-		return true;
-	}
 		
-	if (map.possiblePlace(*vehicle, path.front(), false, true))
+	if (map.possiblePlace(*vehicle, path.front(), false, true)) // ignore moving units
 	{
 		// if the target field is blocked by a moving unit,
 		// just wait and see if it gets free later
 		return false;
+	}
+
+	// enemy stealth units get the chance to get out of the way...
+	model.sideStepStealthUnit(path.front(), *vehicle);
+	if (map.possiblePlace(*vehicle, path.front(), false))
+	{
+		return true;
 	}
 
 	// field is definitely blocked. Try to find another path to destination
@@ -305,11 +308,7 @@ bool cMoveJob::recalculatePath(cModel &model)
 	if (!newPath.empty())
 	{
 		const cMap& map = *model.getMap();
-		if (!map.possiblePlace(*vehicle, newPath.front(), false))
-		{
-			//TODO: model.sideStepStealthUnit();
-		}
-
+		model.sideStepStealthUnit(newPath.front(), *vehicle);
 		if (map.possiblePlace(*vehicle, newPath.front(), false))
 		{
 			// new path is ok. Use it to continue movement...
@@ -413,7 +412,9 @@ void cMoveJob::endMove(cModel& model)
 {
 	vehicle->setMovementOffset (cPosition (0, 0));
 
-	//TODO: handle detection
+	vehicle->detectOtherUnits(*model.getMap());
+	vehicle->detectThisUnit(*model.getMap(), model.getPlayerList());
+
 	//TODO: trigger landing/take off
 
 	cBuilding* mine = model.getMap()->getField(vehicle->getPosition()).getMine();

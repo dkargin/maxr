@@ -325,8 +325,7 @@ private:
 	//cBox<cVector2> computeTileDrawingRange() const;
 	std::pair<cPosition, cPosition> computeTileDrawingRange() const;
 
-	// Bad method
-	SDL_Rect computeTileDrawingArea (const cPosition& zoomedTileSize, const cPosition& zoomedStartTilePixelOffset, const cPosition& tileStartIndex, const cPosition& tileIndex);
+	SDL_Rect computeTileDrawingArea (const cPosition& zoomedTileSize, const cPosition& zoomedStartTilePixelOffset, const cPosition& tileStartIndex, const cPosition& tileIndex) const;
 
 	cPosition getMapTilePosition (const cPosition& pixelPosition) const;
 	cPosition getScreenPosition (const cUnit& unit, bool movementOffset = true) const;

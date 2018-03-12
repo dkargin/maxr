@@ -74,6 +74,8 @@ cWindowReports::cWindowReports (std::vector<std::shared_ptr<const cPlayer>> play
 	disadvantagesListDirty (true),
 	reportsListDirty (true)
 {
+	auto* font = cUnicodeFont::font.get();
+
 	auto turnTimeClockWidget = addChild (std::make_unique<cTurnTimeClockWidget> (cBox<cPosition> (cPosition (527, 17), cPosition (527 + 57, 17 + 10))));
 	turnTimeClockWidget->setTurnTimeClock (std::move (turnTimeClock));
 

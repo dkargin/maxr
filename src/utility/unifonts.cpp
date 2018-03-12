@@ -960,5 +960,4 @@ int cUnicodeFont::getUnicodeCharacterWidth (Uint16 unicodeCharacter, eUnicodeFon
 	return 0;
 }
 
-// TODO: Should not be that global
-std::unique_ptr<cUnicodeFont> font;
+std::unique_ptr<cUnicodeFont> cUnicodeFont::font;

@@ -140,6 +140,7 @@ void cWindowMapSelection::updateUpDownLocked()
 //------------------------------------------------------------------------------
 void cWindowMapSelection::updateMaps()
 {
+	auto* font = cUnicodeFont::font.get();
 	for (size_t i = 0; i < mapCount; ++i)
 	{
 		const auto mapIndex = page * mapCount + i;

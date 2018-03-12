@@ -121,7 +121,7 @@ void sDrawingCacheEntry::init (const cVehicle& vehicle, const cMapView& map, con
 	{
 		isOnWaterAndNotCoast = false;
 	}
-	if ((vehicle.getStaticUnitData().isStealthOn & TERRAIN_SEA) && isOnWaterAndNotCoast && vehicle.detectedByPlayerList.empty() && vehicle.getOwner() == player)
+	if ((vehicle.getStaticUnitData().isStealthOn & TERRAIN_SEA) && isOnWaterAndNotCoast && !vehicle.isDetectedByAnyPlayer() && vehicle.getOwner() == player)
 		stealth = true;
 	else
 		stealth = false;
@@ -319,7 +319,7 @@ SDL_Surface* cDrawingCache::getCachedImage (const cVehicle& vehicle, double zoom
 			isOnWaterAndNotCoast = false;
 		}
 
-		if ((vehicle.getStaticUnitData().isStealthOn & TERRAIN_SEA) && isOnWaterAndNotCoast && vehicle.detectedByPlayerList.empty() && vehicle.getOwner() == player)
+		if ((vehicle.getStaticUnitData().isStealthOn & TERRAIN_SEA) && isOnWaterAndNotCoast && !vehicle.isDetectedByAnyPlayer() && vehicle.getOwner() == player)
 			stealth = true;
 
 		if (entry.stealth != stealth) continue;

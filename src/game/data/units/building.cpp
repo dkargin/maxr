@@ -206,6 +206,7 @@ cBuilding::~cBuilding()
 //----------------------------------------------------
 string cBuilding::getStatusStr (const cPlayer* whoWantsToKnow, const cUnitsData& unitsData) const
 {
+	auto font = cUnicodeFont::font.get();
 	if (isDisabled())
 	{
 		string sText;
@@ -1035,6 +1036,7 @@ void cBuilding::calcTurboBuild (std::array<int, 3>& turboBuildRounds, std::array
 }
 
 //--------------------------------------------------------------------------
+/*
 bool cBuilding::isDetectedByPlayer (const cPlayer* player) const
 {
 	return Contains (detectedByPlayerList, player);
@@ -1073,8 +1075,7 @@ void cBuilding::makeDetection (cServer& server)
 		}
 	}
 }
-
-
+*/
 //-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 //-- methods, that already have been extracted as part of cUnit refactoring

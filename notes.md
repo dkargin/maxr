@@ -37,6 +37,7 @@ Notable defines to be fixed:
 ```
 #ifdef FIX_THIS
 #ifdef FUCK_THIS
+#ifdef MOVE_IT_TO_XML
 ```
 
 Graphic layers:

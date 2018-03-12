@@ -209,8 +209,8 @@ int cLoader::loadFolder(const char* path)
 			return 0;
 		}
 
-		font.reset(new cUnicodeFont()); // init ascii fonts
-		font->setTargetSurface (cVideo::buffer);
+		cUnicodeFont::font.reset(new cUnicodeFont()); // init ascii fonts
+		cUnicodeFont::font->setTargetSurface (cVideo::buffer);
 		Log.mark();
 	}
 
@@ -413,6 +413,7 @@ void cLoader::writeConsole (const string& sTxt, int ok, int increment)
 		cout << sTxt << endl;
 		return;
 	}
+	const auto& font = cUnicodeFont::font.get();
 	const SDL_Rect rDest = {22, 152, 228, Uint16 (font->getFontHeight (FONT_LATIN_BIG_GOLD)) };
 	const SDL_Rect rDest2 = {250, 152, 230, Uint16 (font->getFontHeight (FONT_LATIN_BIG_GOLD)) };
 

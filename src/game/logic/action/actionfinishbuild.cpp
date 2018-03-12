@@ -68,11 +68,8 @@ void cActionFinishBuild::finishABuilding(cModel &model, cVehicle& vehicle) const
 		return;
 	//if (!vehicle.isNextTo(escapePosition, 1, 1))
 	//    return;
+	model.sideStepStealthUnit(escapePosition, vehicle);
 
-	if (!map->possiblePlace(vehicle, escapePosition, false))
-	{
-		//model.sideStepStealthUnit(escapePosition, *vehicle);
-	}
 	if (!map->possiblePlace(vehicle, escapePosition, false))
 		return;
 
@@ -92,6 +89,9 @@ void cActionFinishBuild::finishABuilding(cModel &model, cVehicle& vehicle) const
 			x++;
 		if (escapePosition.y() > vehicle.getPosition().y())
 			y++;
+
+		if(cPlayer* owner = vehicle.getOwner())
+			owner->updateScan(vehicle, cPosition(x, y), vehicle.getCellSize());
 		map->moveVehicle(vehicle, cPosition(x, y));
 	}
 
@@ -118,16 +118,13 @@ void cActionFinishBuild::finishAVehicle(cModel &model, cBuilding& building) cons
 	if (buildingListItem.getRemainingMetal() > 0)
 		return;
 
-
 	const cStaticUnitData& unitData = *model.getUnitsData()->getUnit(buildingListItem.getType());
-	if (!map->possiblePlaceVehicle(unitData, escapePosition, building.getOwner()))
-	{
-		//model.sideStepStealthUnit(position, unitData, Building->getOwner());
-	}
+
+	model.sideStepStealthUnit(escapePosition, unitData, building.getOwner());
 	if (!map->possiblePlaceVehicle(unitData, escapePosition, building.getOwner()))
 		return;
 
-	model.addVehicle (escapePosition, buildingListItem.getType(), building.getOwner(), false);
+	model.addVehicle (escapePosition, buildingListItem.getType(), building.getOwner());
 
 	// start new buildjob
 	if (building.getRepeatBuild())

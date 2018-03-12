@@ -87,9 +87,9 @@ void cVehicleData::render(cRenderable::sContext& context, const sRenderOps& ops)
 //-----------------------------------------------------------------------------
 
 //-----------------------------------------------------------------------------
-cVehicle::cVehicle (sVehicleDataPtr sdata, const cDynamicUnitData& dynamicData, cPlayer* owner, unsigned int ID) :
-	cUnit (&dynamicData, sdata, owner, ID),
-		vehicleData(sdata),
+cVehicle::cVehicle (sVehicleDataPtr sdata, const cDynamicUnitData* dynamicData, cPlayer* owner, unsigned int ID) :
+	cUnit (dynamicData, sdata, owner, ID),
+	vehicleData(sdata),
 	loaded (false),
 	isBuilding (false),
 	buildingTyp(),
@@ -283,15 +283,11 @@ void cVehicle::proceedBuilding (cModel& model)
 			if (getPosition().y() < bandPosition.y()) nextPosition.y()++;
 			// Can we move to this position?
 			// If not, we need to kill the path building now.
+			model.sideStepStealthUnit (nextPosition, *this);
 			if (!map.possiblePlace (*this, nextPosition, false))
 			{
-				// Try sidestepping stealth units before giving up.
-				//model.sideStepStealthUnit (nextPosition, *this);
-				if (!map.possiblePlace (*this, nextPosition, false))
-				{
-					// We can't build along this path any more.
-					break;
-				}
+				// We can't build along this path any more.
+				break;
 			}
 			// Can we build at this next position?
 			if (map.possiblePlaceBuilding (*building, nextPosition, nullptr))
@@ -373,6 +369,7 @@ bool cVehicle::proceedClearing (cServer& server)
 	// This is another strange task, when clearing machine moves to a center of destroyed object
 	if (cellSize > 1)
 	{
+		getOwner()->updateScan(*this, buildBigSavedPosition);
 		map.moveVehicle (*this, buildBigSavedPosition);
 		sendStopClear (server, *this, buildBigSavedPosition, *getOwner());
 		for (size_t i = 0; i != seenByPlayerList.size(); ++i)
@@ -416,6 +413,7 @@ bool cVehicle::refreshData()
 //-----------------------------------------------------------------------------
 string cVehicle::getStatusStr(const cPlayer* player, const cUnitsData& unitsData) const
 {
+	auto font = cUnicodeFont::font.get();
 	if (isDisabled())
 	{
 		string sText;
@@ -1069,8 +1067,8 @@ void cVehicle::layMine (cModel& model)
 		return;
 
 	const cMap& map = *model.getMap();
-
 	const auto& staticMineData = model.getUnitsData()->getBuilding(vehicleData->sweepBuildObject);
+
 	if(!staticMineData)
 		return;
 
@@ -1079,7 +1077,8 @@ void cVehicle::layMine (cModel& model)
 	if (!map.possiblePlaceBuilding(*staticMineData, pos, nullptr, this))
 		return;
 
-	model.addBuilding(pos, staticMineData->ID, getOwner(), false);
+	model.addBuilding(pos, staticMineData->ID, getOwner());
+
 	setStoredResources (getStoredResources() - 1);
 
 	if (getStoredResources() <= 0)
@@ -1212,161 +1211,13 @@ int cVehicle::calcCommandoTurns (const cUnit* destUnit) const
 }
 
 //-----------------------------------------------------------------------------
-bool cVehicle::isDetectedByPlayer (const cPlayer* player) const
+void cVehicle::tryResetOfDetectionStateBeforeMove (const cMap& map, const std::vector<std::shared_ptr<cPlayer>>& playerList)
 {
-	return Contains (detectedByPlayerList, player);
-}
-
-//-----------------------------------------------------------------------------
-void cVehicle::setDetectedByPlayer(cPlayer* player, bool addToDetectedInThisTurnList /*= true*/)
-{
-	//TODO: make voice / text massage for owner and player
-	bool wasDetected = (detectedByPlayerList.empty() == false);
-
-	if (!isDetectedByPlayer (player))
-		detectedByPlayerList.push_back (player);
-
-
-	if (addToDetectedInThisTurnList && Contains (detectedInThisTurnByPlayerList, player) == false)
-		detectedInThisTurnByPlayerList.push_back (player);
-}
-
-//-----------------------------------------------------------------------------
-void cVehicle::resetDetectedByPlayer (cServer& server, cPlayer* player)
-{
-	bool wasDetected = (detectedByPlayerList.empty() == false);
-
-	Remove (detectedByPlayerList, player);
-	Remove (detectedInThisTurnByPlayerList, player);
-
-	if (wasDetected && detectedByPlayerList.empty()) sendDetectionState (server, *this);
-}
-
-//-----------------------------------------------------------------------------
-bool cVehicle::wasDetectedInThisTurnByPlayer (const cPlayer* player) const
-{
-	return Contains (detectedInThisTurnByPlayerList, player);
-}
-
-//-----------------------------------------------------------------------------
-void cVehicle::clearDetectedInThisTurnPlayerList()
-{
-	detectedInThisTurnByPlayerList.clear();
-}
-
-//-----------------------------------------------------------------------------
-void cVehicle::tryResetOfDetectionStateAfterMove (cServer& server)
-{
-	std::vector<cPlayer*> playersThatDetectThisVehicle = calcDetectedByPlayer (server);
-
-	bool foundPlayerToReset = true;
-	while (foundPlayerToReset)
+	for (const auto& player : playerList)
 	{
-		foundPlayerToReset = false;
-		for (unsigned int i = 0; i < detectedByPlayerList.size(); i++)
+		if (!Contains(detectedInThisTurnByPlayerList, player->getId()) && !checkDetectedByPlayer(*player, map))
 		{
-			if (Contains (playersThatDetectThisVehicle, detectedByPlayerList[i]) == false
-				&& Contains (detectedInThisTurnByPlayerList, detectedByPlayerList[i]) == false)
-			{
-				resetDetectedByPlayer (server, detectedByPlayerList[i]);
-				foundPlayerToReset = true;
-				break;
-			}
-		}
-	}
-}
-
-//-----------------------------------------------------------------------------
-std::vector<cPlayer*> cVehicle::calcDetectedByPlayer (cServer& server) const
-{
-	std::vector<cPlayer*> playersThatDetectThisVehicle;
-	// check whether the vehicle has been detected by others
-	if (staticData->isStealthOn != TERRAIN_NONE)  // the vehicle is a stealth vehicle
-	{
-		cMap& map = *server.Map;
-		const auto& playerList = server.playerList;
-		for (unsigned int i = 0; i < playerList.size(); i++)
-		{
-			cPlayer& player = *playerList[i];
-			if (&player == getOwner())
-				continue;
-			bool isOnWater = map.isWater (getPosition());
-			bool isOnCoast = map.isCoast (getPosition()) && (isOnWater == false);
-
-			// if the vehicle can also drive on land, we have to check,
-			// whether there is a brige, platform, etc.
-			// because the vehicle will drive on the bridge
-			const cBuilding* building = map.getField (getPosition()).getBaseBuilding();
-			if (staticData->factorGround > 0 && building
-				&& (building->getStaticUnitData().surfacePosition == cStaticUnitData::SURFACE_POS_BASE
-				|| building->getStaticUnitData().surfacePosition == cStaticUnitData::SURFACE_POS_ABOVE_SEA
-				|| building->getStaticUnitData().surfacePosition == cStaticUnitData::SURFACE_POS_ABOVE_BASE))
-			{
-				isOnWater = false;
-				isOnCoast = false;
-			}
-
-			if ((staticData->isStealthOn & TERRAIN_GROUND)
-				&& (player.hasLandDetection(getPosition()) || (!(staticData->isStealthOn & TERRAIN_COAST) && isOnCoast)
-					|| isOnWater))
-			{
-				playersThatDetectThisVehicle.push_back (&player);
-			}
-
-			if ((staticData->isStealthOn & TERRAIN_SEA)
-				&& (player.hasSeaDetection (getPosition()) || isOnWater == false))
-			{
-				playersThatDetectThisVehicle.push_back (&player);
-			}
-		}
-	}
-	return playersThatDetectThisVehicle;
-}
-
-//-----------------------------------------------------------------------------
-void cVehicle::makeDetection (cServer& server)
-{
-	// check whether the vehicle has been detected by others
-	std::vector<cPlayer*> playersThatDetectThisVehicle = calcDetectedByPlayer (server);
-	for (unsigned int i = 0; i < playersThatDetectThisVehicle.size(); i++)
-		setDetectedByPlayer (playersThatDetectThisVehicle[i]);
-
-	// detect other units
-	if (staticData->canDetectStealthOn == false) return;
-
-	cMap& map = *server.Map;
-	const int minx = std::max (getPosition().x() - data.getScan(), 0);
-	const int maxx = std::min (getPosition().x() + data.getScan(), map.getSize().x() - 1);
-	const int miny = std::max (getPosition().y() - data.getScan(), 0);
-	const int maxy = std::min (getPosition().y() + data.getScan(), map.getSize().x() - 1);
-
-	for (int x = minx; x <= maxx; ++x)
-	{
-		for (int y = miny; y <= maxy; ++y)
-		{
-			const cPosition position (x, y);
-
-			cVehicle* vehicle = map.getField (position).getVehicle();
-			cBuilding* building = map.getField (position).getMine();
-
-			if (vehicle && vehicle->getOwner() != getOwner())
-			{
-				if ((staticData->canDetectStealthOn & TERRAIN_GROUND) && getOwner()->hasLandDetection(position) && (vehicle->getStaticUnitData().isStealthOn & TERRAIN_GROUND))
-				{
-					vehicle->setDetectedByPlayer (getOwner());
-				}
-				if ((staticData->canDetectStealthOn & TERRAIN_SEA) && getOwner()->hasSeaDetection(position) && (vehicle->getStaticUnitData().isStealthOn & TERRAIN_SEA))
-				{
-					vehicle->setDetectedByPlayer (getOwner());
-				}
-			}
-			if (building && building->getOwner() != getOwner())
-			{
-				if ((staticData->canDetectStealthOn & AREA_EXP_MINE) && getOwner()->hasMineDetection(position) && (building->getStaticUnitData().isStealthOn & AREA_EXP_MINE))
-				{
-					building->setDetectedByPlayer (getOwner());
-				}
-			}
+			resetDetectedByPlayer(player.get());
 		}
 	}
 }
@@ -1408,8 +1259,6 @@ uint32_t cVehicle::getChecksum(uint32_t crc) const
 	crc = calcCheckSum(buildBigSavedPosition, crc);
 	crc = calcCheckSum(BuildPath, crc);
 	crc = calcCheckSum(WalkFrame, crc);
-	for ( const auto& p : detectedInThisTurnByPlayerList)
-		crc = calcCheckSum(p, crc);
 	//std::shared_ptr<cAutoMJob> autoMoveJob;
 	crc = calcCheckSum(tileMovementOffset, crc);
 	crc = calcCheckSum(loaded, crc);

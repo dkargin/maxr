@@ -269,7 +269,7 @@ void cActionInitNewGame::makeLanding(cPlayer& player, const sLandingConfig& land
 		for(const auto& item: landingConfig.baseLayout)
 		{
 			if(item.data)
-				model.addBuilding(landingPosition + item.pos, item.data->ID, &player, true);
+				model.addBuilding(landingPosition + item.pos, item.data->ID, &player);
 		}
 
 		// Explore area under created buildings
@@ -345,7 +345,7 @@ cVehicle* cActionInitNewGame::landVehicle(const cPosition& landingPosition, int 
 			if (!map.possiblePlaceVehicle(unitData, pos, &player))
 				continue;
 
-			return &model.addVehicle(pos, id, &player, true);
+			return &model.addVehicle(pos, id, &player);
 		}
 	}
 	return nullptr;
